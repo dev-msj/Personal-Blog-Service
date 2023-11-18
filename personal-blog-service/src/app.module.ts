@@ -5,7 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeOrmConfig';
 import { WinstonModule, utilities } from 'nest-winston';
-import winston from 'winston';
+import * as winston from 'winston';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -25,6 +26,16 @@ import winston from 'winston';
         }),
       ],
     }),
+    ClientsModule.register([
+      {
+        name: 'BLOG_SERVICE',
+        transport: Transport.REDIS,
+        options: {
+          host: 'localhost',
+          port: 6479,
+        },
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [AppService],
