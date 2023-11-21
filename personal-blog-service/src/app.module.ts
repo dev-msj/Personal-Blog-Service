@@ -8,6 +8,7 @@ import { WinstonModule, utilities } from 'nest-winston';
 import * as winston from 'winston';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisConfig } from './config/redisConfig';
+import { BlogModule } from './blog/blog.module';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { redisConfig } from './config/redisConfig';
       ],
     }),
     CacheModule.registerAsync(redisConfig),
-    ,
+    BlogModule,
   ],
   controllers: [AppController],
   providers: [AppService],
