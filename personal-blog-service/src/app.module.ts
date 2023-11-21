@@ -6,7 +6,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeOrmConfig';
 import { WinstonModule, utilities } from 'nest-winston';
 import * as winston from 'winston';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisConfig } from './config/redisConfig';
 
 @Module({
   imports: [
@@ -26,16 +27,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         }),
       ],
     }),
-    ClientsModule.register([
-      {
-        name: 'BLOG_SERVICE',
-        transport: Transport.REDIS,
-        options: {
-          host: 'localhost',
-          port: 6479,
-        },
-      },
-    ]),
+    CacheModule.registerAsync(redisConfig),
+    ,
   ],
   controllers: [AppController],
   providers: [AppService],
