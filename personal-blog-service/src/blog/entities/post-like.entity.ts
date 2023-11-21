@@ -1,4 +1,11 @@
-import { Entity, PrimaryColumn } from 'typeorm';
+import {
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { PostEntity } from './post.entity';
 
 @Entity('POST_LIKE')
 export class PostLikeEntity {
@@ -10,4 +17,19 @@ export class PostLikeEntity {
 
   @PrimaryColumn({ name: 'POST_ID' })
   readonly postId: number;
+
+  @CreateDateColumn({
+    name: 'CREATE_DATETIME',
+    type: 'datetime',
+  })
+  readonly createDatetime: Date;
+
+  @UpdateDateColumn({
+    name: 'MODIFY_DATETIME',
+    type: 'datetime',
+  })
+  readonly modifyDatetime: Date;
+
+  @ManyToOne(() => PostEntity, (postEntity) => postEntity.postLikeEntitys)
+  readonly postEntity: PostEntity;
 }
