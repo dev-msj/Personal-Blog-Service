@@ -1,6 +1,7 @@
 import {
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryColumn,
   UpdateDateColumn,
@@ -31,5 +32,9 @@ export class PostLikeEntity {
   readonly modifyDatetime: Date;
 
   @ManyToOne(() => PostEntity, (postEntity) => postEntity.postLikeEntitys)
+  @JoinColumn([
+    { name: 'POST_UID', referencedColumnName: 'postUid' },
+    { name: 'POST_ID', referencedColumnName: 'postId' },
+  ])
   readonly postEntity: PostEntity;
 }
