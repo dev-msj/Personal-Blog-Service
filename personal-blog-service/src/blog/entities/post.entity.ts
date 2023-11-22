@@ -44,5 +44,5 @@ export class PostEntity {
     () => PostLikeEntity,
     (postLikeEntity) => postLikeEntity.postEntity,
   )
-  readonly postLikeEntitys: PostLikeEntity;
+  readonly postLikeEntitys: PostLikeEntity[];
 }
