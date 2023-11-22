@@ -9,6 +9,9 @@ import * as winston from 'winston';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisConfig } from './config/redisConfig';
 import { BlogModule } from './blog/blog.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './auth/auth.guard';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -30,8 +33,15 @@ import { BlogModule } from './blog/blog.module';
     }),
     CacheModule.registerAsync(redisConfig),
     BlogModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    }
+  ],
 })
 export class AppModule {}
