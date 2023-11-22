@@ -13,6 +13,7 @@ export class PostDao {
     const postDao = new PostDao();
     postDao.postUid = postEntity.postUid;
     postDao.postId = postEntity.postId;
+    postDao.title = postEntity.title;
     postDao.wrtieDatetime = postEntity.wrtieDatetime;
     postDao.contents = postEntity.contents;
     postDao.hits = postEntity.hits;
@@ -24,6 +25,7 @@ export class PostDao {
     return {
       postUid: this.postUid,
       postId: this.postId,
+      title: this.title,
       wrtieDatetime: this.wrtieDatetime,
       contents: this.contents,
       hits: this.hits,
