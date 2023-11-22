@@ -43,6 +43,7 @@ export class PostEntity {
   @OneToMany(
     () => PostLikeEntity,
     (postLikeEntity) => postLikeEntity.postEntity,
+    { onDelete: 'CASCADE' },
   )
   readonly postLikeEntitys: PostLikeEntity[];
 }
