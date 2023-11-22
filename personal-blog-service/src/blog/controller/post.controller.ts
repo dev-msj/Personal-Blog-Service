@@ -10,7 +10,6 @@ export class PostController {
   async getDefaultPostDtoList(
     @Headers('uid') authUid: string,
   ): Promise<PostDto[]> {
-    console.log(authUid);
     return this.postService.getPostDtoList(authUid);
   }
 
