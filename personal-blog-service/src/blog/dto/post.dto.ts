@@ -1,4 +1,5 @@
 import { IsDate, IsNumber, IsString } from 'class-validator';
+import { PostLikeDto } from './post-like.dto';
 
 export class PostDto {
   @IsString()
@@ -18,4 +19,6 @@ export class PostDto {
 
   @IsNumber()
   readonly hits: number;
+
+  readonly postLikeDtos: PostLikeDto[];
 }
