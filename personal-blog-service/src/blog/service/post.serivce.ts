@@ -12,9 +12,12 @@ export class PostService {
     private readonly postRrepository: Repository<PostEntity>,
   ) {}
 
-  async getPostDtoList(postId: number = 0): Promise<PostDto[]> {
+  async getPostDtoList(
+    authUid: string,
+    postId: number = 0,
+  ): Promise<PostDto[]> {
     const postEntityList = await this.postRrepository.find({
-      where: { postUid: 'asdf', postId: MoreThanOrEqual(postId) },
+      where: { postUid: authUid, postId: MoreThanOrEqual(postId) },
       take: 20,
       order: { postId: 'DESC' },
     });
