@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PostEntity } from '../entities/post.entity';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostDto } from '../dto/post.dto';
 import { PostDao } from '../dao/post.dao';
@@ -12,9 +12,9 @@ export class PostService {
     private readonly postRrepository: Repository<PostEntity>,
   ) {}
 
-  async getPostDtoList(): Promise<PostDto[]> {
+  async getPostDtoList(postId: number = 0): Promise<PostDto[]> {
     const postEntityList = await this.postRrepository.find({
-      where: { postUid: 'asdf' },
+      where: { postUid: 'asdf', postId: MoreThanOrEqual(postId) },
       take: 20,
       order: { postId: 'DESC' },
     });
