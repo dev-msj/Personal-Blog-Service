@@ -4,12 +4,15 @@ import { MoreThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostDto } from '../dto/post.dto';
 import { PostDao } from '../dao/post.dao';
+import { PostLikeEntity } from '../entities/post-like.entity';
 
 @Injectable()
 export class PostService {
   constructor(
     @InjectRepository(PostEntity)
     private readonly postRrepository: Repository<PostEntity>,
+    @InjectRepository(PostLikeEntity)
+    private readonly postLikeRrepository: Repository<PostLikeEntity>,
   ) {}
 
   async getPostDtoList(
@@ -20,6 +23,7 @@ export class PostService {
       where: { postUid: authUid, postId: MoreThanOrEqual(postId) },
       take: 20,
       order: { postId: 'DESC' },
+      relations: ['postLikeEntitys'],
     });
 
     return postEntityList.map((postEntity) =>
