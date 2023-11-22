@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PostEntity } from '../entities/post.entity';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import { LessThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostDto } from '../dto/post.dto';
 import { PostDao } from '../dao/post.dao';
@@ -17,10 +17,14 @@ export class PostService {
 
   async getPostDtoList(
     authUid: string,
-    postId: number = 0,
+    postId: number = -1,
   ): Promise<PostDto[]> {
+    if (postId < 0) {
+      postId = await this.getMaxPostId(authUid);
+    }
+
     const postEntityList = await this.postRrepository.find({
-      where: { postUid: authUid, postId: MoreThanOrEqual(postId) },
+      where: { postUid: authUid, postId: LessThanOrEqual(postId) },
       take: 20,
       order: { postId: 'DESC' },
       relations: ['postLikeEntitys'],
@@ -29,5 +33,15 @@ export class PostService {
     return postEntityList.map((postEntity) =>
       PostDao.fromPostEntity(postEntity).toPostDto(),
     );
+  }
+
+  private async getMaxPostId(authUid: string): Promise<number> {
+    return (
+      await this.postRrepository
+        .createQueryBuilder('postEntity')
+        .select('MAX(postEntity.postId)', 'max')
+        .where('postEntity.postUid = :postUid', { postUid: authUid })
+        .getRawOne()
+    ).max;
   }
 }
