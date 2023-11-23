@@ -4,8 +4,8 @@ export class PostDto {
   @IsString()
   readonly postUid: string;
 
-  @IsNumber()
-  readonly postId: number;
+  @IsString()
+  readonly postId: string;
 
   @IsString()
   readonly title: string;
