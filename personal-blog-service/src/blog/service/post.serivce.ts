@@ -38,7 +38,6 @@ export class PostService {
 
     await this.setPostLikeUidList(postDaoList);
 
-    console.log(this.config.pkSecretKey)
     return postDaoList.map((postDao) =>
       postDao.toPostDto(this.config.pkSecretKey),
     );
