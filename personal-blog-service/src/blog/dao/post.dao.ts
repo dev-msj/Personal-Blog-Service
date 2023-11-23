@@ -1,3 +1,4 @@
+import { AES } from 'crypto-js';
 import { PostDto } from '../dto/post.dto';
 import { PostEntity } from '../entities/post.entity';
 
@@ -34,10 +35,10 @@ export class PostDao {
     this.postLikeUidList = postLikeUidList;
   }
 
-  toPostDto(): PostDto {
+  toPostDto(pkSecretKey: string): PostDto {
     return {
-      postUid: this.postUid,
-      postId: this.postId,
+      postUid: AES.encrypt(this.postUid, pkSecretKey).toString(),
+      postId: AES.encrypt(this.postId.toString(), pkSecretKey).toString(),
       title: this.title,
       wrtieDatetime: this.wrtieDatetime,
       contents: this.contents,
