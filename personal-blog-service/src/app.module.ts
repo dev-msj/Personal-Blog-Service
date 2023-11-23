@@ -12,12 +12,16 @@ import { BlogModule } from './blog/blog.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthModule } from './auth/auth.module';
+import authConfig from './config/authConfig';
+import { validationEnv } from './config/validationEnv';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `env/.${process.env.NODE_ENV}.env`,
+      load: [authConfig],
+      validationSchema: validationEnv,
     }),
     TypeOrmModule.forRootAsync(typeOrmConfig),
     WinstonModule.forRoot({
