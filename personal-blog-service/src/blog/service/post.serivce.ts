@@ -1,14 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PostEntity } from '../entities/post.entity';
 import { LessThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostDto } from '../dto/post.dto';
 import { PostDao } from '../dao/post.dao';
 import { PostLikeService } from './post-like.serivce';
+import authConfig from 'src/config/authConfig';
+import { ConfigType } from '@nestjs/config';
 
 @Injectable()
 export class PostService {
   constructor(
+    @Inject(authConfig.KEY)
+    private config: ConfigType<typeof authConfig>,
     @InjectRepository(PostEntity)
     private readonly postRrepository: Repository<PostEntity>,
     private readonly postLikeService: PostLikeService,
@@ -34,7 +38,10 @@ export class PostService {
 
     await this.setPostLikeUidList(postDaoList);
 
-    return postDaoList.map((postDao) => postDao.toPostDto());
+    console.log(this.config.pkSecretKey)
+    return postDaoList.map((postDao) =>
+      postDao.toPostDto(this.config.pkSecretKey),
+    );
   }
 
   private async getMaxPostId(authUid: string): Promise<number> {
