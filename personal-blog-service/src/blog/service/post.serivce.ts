@@ -4,15 +4,14 @@ import { LessThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostDto } from '../dto/post.dto';
 import { PostDao } from '../dao/post.dao';
-import { PostLikeEntity } from '../entities/post-like.entity';
+import { PostLikeService } from './post-like.serivce';
 
 @Injectable()
 export class PostService {
   constructor(
     @InjectRepository(PostEntity)
     private readonly postRrepository: Repository<PostEntity>,
-    @InjectRepository(PostLikeEntity)
-    private readonly postLikeRrepository: Repository<PostLikeEntity>,
+    private readonly postLikeService: PostLikeService,
   ) {}
 
   async getPostDtoList(
@@ -27,12 +26,15 @@ export class PostService {
       where: { postUid: authUid, postId: LessThanOrEqual(postId) },
       take: 20,
       order: { postId: 'DESC' },
-      relations: ['postLikeEntitys'],
     });
 
-    return postEntityList.map((postEntity) =>
-      PostDao.fromPostEntity(postEntity).toPostDto(),
+    const postDaoList = postEntityList.map((postEntity) =>
+      PostDao.fromPostEntity(postEntity),
     );
+
+    await this.setPostLikeUidList(postDaoList);
+
+    return postDaoList.map((postDao) => postDao.toPostDto());
   }
 
   private async getMaxPostId(authUid: string): Promise<number> {
@@ -43,5 +45,15 @@ export class PostService {
         .where('postEntity.postUid = :postUid', { postUid: authUid })
         .getRawOne()
     ).max;
+  }
+
+  private async setPostLikeUidList(postDaoList: PostDao[]) {
+    for (const postDao of postDaoList) {
+      postDao.setPostLikeUidList =
+        await this.postLikeService.getPostLikeUidList(
+          postDao.getPostUid,
+          postDao.getPostId,
+        );
+    }
   }
 }

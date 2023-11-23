@@ -1,6 +1,5 @@
 import { PostDto } from '../dto/post.dto';
 import { PostEntity } from '../entities/post.entity';
-import { PostLikeDao } from './post-like.dao';
 
 export class PostDao {
   private postUid: string;
@@ -9,7 +8,7 @@ export class PostDao {
   private wrtieDatetime: Date;
   private contents: string;
   private hits: number;
-  private PostLikeDaos: PostLikeDao[];
+  private postLikeUidList: string[];
 
   static fromPostEntity(postEntity: PostEntity): PostDao {
     const postDao = new PostDao();
@@ -19,11 +18,20 @@ export class PostDao {
     postDao.wrtieDatetime = postEntity.wrtieDatetime;
     postDao.contents = postEntity.contents;
     postDao.hits = postEntity.hits;
-    postDao.PostLikeDaos = postEntity.postLikeEntitys.map((postLikeEntity) =>
-      PostLikeDao.fromPostLikeEntity(postLikeEntity),
-    );
 
     return postDao;
+  }
+
+  get getPostUid() {
+    return this.postUid;
+  }
+
+  get getPostId() {
+    return this.postId;
+  }
+
+  set setPostLikeUidList(postLikeUidList: string[]) {
+    this.postLikeUidList = postLikeUidList;
   }
 
   toPostDto(): PostDto {
@@ -34,9 +42,7 @@ export class PostDao {
       wrtieDatetime: this.wrtieDatetime,
       contents: this.contents,
       hits: this.hits,
-      postLikeDtos: this.PostLikeDaos.map((postLikeDao) =>
-        postLikeDao.toPostLikeDto(),
-      ),
+      postLikeUidList: this.postLikeUidList,
     } as PostDto;
   }
 }
