@@ -37,8 +37,12 @@ export class PostDao {
 
   toPostDto(pkSecretKey: string): PostDto {
     return {
-      postUid: AES.encrypt(this.postUid, pkSecretKey).toString(),
-      postId: AES.encrypt(this.postId.toString(), pkSecretKey).toString(),
+      postUid: encodeURIComponent(
+        AES.encrypt(this.postUid, pkSecretKey).toString(),
+      ),
+      postId: encodeURIComponent(
+        AES.encrypt(this.postId.toString(), pkSecretKey).toString(),
+      ),
       title: this.title,
       wrtieDatetime: this.wrtieDatetime,
       contents: this.contents,
