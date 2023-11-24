@@ -10,7 +10,7 @@ export class PostController {
   async getDefaultPostDtoList(
     @Headers('uid') authUid: string,
   ): Promise<PostDto[]> {
-    return this.postService.getPostDtoList(authUid);
+    return await this.postService.getPostDtoList(authUid);
   }
 
   @Get(':postId')
@@ -18,6 +18,6 @@ export class PostController {
     @Headers('uid') authUid: string,
     @Param('postId') postId: number,
   ): Promise<PostDto[]> {
-    return this.postService.getPostDtoList(authUid, postId);
+    return await this.postService.getPostDtoList(authUid, postId);
   }
 }
