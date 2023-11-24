@@ -1,6 +1,7 @@
 import { Controller, Get, Headers, Param } from '@nestjs/common';
 import { PostService } from '../service/post.serivce';
 import { PostDto } from '../dto/post.dto';
+import { DecryptionPipe } from 'src/pipe/decryption.pipe';
 
 @Controller('posts')
 export class PostController {
@@ -16,7 +17,7 @@ export class PostController {
   @Get(':postId')
   async getPostDtoList(
     @Headers('uid') authUid: string,
-    @Param('postId') postId: number,
+    @Param('postId', DecryptionPipe) postId: number,
   ): Promise<PostDto[]> {
     return await this.postService.getPostDtoList(authUid, postId);
   }
