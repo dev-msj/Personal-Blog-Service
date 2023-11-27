@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostLikeEntity } from '../entities/post-like.entity';
 import { UserInfoService } from 'src/user/service/user-info.service';
@@ -15,7 +15,6 @@ export class PostLikeService {
     private readonly logger: Logger,
     @InjectRepository(PostLikeEntity)
     private readonly postLikeRrepository: Repository<PostLikeEntity>,
-    private dataSource: DataSource,
     private readonly userInfoService: UserInfoService,
   ) {}
 
@@ -44,24 +43,14 @@ export class PostLikeService {
   }
 
   async addPostLikeUser(postLikeDto: PostLikeDto) {
-    this.dataSource.transaction(async (manager) => {
-      try {
-        this.postLikeRrepository.save(
-          await manager.save(
-            PostLikeDao.fromPostLikeDto(postLikeDto).toPostLikeEntity(),
-          ),
-        );
-      } catch (e) {
-        this.logger.warn(e);
-      }
-    });
+    await this.postLikeRrepository.save(
+      PostLikeDao.fromPostLikeDto(postLikeDto).toPostLikeEntity(),
+    );
   }
 
   async removePostLikeUser(postLikeDto: PostLikeDto) {
-    this.dataSource.transaction(async (manager) => {
-      await manager.remove(
-        PostLikeDao.fromPostLikeDto(postLikeDto).toPostLikeEntity(),
-      );
-    });
+    await this.postLikeRrepository.remove(
+      PostLikeDao.fromPostLikeDto(postLikeDto).toPostLikeEntity(),
+    );
   }
 }
