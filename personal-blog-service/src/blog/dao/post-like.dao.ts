@@ -29,6 +29,6 @@ export class PostLikeDao {
   }
 
   toPostLikeEntity(): PostLikeEntity {
-    return new PostLikeEntity(this.getUid, this.postId, this.uid);
+    return new PostLikeEntity(this.postUid, this.postId, this.uid);
   }
 }
