@@ -56,4 +56,12 @@ export class PostLikeService {
       }
     });
   }
+
+  async removePostLikeUser(postLikeDto: PostLikeDto) {
+    this.dataSource.transaction(async (manager) => {
+      await manager.remove(
+        PostLikeDao.fromPostLikeDto(postLikeDto).toPostLikeEntity(),
+      );
+    });
+  }
 }
