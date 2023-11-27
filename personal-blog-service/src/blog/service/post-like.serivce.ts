@@ -1,18 +1,21 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostLikeEntity } from '../entities/post-like.entity';
-import authConfig from 'src/config/authConfig';
-import { ConfigType } from '@nestjs/config';
 import { UserInfoService } from 'src/user/service/user-info.service';
+import { PostLikeDto } from '../dto/post-like.dto';
+import { PostLikeDao } from '../dao/post-like.dao';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 @Injectable()
 export class PostLikeService {
   constructor(
-    @Inject(authConfig.KEY)
-    private config: ConfigType<typeof authConfig>,
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
     @InjectRepository(PostLikeEntity)
     private readonly postLikeRrepository: Repository<PostLikeEntity>,
+    private dataSource: DataSource,
     private readonly userInfoService: UserInfoService,
   ) {}
 
@@ -38,5 +41,19 @@ export class PostLikeService {
     }
 
     return nicknameList;
+  }
+
+  async addPostLikeUser(postLikeDto: PostLikeDto) {
+    this.dataSource.transaction(async (manager) => {
+      try {
+        this.postLikeRrepository.save(
+          await manager.save(
+            PostLikeDao.fromPostLikeDto(postLikeDto).toPostLikeEntity(),
+          ),
+        );
+      } catch (e) {
+        this.logger.warn(e);
+      }
+    });
   }
 }
