@@ -45,6 +45,7 @@ export class PostController {
       ...postLikeDto,
       uid: authUid,
     } as PostLikeDto);
+
     return new SuccessResponse();
   }
 
