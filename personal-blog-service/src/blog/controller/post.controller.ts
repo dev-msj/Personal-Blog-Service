@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Headers, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { PostService } from '../service/post.serivce';
 import { PostDto } from '../dto/post.dto';
 import { DecryptionPipe } from 'src/pipe/decryption.pipe';
@@ -37,6 +45,19 @@ export class PostController {
       ...postLikeDto,
       uid: authUid,
     } as PostLikeDto);
+    return new SuccessResponse();
+  }
+
+  @Delete('likes')
+  async deletePostLikeUser(
+    @Headers('uid') authUid: string,
+    @Body() postLikeDto: PostLikeDto,
+  ): Promise<SuccessResponse> {
+    await this.postLikeService.removePostLikeUser({
+      ...postLikeDto,
+      uid: authUid,
+    } as PostLikeDto);
+
     return new SuccessResponse();
   }
 }
