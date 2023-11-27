@@ -37,4 +37,10 @@ export class PostLikeEntity {
     { name: 'POST_ID', referencedColumnName: 'postId' },
   ])
   readonly postEntity: PostEntity;
+
+  constructor(postUid: string, postId: number, uid: string) {
+    this.postUid = postUid;
+    this.postId = postId;
+    this.uid = uid;
+  }
 }
