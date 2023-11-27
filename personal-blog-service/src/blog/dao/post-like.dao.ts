@@ -1,3 +1,4 @@
+import { PostLikeDto } from '../dto/post-like.dto';
 import { PostLikeEntity } from '../entities/post-like.entity';
 
 export class PostLikeDao {
@@ -14,7 +15,20 @@ export class PostLikeDao {
     return postLikeDao;
   }
 
+  static fromPostLikeDto(postLikeDto: PostLikeDto): PostLikeDao {
+    const postLikeDao = new PostLikeDao();
+    postLikeDao.postUid = postLikeDto.postUid;
+    postLikeDao.postId = postLikeDto.postId;
+    postLikeDao.uid = postLikeDto.uid;
+
+    return postLikeDao;
+  }
+
   get getUid() {
     return this.uid;
+  }
+
+  toPostLikeEntity(): PostLikeEntity {
+    return new PostLikeEntity(this.getUid, this.postId, this.uid);
   }
 }
