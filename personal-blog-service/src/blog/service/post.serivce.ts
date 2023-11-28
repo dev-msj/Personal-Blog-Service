@@ -45,12 +45,14 @@ export class PostService {
 
   private async getMaxPostId(authUid: string): Promise<number> {
     return (
-      await this.postRrepository
-        .createQueryBuilder('postEntity')
-        .select('MAX(postEntity.postId)', 'max')
-        .where('postEntity.postUid = :postUid', { postUid: authUid })
-        .getRawOne()
-    ).max;
+      (
+        await this.postRrepository
+          .createQueryBuilder('postEntity')
+          .select('MAX(postEntity.postId)', 'max')
+          .where('postEntity.postUid = :postUid', { postUid: authUid })
+          .getRawOne()
+      ).max || 0
+    );
   }
 
   private async setPostLikeUidList(postDaoList: PostDao[]) {
