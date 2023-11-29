@@ -9,10 +9,10 @@ import {
 } from '@nestjs/common';
 import { PostService } from '../service/post.serivce';
 import { PostDto } from '../dto/post.dto';
-import { DecryptionPipe } from 'src/pipe/decryption.pipe';
 import { PostLikeDto } from '../dto/post-like.dto';
 import { SuccessResponse } from 'src/response/success-response.dto';
 import { PostLikeService } from '../service/post-like.serivce';
+import { PaginationDto } from '../dto/pagination.dto';
 
 @Controller('posts')
 export class PostController {
@@ -24,16 +24,16 @@ export class PostController {
   @Get()
   async getDefaultPostDtoList(
     @Headers('uid') authUid: string,
-  ): Promise<PostDto[]> {
+  ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostDtoList(authUid);
   }
 
-  @Get(':postId')
+  @Get(':page')
   async getPostDtoList(
     @Headers('uid') authUid: string,
-    @Param('postId', DecryptionPipe) postId: number,
-  ): Promise<PostDto[]> {
-    return await this.postService.getPostDtoList(authUid, postId);
+    @Param('page') page: number,
+  ): Promise<PaginationDto<PostDto>> {
+    return await this.postService.getPostDtoList(authUid, page);
   }
 
   @Post('likes')
