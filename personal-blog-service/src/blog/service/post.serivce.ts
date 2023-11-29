@@ -1,12 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PostEntity } from '../entities/post.entity';
-import { LessThanOrEqual, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostDto } from '../dto/post.dto';
 import { PostDao } from '../dao/post.dao';
 import { PostLikeService } from './post-like.serivce';
 import authConfig from 'src/config/authConfig';
 import { ConfigType } from '@nestjs/config';
+import { PaginationDto } from '../dto/pagination.dto';
+import { PaginationUtils } from 'src/utils/pagination.utils';
 
 @Injectable()
 export class PostService {
@@ -20,15 +22,12 @@ export class PostService {
 
   async getPostDtoList(
     authUid: string,
-    postId: number = -1,
-  ): Promise<PostDto[]> {
-    if (postId < 0) {
-      postId = await this.getMaxPostId(authUid);
-    }
-
-    const postEntityList = await this.postRrepository.find({
-      where: { postUid: authUid, postId: LessThanOrEqual(postId) },
-      take: 20,
+    page: number = 1,
+  ): Promise<PaginationDto<PostDto>> {
+    const [postEntityList, total] = await this.postRrepository.findAndCount({
+      where: { postUid: authUid },
+      take: PaginationUtils.TAKE,
+      skip: (page - 1) * PaginationUtils.TAKE,
       order: { postId: 'DESC' },
     });
 
@@ -38,8 +37,10 @@ export class PostService {
 
     await this.setPostLikeUidList(postDaoList);
 
-    return postDaoList.map((postDao) =>
-      postDao.toPostDto(this.config.pkSecretKey),
+    return PaginationUtils.toPaginationDto<PostDto>(
+      postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
+      total,
+      page,
     );
   }
 
