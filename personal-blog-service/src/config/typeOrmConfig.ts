@@ -1,6 +1,5 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
-import { TimeUtils } from 'src/utils/time.utills';
 
 export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
   imports: [ConfigModule],
@@ -17,7 +16,6 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
       synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
       cache: {
         type: 'redis',
-        duration: TimeUtils.getTicTimeHMS(24),
         options: {
           host: configService.get('REDIS_HOST'),
           port: configService.get('REDIS_PORT'),
