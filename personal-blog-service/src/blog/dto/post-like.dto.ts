@@ -9,4 +9,10 @@ export class PostLikeDto {
 
   @IsString()
   readonly uid: string;
+
+  constructor(postUid: string, postId: number, uid: string) {
+    this.postUid = postUid;
+    this.postId = postId;
+    this.uid = uid;
+  }
 }
