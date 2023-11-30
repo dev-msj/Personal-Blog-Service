@@ -1,22 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UserInfoEntity } from '../entities/user-info.entity';
-import { Repository } from 'typeorm';
-import { UserInfoDao } from '../dao/user-info.dao';
 import { UserInfoDto } from '../dto/user-info.dto';
+import { UserInfoRepository } from '../repository/user-info.repository';
 
 @Injectable()
 export class UserInfoService {
-  constructor(
-    @InjectRepository(UserInfoEntity)
-    private readonly userInfoRepository: Repository<UserInfoEntity>,
-  ) {}
+  constructor(private readonly userInfoRepository: UserInfoRepository) {}
 
   async getUserInfoDto(uid: string): Promise<UserInfoDto> {
-    return UserInfoDao.fromUserInfoEntity(
-      await this.userInfoRepository.findOne({
-        where: { uid: uid },
-      }),
-    ).toUserInfoDto();
+    return (await this.userInfoRepository.findUserInfoDao(uid)).toUserInfoDto();
   }
 }
