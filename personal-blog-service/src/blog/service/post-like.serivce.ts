@@ -24,22 +24,23 @@ export class PostLikeService {
     );
   }
 
-  async addPostLikeUser(postLikeDto: PostLikeDto) {
+  async addPostLikeUser(postLikeDto: PostLikeDto): Promise<void> {
     await this.postLikeRepository.savePostLikeDto(postLikeDto);
   }
 
-  async removePostLikeUser(postLikeDto: PostLikeDto) {
+  async removePostLikeUser(postLikeDto: PostLikeDto): Promise<void> {
     await this.postLikeRepository.removePostLikeDto(postLikeDto);
   }
 
-  private async getNicknameList(postLikeDaoList: PostLikeDao[]) {
+  private async getNicknameList(
+    postLikeDaoList: PostLikeDao[],
+  ): Promise<string[]> {
     const nicknameList = [];
     for (const postLikeDao of postLikeDaoList) {
-      const userInfo = await this.userInfoService.getUserInfoDto(
-        postLikeDao.getUid,
+      nicknameList.push(
+        (await this.userInfoService.getUserInfoDto(postLikeDao.getUid))
+          .nickname,
       );
-
-      nicknameList.push(userInfo.nickname);
     }
 
     return nicknameList;
