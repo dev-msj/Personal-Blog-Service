@@ -28,6 +28,10 @@ export class PostLikeDao {
     return this.uid;
   }
 
+  toPostLikeDto(): PostLikeDto {
+    return new PostLikeDto(this.postUid, this.postId, this.uid);
+  }
+
   toPostLikeEntity(): PostLikeEntity {
     return new PostLikeEntity(this.postUid, this.postId, this.uid);
   }
