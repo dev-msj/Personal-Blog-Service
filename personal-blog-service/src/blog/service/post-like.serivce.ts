@@ -19,12 +19,9 @@ export class PostLikeService {
     postUid: string,
     postId: number,
   ): Promise<string[]> {
-    const postLikeDaoList = await this.postLikeRepository.findPostLikeDaoList(
-      postUid,
-      postId,
+    return this.getNicknameList(
+      await this.postLikeRepository.findPostLikeDaoList(postUid, postId),
     );
-
-    return this.getNicknameList(postLikeDaoList);
   }
 
   async addPostLikeUser(postLikeDto: PostLikeDto) {
