@@ -9,11 +9,12 @@ import * as winston from 'winston';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisConfig } from './config/redisConfig';
 import { BlogModule } from './blog/blog.module';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthModule } from './auth/auth.module';
 import authConfig from './config/authConfig';
 import { validationEnv } from './config/validationEnv';
+import { HttpExceptionFilter } from './filter/http-exception.filter';
 
 @Module({
   imports: [
@@ -46,6 +47,10 @@ import { validationEnv } from './config/validationEnv';
       provide: APP_GUARD,
       useClass: AuthGuard,
     },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    }
   ],
 })
 export class AppModule {}
