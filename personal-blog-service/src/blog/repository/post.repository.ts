@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { PaginationUtils } from 'src/utils/pagination.utils';
 import { TimeUtils } from 'src/utils/time.utills';
 import { PostDao } from '../dao/post.dao';
+import { CacheIdUtils } from 'src/utils/cache-id.utils';
 
 @Injectable()
 export class PostRepository {
@@ -24,7 +25,7 @@ export class PostRepository {
       order: { postId: 'DESC' },
       // create/update/delete 할 때 캐시를 어떻게 처리할 것인지 고민해보기
       cache: {
-        id: `getPostDtoList_${postUid}_${page}`,
+        id: CacheIdUtils.getPostEntityListCacheId(postUid, page),
         milliseconds: TimeUtils.getTicTimeHMS(24),
       },
     });
