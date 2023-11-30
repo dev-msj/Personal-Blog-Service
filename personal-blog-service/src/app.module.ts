@@ -15,6 +15,8 @@ import { AuthModule } from './auth/auth.module';
 import authConfig from './config/authConfig';
 import { validationEnv } from './config/validationEnv';
 import { HttpExceptionFilter } from './filter/http-exception.filter';
+import * as winstonDaily from 'winston-daily-rotate-file';
+import { dailyOption } from './config/dailyLogConfig';
 
 @Module({
   imports: [
@@ -26,14 +28,16 @@ import { HttpExceptionFilter } from './filter/http-exception.filter';
     }),
     TypeOrmModule.forRootAsync(typeOrmConfig),
     WinstonModule.forRoot({
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        utilities.format.nestLike('PersonalBlog', { prettyPrint: true }),
+      ),
       transports: [
         new winston.transports.Console({
           level: process.env.NODE_ENV === 'production' ? 'info' : 'silly',
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            utilities.format.nestLike('PersonalBlog', { prettyPrint: true }),
-          ),
         }),
+        new winstonDaily(dailyOption('info')),
+        new winstonDaily(dailyOption('error')),
       ],
     }),
     CacheModule.registerAsync(redisConfig),
@@ -50,7 +54,7 @@ import { HttpExceptionFilter } from './filter/http-exception.filter';
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
-    }
+    },
   ],
 })
 export class AppModule {}
