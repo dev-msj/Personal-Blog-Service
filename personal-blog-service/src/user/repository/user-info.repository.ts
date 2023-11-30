@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfoEntity } from '../entities/user-info.entity';
 import { Repository } from 'typeorm';
 import { UserInfoDao } from '../dao/user-info.dao';
+import { TimeUtils } from 'src/utils/time.utills';
+import { CacheIdUtils } from 'src/utils/cache-id.utils';
 
 @Injectable()
 export class UserInfoRepository {
@@ -15,6 +17,10 @@ export class UserInfoRepository {
     return UserInfoDao.fromUserInfoEntity(
       await this.userInfoRepository.findOne({
         where: { uid: uid },
+        cache: {
+          id: CacheIdUtils.getUserInfoEntityCacheId(uid),
+          milliseconds: TimeUtils.getTicTimeHMS(24),
+        },
       }),
     );
   }
