@@ -4,6 +4,7 @@ import { PostEntity } from '../entities/post.entity';
 import { Repository } from 'typeorm';
 import { PaginationUtils } from 'src/utils/pagination.utils';
 import { TimeUtils } from 'src/utils/time.utills';
+import { PostDao } from '../dao/post.dao';
 
 @Injectable()
 export class PostRepository {
@@ -12,11 +13,11 @@ export class PostRepository {
     private readonly postRepository: Repository<PostEntity>,
   ) {}
 
-  async findPostEntityListAndCount(
+  async findPostDaoListAndCount(
     postUid: string,
     page: number,
-  ): Promise<[PostEntity[], number]> {
-    return await this.postRepository.findAndCount({
+  ): Promise<[PostDao[], number]> {
+    const [postEntityList, count] = await this.postRepository.findAndCount({
       where: { postUid: postUid },
       take: PaginationUtils.TAKE,
       skip: (page - 1) * PaginationUtils.TAKE,
@@ -27,6 +28,11 @@ export class PostRepository {
         milliseconds: TimeUtils.getTicTimeHMS(24),
       },
     });
+
+    return [
+      postEntityList.map((postEntity) => PostDao.fromPostEntity(postEntity)),
+      count,
+    ];
   }
 
   async getMaxPostId(postUid: string): Promise<number> {
