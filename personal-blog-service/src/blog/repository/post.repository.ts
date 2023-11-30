@@ -23,7 +23,6 @@ export class PostRepository {
       take: PaginationUtils.TAKE,
       skip: (page - 1) * PaginationUtils.TAKE,
       order: { postId: 'DESC' },
-      // create/update/delete 할 때 캐시를 어떻게 처리할 것인지 고민해보기
       cache: {
         id: CacheIdUtils.getPostEntityListCacheId(postUid, page),
         milliseconds: TimeUtils.getTicTimeHMS(24),
