@@ -6,4 +6,9 @@ export class PostPageRequestDto {
 
   @IsNumber()
   readonly page: number;
+
+  constructor(postUid: string, page: number) {
+    this.postUid = postUid;
+    this.page = page;
+  }
 }
