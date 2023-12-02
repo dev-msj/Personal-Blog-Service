@@ -24,8 +24,8 @@ export class PostController {
     private readonly postLikeService: PostLikeService,
   ) {}
 
-  @Get(':postUid')
-  async getDefaultPostDtoListByPostPageRequestDto(
+  @Get('users/:postUid')
+  async getLatestPostPageListByPostPageRequestDto(
     @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
@@ -33,8 +33,8 @@ export class PostController {
     );
   }
 
-  @Get(':postUid/:page')
-  async getPostDtoListByPostPageRequestDto(
+  @Get('users/:postUid/:page')
+  async getPostPageListByPostPageRequestDto(
     @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
