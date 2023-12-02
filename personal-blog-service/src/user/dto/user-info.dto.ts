@@ -9,4 +9,10 @@ export class UserInfoDto {
 
   @IsString()
   readonly introduce: string;
+
+  constructor(uid: string, nickname: string, introduce: string) {
+    this.uid = uid;
+    this.nickname = nickname;
+    this.introduce = introduce;
+  }
 }
