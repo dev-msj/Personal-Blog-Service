@@ -1,10 +1,10 @@
-export class CacheIdUtils {
-  private static readonly POST_ENTITY_LIST_CACHE_NAME_PREFIX = 'PostEntityList';
-  private static readonly POST_LIKE_ENTITY_LIST_CACHE_NAME_PREFIX =
-    'PostLikeEntityList';
+import { PostPageRequestDto } from '../blog/dto/post-page-request.dto';
 
-  static getPostEntityListCacheId(postUid: string, page: number) {
-    return `PostEntityList_${postUid}_${page}`;
+export class CacheIdUtils {
+  static getPostEntityListByPostPageRequestDtoCacheId(
+    PostPageRequestDto: PostPageRequestDto,
+  ) {
+    return `getPostEntityListByPostPageRequestDto_${PostPageRequestDto.postUid}_${PostPageRequestDto.page}`;
   }
 
   static getPostLikeEntityListCacheId(postUid: string, postId: number) {
