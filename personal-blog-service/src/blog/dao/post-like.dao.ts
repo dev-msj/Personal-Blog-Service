@@ -1,3 +1,4 @@
+import { PostLikeInteface } from '../dto/interface/post-like.interface';
 import { PostLikeDto } from '../dto/post-like.dto';
 import { PostLikeEntity } from '../entities/post-like.entity';
 
@@ -6,20 +7,11 @@ export class PostLikeDao {
   private postId: number;
   private uid: string;
 
-  static fromPostLikeEntity(postLikeEntity: PostLikeEntity): PostLikeDao {
+  static from(postLikeInteface: PostLikeInteface) {
     const postLikeDao = new PostLikeDao();
-    postLikeDao.postUid = postLikeEntity.postUid;
-    postLikeDao.postId = postLikeEntity.postId;
-    postLikeDao.uid = postLikeEntity.uid;
-
-    return postLikeDao;
-  }
-
-  static fromPostLikeDto(postLikeDto: PostLikeDto): PostLikeDao {
-    const postLikeDao = new PostLikeDao();
-    postLikeDao.postUid = postLikeDto.postUid;
-    postLikeDao.postId = postLikeDto.postId;
-    postLikeDao.uid = postLikeDto.uid;
+    postLikeDao.postUid = postLikeInteface.postUid;
+    postLikeDao.postId = postLikeInteface.postId;
+    postLikeDao.uid = postLikeInteface.uid;
 
     return postLikeDao;
   }

@@ -1,6 +1,6 @@
 import { AES } from 'crypto-js';
 import { PostDto } from '../dto/post.dto';
-import { PostEntity } from '../entities/post.entity';
+import { PostInterface } from '../dto/interface/post.inteface';
 
 export class PostDao {
   private postUid: string;
@@ -11,14 +11,14 @@ export class PostDao {
   private hits: number;
   private postLikeUidList: string[];
 
-  static fromPostEntity(postEntity: PostEntity): PostDao {
+  static from(postInterface: PostInterface): PostDao {
     const postDao = new PostDao();
-    postDao.postUid = postEntity.postUid;
-    postDao.postId = postEntity.postId;
-    postDao.title = postEntity.title;
-    postDao.writeDatetime = postEntity.writeDatetime;
-    postDao.contents = postEntity.contents;
-    postDao.hits = postEntity.hits;
+    postDao.postUid = postInterface.postUid;
+    postDao.postId = postInterface.postId;
+    postDao.title = postInterface.title;
+    postDao.writeDatetime = postInterface.writeDatetime;
+    postDao.contents = postInterface.contents;
+    postDao.hits = postInterface.hits;
 
     return postDao;
   }

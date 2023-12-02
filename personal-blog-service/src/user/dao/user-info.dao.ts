@@ -1,16 +1,16 @@
+import { UserInfoInterface } from '../dto/interface/user-info.interface';
 import { UserInfoDto } from '../dto/user-info.dto';
-import { UserInfoEntity } from '../entities/user-info.entity';
 
 export class UserInfoDao {
   private uid: string;
   private nickname: string;
   private introduce: string;
 
-  static fromUserInfoEntity(userInfoEntity: UserInfoEntity): UserInfoDao {
+  static from(userInfoInterace: UserInfoInterface): UserInfoDao {
     const userInfoDao = new UserInfoDao();
-    userInfoDao.uid = userInfoEntity.uid;
-    userInfoDao.nickname = userInfoEntity.nickname;
-    userInfoDao.introduce = userInfoEntity.introduce;
+    userInfoDao.uid = userInfoInterace.uid;
+    userInfoDao.nickname = userInfoInterace.nickname;
+    userInfoDao.introduce = userInfoInterace.introduce;
 
     return userInfoDao;
   }

@@ -14,7 +14,7 @@ export class UserInfoRepository {
   ) {}
 
   async findUserInfoDao(uid: string): Promise<UserInfoDao> {
-    return UserInfoDao.fromUserInfoEntity(
+    const userInfoEntity =
       (await this.userInfoRepository.findOne({
         where: { uid: uid },
         cache: {
@@ -22,9 +22,10 @@ export class UserInfoRepository {
           milliseconds: TimeUtils.getTicTimeHMS(24),
         },
       })) ||
-        (() => {
-          throw new NotFoundException(`User('${uid}') does not exist!`);
-        })(),
-    );
+      (() => {
+        throw new NotFoundException(`User('${uid}') does not exist!`);
+      })();
+
+    return UserInfoDao.from({ ...userInfoEntity });
   }
 }

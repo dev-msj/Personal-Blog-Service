@@ -30,7 +30,7 @@ export class PostRepository {
     });
 
     return [
-      postEntityList.map((postEntity) => PostDao.fromPostEntity(postEntity)),
+      postEntityList.map((postEntity) => PostDao.from({ ...postEntity })),
       count,
     ];
   }

@@ -27,7 +27,7 @@ export class PostLikeRepository {
           milliseconds: TimeUtils.getTicTimeHMS(24),
         },
       })
-    ).map((postLikeEntiy) => PostLikeDao.fromPostLikeEntity(postLikeEntiy));
+    ).map((postLikeEntiy) => PostLikeDao.from({ ...postLikeEntiy }));
   }
 
   async savePostLikeDto(postLikeDto: PostLikeDto): Promise<void> {
@@ -37,7 +37,7 @@ export class PostLikeRepository {
     );
 
     await this.postLikeRepository.save(
-      PostLikeDao.fromPostLikeDto(postLikeDto).toPostLikeEntity(),
+      PostLikeDao.from({ ...postLikeDto }).toPostLikeEntity(),
     );
   }
 
@@ -48,7 +48,7 @@ export class PostLikeRepository {
     );
 
     await this.postLikeRepository.remove(
-      PostLikeDao.fromPostLikeDto(postLikeDto).toPostLikeEntity(),
+      PostLikeDao.from({ ...postLikeDto }).toPostLikeEntity(),
     );
   }
 
