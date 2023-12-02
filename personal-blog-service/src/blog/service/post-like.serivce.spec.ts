@@ -46,11 +46,10 @@ describe('PostLikeService', () => {
       const postId = 0;
       const uid = 'uid';
       const expected = 'nickname';
-      const postLikeDao = PostLikeDao.from({ postUid, postId, uid });
 
       postLikeRepository.findPostLikeDaoList = jest
         .fn()
-        .mockResolvedValue([postLikeDao]);
+        .mockResolvedValue([PostLikeDao.from({ postUid, postId, uid })]);
 
       userInfoService.getUserInfoDto = jest
         .fn()
