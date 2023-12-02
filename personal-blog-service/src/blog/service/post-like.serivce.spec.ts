@@ -64,5 +64,19 @@ describe('PostLikeService', () => {
       // Then
       expect(actual[0]).toEqual(expected);
     });
+
+    it('Test when there is no post like user.', async () => {
+      // Given
+      postLikeRepository.findPostLikeDaoList = jest.fn().mockResolvedValue([]);
+
+      // When
+      const actual = await postLikeService.getPostLikeNicknameList(
+        'postUid',
+        0,
+      );
+
+      // Then
+      expect(actual).toEqual([]);
+    });
   });
 });
