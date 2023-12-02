@@ -15,6 +15,25 @@ export class PostRepository {
     private readonly postRepository: Repository<PostEntity>,
   ) {}
 
+  async findPostDaoListAndCountByPage(
+    page: number,
+  ): Promise<[PostDao[], number]> {
+    const [postEntityList, count] = await this.postRepository.findAndCount({
+      take: PaginationUtils.TAKE,
+      skip: (page - 1) * PaginationUtils.TAKE,
+      order: { writeDatetime: 'DESC' },
+      cache: {
+        id: CacheIdUtils.getPostEntityListByPageCacheId(page),
+        milliseconds: TimeUtils.getTicTimeMS(5),
+      },
+    });
+
+    return [
+      postEntityList.map((postEntity) => PostDao.from({ ...postEntity })),
+      count,
+    ];
+  }
+
   async findPostDaoListAndCountByPostPageRequestDto(
     postPageRequestDto: PostPageRequestDto,
   ): Promise<[PostDao[], number]> {
