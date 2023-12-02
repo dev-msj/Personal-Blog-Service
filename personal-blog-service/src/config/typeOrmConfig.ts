@@ -14,6 +14,14 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
       database: configService.get('DB_DATABASE'),
       entities: ['dist/**/*.entity{.ts,.js}'],
       synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
+      cache: {
+        type: 'redis',
+        options: {
+          host: configService.get('REDIS_HOST'),
+          port: configService.get('REDIS_PORT'),
+        },
+        ignoreErrors: true,
+      },
     };
   },
 };
