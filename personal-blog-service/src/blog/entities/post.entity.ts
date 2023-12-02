@@ -20,7 +20,7 @@ export class PostEntity {
   readonly title: string;
 
   @CreateDateColumn({ name: 'WRITE_DATETIME', type: 'datetime' })
-  readonly wrtieDatetime: Date;
+  readonly writeDatetime: Date;
 
   @Column({ name: 'CONTENTS', type: 'text' })
   readonly contents: string;
