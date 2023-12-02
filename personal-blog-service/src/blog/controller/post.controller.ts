@@ -14,6 +14,8 @@ import { PostLikeService } from '../service/post-like.serivce';
 import { PaginationDto } from '../dto/pagination.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { PostLikeRequestDto } from '../dto/post-like-request.dto';
+import { PostPageRequestDto } from '../dto/post-page-request.dto';
+import { DecryptionPostPKPipe } from '../../pipe/decryptionPostPk.pipe';
 
 @Controller('posts')
 export class PostController {
@@ -22,19 +24,22 @@ export class PostController {
     private readonly postLikeService: PostLikeService,
   ) {}
 
-  @Get()
+  @Get(':postUid')
   async getDefaultPostDtoList(
-    @Headers('uid') authUid: string,
+    @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
-    return await this.postService.getPostDtoList(authUid);
+    return await this.postService.getPostPageListByPostPageRequestDto(
+      postPageRequestDto,
+    );
   }
 
-  @Get(':page')
+  @Get(':postUid/:page')
   async getPostDtoList(
-    @Headers('uid') authUid: string,
-    @Param('page') page: number,
+    @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
-    return await this.postService.getPostDtoList(authUid, page);
+    return await this.postService.getPostPageListByPostPageRequestDto(
+      postPageRequestDto,
+    );
   }
 
   @Post('likes')
