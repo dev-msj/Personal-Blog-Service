@@ -1,4 +1,3 @@
-import { AES } from 'crypto-js';
 import { PostDto } from '../dto/post.dto';
 import { PostInterface } from '../dto/interface/post.inteface';
 import { CryptoUtils } from '../../utils/crypto.utils';
