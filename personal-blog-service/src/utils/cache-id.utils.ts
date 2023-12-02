@@ -1,6 +1,10 @@
 import { PostPageRequestDto } from '../blog/dto/post-page-request.dto';
 
 export class CacheIdUtils {
+  static getPostEntityListByPageCacheId(page: number) {
+    return `getPostEntityListByPage_${page}`;
+  }
+
   static getPostEntityListByPostPageRequestDtoCacheId(
     PostPageRequestDto: PostPageRequestDto,
   ) {
