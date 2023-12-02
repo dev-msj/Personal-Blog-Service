@@ -25,7 +25,7 @@ export class PostController {
   ) {}
 
   @Get(':postUid')
-  async getDefaultPostDtoList(
+  async getDefaultPostDtoListByPostPageRequestDto(
     @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
@@ -34,7 +34,7 @@ export class PostController {
   }
 
   @Get(':postUid/:page')
-  async getPostDtoList(
+  async getPostDtoListByPostPageRequestDto(
     @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
