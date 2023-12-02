@@ -4,8 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeOrmConfig';
-import { WinstonModule, utilities } from 'nest-winston';
-import * as winston from 'winston';
+import { WinstonModule } from 'nest-winston';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisConfig } from './config/redisConfig';
 import { BlogModule } from './blog/blog.module';
@@ -15,8 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import authConfig from './config/authConfig';
 import { validationEnv } from './config/validationEnv';
 import { HttpExceptionFilter } from './filter/http-exception.filter';
-import * as winstonDaily from 'winston-daily-rotate-file';
-import { dailyOption } from './config/dailyLogConfig';
+import { winstonConfig } from './config/winstonConfig';
 
 @Module({
   imports: [
@@ -27,19 +25,7 @@ import { dailyOption } from './config/dailyLogConfig';
       validationSchema: validationEnv,
     }),
     TypeOrmModule.forRootAsync(typeOrmConfig),
-    WinstonModule.forRoot({
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        utilities.format.nestLike('PersonalBlog', { prettyPrint: true }),
-      ),
-      transports: [
-        new winston.transports.Console({
-          level: process.env.NODE_ENV === 'production' ? 'info' : 'silly',
-        }),
-        new winstonDaily(dailyOption('info')),
-        new winstonDaily(dailyOption('error')),
-      ],
-    }),
+    WinstonModule.forRootAsync(winstonConfig),
     CacheModule.registerAsync(redisConfig),
     BlogModule,
     AuthModule,
