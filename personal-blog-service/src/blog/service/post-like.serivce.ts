@@ -19,7 +19,7 @@ export class PostLikeService {
     postUid: string,
     postId: number,
   ): Promise<string[]> {
-    return this.getNicknameList(
+    return await this.getNicknameList(
       await this.postLikeRepository.findPostLikeDaoList(postUid, postId),
     );
   }
