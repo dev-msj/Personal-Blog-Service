@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { BaseResponse } from './base-response.dto';
 import { UnexpectedCodeException } from '../exception/unexpected-code.exception';
+import { ErrorCode } from '../constant/error-code.enum';
 
 export class FailureResponse extends BaseResponse {
   constructor(code: HttpStatus, message: string) {
