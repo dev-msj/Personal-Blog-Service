@@ -11,7 +11,7 @@ export class PostDto {
   readonly title: string;
 
   @IsDate()
-  readonly wrtieDatetime: Date;
+  readonly writeDatetime: Date;
 
   @IsString()
   readonly contents: string;
@@ -20,4 +20,22 @@ export class PostDto {
   readonly hits: number;
 
   readonly postLikeUidList: string[];
+
+  constructor(
+    postUid: string,
+    postId: string,
+    title: string,
+    writeDateTime: Date,
+    contents: string,
+    hits: number,
+    postLikeUidList: string[],
+  ) {
+    this.postUid = postUid;
+    this.postId = postId;
+    this.title = title;
+    this.writeDatetime = writeDateTime;
+    this.contents = contents;
+    this.hits = hits;
+    this.postLikeUidList = postLikeUidList;
+  }
 }
