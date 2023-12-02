@@ -1,6 +1,7 @@
 import { AES } from 'crypto-js';
 import { PostDto } from '../dto/post.dto';
 import { PostInterface } from '../dto/interface/post.inteface';
+import { CryptoUtils } from '../../utils/crypto.utils';
 
 export class PostDao {
   private postUid: string;
@@ -37,10 +38,8 @@ export class PostDao {
 
   toPostDto(pkSecretKey: string): PostDto {
     return new PostDto(
-      encodeURIComponent(AES.encrypt(this.postUid, pkSecretKey).toString()),
-      encodeURIComponent(
-        AES.encrypt(this.postId.toString(), pkSecretKey).toString(),
-      ),
+      CryptoUtils.encryptPostPK(this.postUid, pkSecretKey),
+      CryptoUtils.encryptPostPK(this.postId.toString(), pkSecretKey),
       this.title,
       this.writeDatetime,
       this.contents,
