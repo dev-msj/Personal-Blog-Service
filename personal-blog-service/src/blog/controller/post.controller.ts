@@ -24,6 +24,17 @@ export class PostController {
     private readonly postLikeService: PostLikeService,
   ) {}
 
+  @Get('all-users')
+  async getLatestPostDtoList() {
+    return await this.postService.getPostPageListByPage();
+  }
+
+  @Get('all-users/:page')
+  async getPostDtoListByPage(@Param('page') page: number) {
+    return await this.postService.getPostPageListByPage(page);
+  }
+
+
   @Get('users/:postUid')
   async getLatestPostPageListByPostPageRequestDto(
     @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
