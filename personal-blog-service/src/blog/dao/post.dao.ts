@@ -6,7 +6,7 @@ export class PostDao {
   private postUid: string;
   private postId: number;
   private title: string;
-  private wrtieDatetime: Date;
+  private writeDatetime: Date;
   private contents: string;
   private hits: number;
   private postLikeUidList: string[];
@@ -16,7 +16,7 @@ export class PostDao {
     postDao.postUid = postEntity.postUid;
     postDao.postId = postEntity.postId;
     postDao.title = postEntity.title;
-    postDao.wrtieDatetime = postEntity.wrtieDatetime;
+    postDao.writeDatetime = postEntity.writeDatetime;
     postDao.contents = postEntity.contents;
     postDao.hits = postEntity.hits;
 
@@ -36,18 +36,16 @@ export class PostDao {
   }
 
   toPostDto(pkSecretKey: string): PostDto {
-    return {
-      postUid: encodeURIComponent(
-        AES.encrypt(this.postUid, pkSecretKey).toString(),
-      ),
-      postId: encodeURIComponent(
+    return new PostDto(
+      encodeURIComponent(AES.encrypt(this.postUid, pkSecretKey).toString()),
+      encodeURIComponent(
         AES.encrypt(this.postId.toString(), pkSecretKey).toString(),
       ),
-      title: this.title,
-      wrtieDatetime: this.wrtieDatetime,
-      contents: this.contents,
-      hits: this.hits,
-      postLikeUidList: this.postLikeUidList,
-    } as PostDto;
+      this.title,
+      this.writeDatetime,
+      this.contents,
+      this.hits,
+      this.postLikeUidList,
+    );
   }
 }
