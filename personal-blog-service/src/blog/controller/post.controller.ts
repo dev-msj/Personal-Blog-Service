@@ -34,7 +34,6 @@ export class PostController {
     return await this.postService.getPostPageListByPage(page);
   }
 
-
   @Get('users/:postUid')
   async getLatestPostPageListByPostPageRequestDto(
     @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
