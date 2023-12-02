@@ -18,6 +18,19 @@ export class PostService {
     private readonly postLikeService: PostLikeService,
   ) {}
 
+  async getPostPageListByPage(page: number = 1) {
+    const [postDaoList, total] =
+      await this.postRepository.findPostDaoListAndCountByPage(page);
+
+    await this.setPostLikeUidList(postDaoList);
+
+    return PaginationUtils.toPaginationDto<PostDto>(
+      postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
+      total,
+      page,
+    );
+  }
+
   async getPostPageListByPostPageRequestDto(
     postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
