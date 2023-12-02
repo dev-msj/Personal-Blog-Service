@@ -7,6 +7,7 @@ import { PaginationDto } from '../dto/pagination.dto';
 import { PostRepository } from '../repository/post.repository';
 import authConfig from '../../config/authConfig';
 import { PaginationUtils } from '../../utils/pagination.utils';
+import { PostPageRequestDto } from '../dto/post-page-request.dto';
 
 @Injectable()
 export class PostService {
@@ -17,19 +18,20 @@ export class PostService {
     private readonly postLikeService: PostLikeService,
   ) {}
 
-  async getPostDtoList(
-    authUid: string,
-    page: number = 1,
+  async getPostPageListByPostPageRequestDto(
+    postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     const [postDaoList, total] =
-      await this.postRepository.findPostDaoListAndCount(authUid, page);
+      await this.postRepository.findPostDaoListAndCountByPostPageRequestDto(
+        postPageRequestDto,
+      );
 
     await this.setPostLikeUidList(postDaoList);
 
     return PaginationUtils.toPaginationDto<PostDto>(
       postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
       total,
-      page,
+      postPageRequestDto.page,
     );
   }
 
