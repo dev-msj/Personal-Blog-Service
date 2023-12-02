@@ -10,9 +10,9 @@ import {
 import { PostService } from '../service/post.serivce';
 import { PostDto } from '../dto/post.dto';
 import { PostLikeDto } from '../dto/post-like.dto';
-import { SuccessResponse } from 'src/response/success-response.dto';
 import { PostLikeService } from '../service/post-like.serivce';
 import { PaginationDto } from '../dto/pagination.dto';
+import { SuccessResponse } from '../../response/success-response.dto';
 
 @Controller('posts')
 export class PostController {

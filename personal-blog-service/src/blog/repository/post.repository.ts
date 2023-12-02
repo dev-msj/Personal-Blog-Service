@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from '../entities/post.entity';
 import { Repository } from 'typeorm';
-import { PaginationUtils } from 'src/utils/pagination.utils';
-import { TimeUtils } from 'src/utils/time.utills';
 import { PostDao } from '../dao/post.dao';
-import { CacheIdUtils } from 'src/utils/cache-id.utils';
+import { PaginationUtils } from '../../utils/pagination.utils';
+import { CacheIdUtils } from '../../utils/cache-id.utils';
+import { TimeUtils } from '../../utils/time.utills';
 
 @Injectable()
 export class PostRepository {

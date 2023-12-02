@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfoEntity } from '../entities/user-info.entity';
 import { Repository } from 'typeorm';
 import { UserInfoDao } from '../dao/user-info.dao';
-import { TimeUtils } from 'src/utils/time.utills';
-import { CacheIdUtils } from 'src/utils/cache-id.utils';
+import { CacheIdUtils } from '../../utils/cache-id.utils';
+import { TimeUtils } from '../../utils/time.utills';
 
 @Injectable()
 export class UserInfoRepository {

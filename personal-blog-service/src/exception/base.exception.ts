@@ -1,4 +1,4 @@
-import { ErrorCode } from 'src/constant/error-code.enum';
+import { ErrorCode } from '../constant/error-code.enum';
 
 export abstract class BaseException extends Error {
   readonly errorCode: ErrorCode;

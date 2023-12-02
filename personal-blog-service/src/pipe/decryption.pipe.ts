@@ -9,9 +9,9 @@ import {
 import { ConfigType } from '@nestjs/config';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
-import authConfig from 'src/config/authConfig';
 import { AES } from 'crypto-js';
 import * as CryptoJS from 'crypto-js';
+import authConfig from '../config/authConfig';
 
 @Injectable()
 export class DecryptionPipe implements PipeTransform<any> {

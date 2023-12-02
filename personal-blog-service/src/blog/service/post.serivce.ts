@@ -2,11 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PostDto } from '../dto/post.dto';
 import { PostDao } from '../dao/post.dao';
 import { PostLikeService } from './post-like.serivce';
-import authConfig from 'src/config/authConfig';
 import { ConfigType } from '@nestjs/config';
 import { PaginationDto } from '../dto/pagination.dto';
-import { PaginationUtils } from 'src/utils/pagination.utils';
 import { PostRepository } from '../repository/post.repository';
+import authConfig from '../../config/authConfig';
+import { PaginationUtils } from '../../utils/pagination.utils';
 
 @Injectable()
 export class PostService {

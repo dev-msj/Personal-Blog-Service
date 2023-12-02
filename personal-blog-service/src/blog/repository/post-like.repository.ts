@@ -4,8 +4,8 @@ import { DataSource, Repository } from 'typeorm';
 import { PostLikeEntity } from '../entities/post-like.entity';
 import { PostLikeDao } from '../dao/post-like.dao';
 import { PostLikeDto } from '../dto/post-like.dto';
-import { TimeUtils } from 'src/utils/time.utills';
-import { CacheIdUtils } from 'src/utils/cache-id.utils';
+import { CacheIdUtils } from '../../utils/cache-id.utils';
+import { TimeUtils } from '../../utils/time.utills';
 
 @Injectable()
 export class PostLikeRepository {

@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { FailureResponse } from 'src/response/failure-response.dto';
 import { Logger } from 'winston';
+import { FailureResponse } from '../response/failure-response.dto';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {

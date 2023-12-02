@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { UserInfoService } from 'src/user/service/user-info.service';
+import { UserInfoService } from '../../user/service/user-info.service';
 import { PostLikeDto } from '../dto/post-like.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
