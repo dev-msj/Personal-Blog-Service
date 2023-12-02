@@ -6,6 +6,7 @@ import { PostDao } from '../dao/post.dao';
 import { PaginationUtils } from '../../utils/pagination.utils';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utills';
+import { PostPageRequestDto } from '../dto/post-page-request.dto';
 
 @Injectable()
 export class PostRepository {
@@ -14,17 +15,18 @@ export class PostRepository {
     private readonly postRepository: Repository<PostEntity>,
   ) {}
 
-  async findPostDaoListAndCount(
-    postUid: string,
-    page: number,
+  async findPostDaoListAndCountByPostPageRequestDto(
+    postPageRequestDto: PostPageRequestDto,
   ): Promise<[PostDao[], number]> {
     const [postEntityList, count] = await this.postRepository.findAndCount({
-      where: { postUid: postUid },
+      where: { postUid: postPageRequestDto.postUid },
       take: PaginationUtils.TAKE,
-      skip: (page - 1) * PaginationUtils.TAKE,
+      skip: (postPageRequestDto.page - 1) * PaginationUtils.TAKE,
       order: { postId: 'DESC' },
       cache: {
-        id: CacheIdUtils.getPostEntityListCacheId(postUid, page),
+        id: CacheIdUtils.getPostEntityListByPostPageRequestDtoCacheId(
+          postPageRequestDto,
+        ),
         milliseconds: TimeUtils.getTicTimeHMS(24),
       },
     });
