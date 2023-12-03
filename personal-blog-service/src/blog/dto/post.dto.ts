@@ -2,10 +2,10 @@ import { IsDate, IsNumber, IsString } from 'class-validator';
 
 export class PostDto {
   @IsString()
-  readonly postUid: string;
+  readonly postId: string;
 
   @IsString()
-  readonly postId: string;
+  readonly postUid: string;
 
   @IsString()
   readonly title: string;
@@ -22,16 +22,16 @@ export class PostDto {
   readonly postLikeUidList: string[];
 
   constructor(
-    postUid: string,
     postId: string,
+    postUid: string,
     title: string,
     writeDateTime: Date,
     contents: string,
     hits: number,
     postLikeUidList: string[],
   ) {
-    this.postUid = postUid;
     this.postId = postId;
+    this.postUid = postUid;
     this.title = title;
     this.writeDatetime = writeDateTime;
     this.contents = contents;

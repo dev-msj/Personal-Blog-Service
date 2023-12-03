@@ -1,6 +1,6 @@
 export interface PostInterface {
-  postUid: string;
   postId: number;
+  postUid: string;
   title: string;
   writeDatetime: Date;
   contents: string;
