@@ -21,7 +21,7 @@ export class PostRepository {
     const [postEntityList, count] = await this.postRepository.findAndCount({
       take: PaginationUtils.TAKE,
       skip: (page - 1) * PaginationUtils.TAKE,
-      order: { writeDatetime: 'DESC' },
+      order: { postId: 'DESC' },
       cache: {
         id: CacheIdUtils.getPostEntityListByPageCacheId(page),
         milliseconds: TimeUtils.getTicTimeMS(5),
