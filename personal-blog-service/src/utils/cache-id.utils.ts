@@ -11,8 +11,8 @@ export class CacheIdUtils {
     return `getPostEntityListByPostPageRequestDto_${PostPageRequestDto.postUid}_${PostPageRequestDto.page}`;
   }
 
-  static getPostLikeEntityListCacheId(postUid: string, postId: number) {
-    return `PostLikeEntityList_${postUid}_${postId}`;
+  static getPostLikeEntityListCacheId(postId: number) {
+    return `PostLikeEntityList_${postId}`;
   }
 
   static getUserInfoEntityCacheId(uid: string) {

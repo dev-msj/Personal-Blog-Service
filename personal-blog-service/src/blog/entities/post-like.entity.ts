@@ -10,9 +10,6 @@ import { PostEntity } from './post.entity';
 
 @Entity('POST_LIKE')
 export class PostLikeEntity {
-  @PrimaryColumn({ name: 'POST_UID', length: 100 })
-  readonly postUid: string;
-
   @PrimaryColumn({ name: 'POST_ID' })
   readonly postId: number;
 
@@ -38,8 +35,7 @@ export class PostLikeEntity {
   ])
   readonly postEntity: PostEntity;
 
-  constructor(postUid: string, postId: number, uid: string) {
-    this.postUid = postUid;
+  constructor(postId: number, uid: string) {
     this.postId = postId;
     this.uid = uid;
   }

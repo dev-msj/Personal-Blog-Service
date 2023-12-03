@@ -48,15 +48,15 @@ describe('PostService', () => {
   describe('getPostPageListByPage', () => {
     it('Test getPostDtoList', async () => {
       // Given
-      const expected = 'postUid';
+      const expected = 1;
 
       postRepository.findPostDaoListAndCountByPage = jest
         .fn()
         .mockResolvedValue([
           [
             PostDao.from({
-              postUid: expected,
-              postId: 1,
+              postId: expected,
+              postUid: 'postUid',
               title: 'title',
               writeDatetime: new Date(),
               contents: 'contents',
@@ -73,7 +73,9 @@ describe('PostService', () => {
 
       // Then
       expect(
-        CryptoUtils.decryptPostPK(actual.data[0].postUid, config.pkSecretKey),
+        Number(
+          CryptoUtils.decryptPostPK(actual.data[0].postId, config.pkSecretKey),
+        ),
       ).toEqual(expected);
     });
 
@@ -94,15 +96,16 @@ describe('PostService', () => {
   describe('getPostPageListByPostPageRequestDto', () => {
     it('Test getPostPageListByPostPageRequestDto', async () => {
       // Given
-      const expected = 'postUid';
+      const expected = 1;
+      const postUid = 'postUid';
 
       postRepository.findPostDaoListAndCountByPostPageRequestDto = jest
         .fn()
         .mockResolvedValue([
           [
             PostDao.from({
-              postUid: expected,
-              postId: 1,
+              postId: expected,
+              postUid: postUid,
               title: 'title',
               writeDatetime: new Date(),
               contents: 'contents',
@@ -116,12 +119,14 @@ describe('PostService', () => {
 
       // When
       const actual = await postService.getPostPageListByPostPageRequestDto(
-        new PostPageRequestDto(expected, 1),
+        new PostPageRequestDto(postUid, 1),
       );
 
       // Then
       expect(
-        CryptoUtils.decryptPostPK(actual.data[0].postUid, config.pkSecretKey),
+        Number(
+          CryptoUtils.decryptPostPK(actual.data[0].postId, config.pkSecretKey),
+        ),
       ).toEqual(expected);
     });
 

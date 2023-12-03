@@ -3,8 +3,8 @@ import { PostInterface } from '../dto/interface/post.inteface';
 import { CryptoUtils } from '../../utils/crypto.utils';
 
 export class PostDao {
-  private postUid: string;
   private postId: number;
+  private postUid: string;
   private title: string;
   private writeDatetime: Date;
   private contents: string;
@@ -13,8 +13,8 @@ export class PostDao {
 
   static from(postInterface: PostInterface): PostDao {
     const postDao = new PostDao();
-    postDao.postUid = postInterface.postUid;
     postDao.postId = postInterface.postId;
+    postDao.postUid = postInterface.postUid;
     postDao.title = postInterface.title;
     postDao.writeDatetime = postInterface.writeDatetime;
     postDao.contents = postInterface.contents;
@@ -23,12 +23,12 @@ export class PostDao {
     return postDao;
   }
 
-  get getPostUid() {
-    return this.postUid;
-  }
-
   get getPostId() {
     return this.postId;
+  }
+
+  get getPostUid() {
+    return this.postUid;
   }
 
   set setPostLikeUidList(postLikeUidList: string[]) {
@@ -37,8 +37,8 @@ export class PostDao {
 
   toPostDto(pkSecretKey: string): PostDto {
     return new PostDto(
-      CryptoUtils.encryptPostPK(this.postUid, pkSecretKey),
       CryptoUtils.encryptPostPK(this.postId.toString(), pkSecretKey),
+      CryptoUtils.encryptPostPK(this.postUid, pkSecretKey),
       this.title,
       this.writeDatetime,
       this.contents,

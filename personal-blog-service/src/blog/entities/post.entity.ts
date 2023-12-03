@@ -2,19 +2,21 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   OneToMany,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { PostLikeEntity } from './post-like.entity';
 
 @Entity('POST')
 export class PostEntity {
-  @PrimaryColumn({ name: 'POST_UID', length: 100 })
-  readonly postUid: string;
-
-  @PrimaryColumn({ name: 'POST_ID' })
+  @PrimaryGeneratedColumn('increment', { name: 'POST_ID' })
   readonly postId: number;
+
+  @Index()
+  @Column({ name: 'POST_UID', length: 100 })
+  readonly postUid: string;
 
   @Column({ name: 'TITLE', length: 500 })
   readonly title: string;

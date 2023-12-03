@@ -1,17 +1,13 @@
 import { IsNumber, IsString } from 'class-validator';
 
 export class PostLikeDto {
-  @IsString()
-  readonly postUid: string;
-
   @IsNumber()
   readonly postId: number;
 
   @IsString()
   readonly uid: string;
 
-  constructor(postUid: string, postId: number, uid: string) {
-    this.postUid = postUid;
+  constructor(postId: number, uid: string) {
     this.postId = postId;
     this.uid = uid;
   }

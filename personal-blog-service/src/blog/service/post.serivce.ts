@@ -51,10 +51,7 @@ export class PostService {
   private async setPostLikeUidList(postDaoList: PostDao[]) {
     for (const postDao of postDaoList) {
       postDao.setPostLikeUidList =
-        await this.postLikeService.getPostLikeNicknameList(
-          postDao.getPostUid,
-          postDao.getPostId,
-        );
+        await this.postLikeService.getPostLikeNicknameList(postDao.getPostId);
     }
   }
 }
