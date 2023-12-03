@@ -13,7 +13,6 @@ import { PostLikeDto } from '../dto/post-like.dto';
 import { PostLikeService } from '../service/post-like.serivce';
 import { PaginationDto } from '../dto/pagination.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
-import { PostLikeRequestDto } from '../dto/post-like-request.dto';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';
 import { DecryptionPostPKPipe } from '../../pipe/decryptionPostPk.pipe';
 
@@ -55,14 +54,10 @@ export class PostController {
   @Post('likes')
   async addPostLikeUser(
     @Headers('uid') authUid: string,
-    @Body() postLikeRequestDto: PostLikeRequestDto,
+    @Body('postId') postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.addPostLikeUser(
-      new PostLikeDto(
-        postLikeRequestDto.postUid,
-        postLikeRequestDto.postId,
-        authUid,
-      ),
+      new PostLikeDto(postId, authUid),
     );
 
     return new SuccessResponse();
@@ -71,14 +66,10 @@ export class PostController {
   @Delete('likes')
   async deletePostLikeUser(
     @Headers('uid') authUid: string,
-    @Body() postLikeRequestDto: PostLikeRequestDto,
+    @Body('postId') postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.removePostLikeUser(
-      new PostLikeDto(
-        postLikeRequestDto.postUid,
-        postLikeRequestDto.postId,
-        authUid,
-      ),
+      new PostLikeDto(postId, authUid),
     );
 
     return new SuccessResponse();
