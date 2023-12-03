@@ -42,24 +42,20 @@ describe('PostLikeService', () => {
   describe('getPostLikeNicknameList', () => {
     it('test get nickname list', async () => {
       // Given
-      const postUid = 'postUid';
       const postId = 0;
       const uid = 'uid';
       const expected = 'nickname';
 
       postLikeRepository.findPostLikeDaoList = jest
         .fn()
-        .mockResolvedValue([PostLikeDao.from({ postUid, postId, uid })]);
+        .mockResolvedValue([PostLikeDao.from({ postId, uid })]);
 
       userInfoService.getUserInfoDto = jest
         .fn()
         .mockResolvedValue(new UserInfoDto(uid, expected, 'introduce'));
 
       // When
-      const actual = await postLikeService.getPostLikeNicknameList(
-        postUid,
-        postId,
-      );
+      const actual = await postLikeService.getPostLikeNicknameList(postId);
 
       // Then
       expect(actual[0]).toEqual(expected);
@@ -70,10 +66,7 @@ describe('PostLikeService', () => {
       postLikeRepository.findPostLikeDaoList = jest.fn().mockResolvedValue([]);
 
       // When
-      const actual = await postLikeService.getPostLikeNicknameList(
-        'postUid',
-        0,
-      );
+      const actual = await postLikeService.getPostLikeNicknameList(0);
 
       // Then
       expect(actual).toEqual([]);

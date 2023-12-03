@@ -15,12 +15,9 @@ export class PostLikeService {
     private readonly userInfoService: UserInfoService,
   ) {}
 
-  async getPostLikeNicknameList(
-    postUid: string,
-    postId: number,
-  ): Promise<string[]> {
+  async getPostLikeNicknameList(postId: number): Promise<string[]> {
     return await this.getNicknameList(
-      await this.postLikeRepository.findPostLikeDaoList(postUid, postId),
+      await this.postLikeRepository.findPostLikeDaoList(postId),
     );
   }
 
