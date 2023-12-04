@@ -16,10 +16,6 @@ export class UserInfoDao {
   }
 
   toUserInfoDto(): UserInfoDto {
-    return {
-      uid: this.uid,
-      nickname: this.nickname,
-      introduce: this.introduce,
-    } as UserInfoDto;
+    return new UserInfoDto(this.uid, this.nickname, this.introduce);
   }
 }
