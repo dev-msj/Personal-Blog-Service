@@ -37,4 +37,10 @@ export class UserInfoEntity {
   @OneToOne(() => UserAuthEntity, (userAuthEntity) => userAuthEntity.uid)
   @JoinColumn({ name: 'UID', referencedColumnName: 'uid' })
   readonly userAuthEntity: UserAuthEntity;
+
+  constructor(uid: string, nickname: string, introduce: string) {
+    this.uid = uid;
+    this.nickname = nickname;
+    this.introduce = introduce;
+  }
 }
