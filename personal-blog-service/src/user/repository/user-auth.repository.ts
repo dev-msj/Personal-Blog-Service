@@ -18,7 +18,7 @@ export class UserAuthRepository {
     private readonly dataSource: DataSource,
   ) {}
 
-  async getUserSessionDtoByUid(uid: string) {
+  async getUserSessionDtoByUid(uid: string): Promise<UserSessionDto> {
     return (
       (await this.userAuthRepository
         .createQueryBuilder('userAuthEntity')
@@ -37,7 +37,9 @@ export class UserAuthRepository {
     );
   }
 
-  async updateUserAuthByUserSessionDto(userSessionDto: UserSessionDto) {
+  async updateUserAuthByUserSessionDto(
+    userSessionDto: UserSessionDto,
+  ): Promise<void> {
     this.dataSource.queryResultCache.remove([
       CacheIdUtils.getUserSessionDtoCacheId(userSessionDto.uid),
     ]);
