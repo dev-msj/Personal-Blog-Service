@@ -18,4 +18,8 @@ export class CacheIdUtils {
   static getUserInfoEntityCacheId(uid: string) {
     return `UserInfoEntity_${uid}`;
   }
+
+  static getUserSessionDtoCacheId(uid: string) {
+    return `UserSessionDto_${uid}`;
+  }
 }
