@@ -6,6 +6,9 @@ import { UserAuthRepository } from '../repository/user-auth.repository';
 import * as jwt from 'jsonwebtoken';
 import { CryptoUtils } from './../../utils/crypto.utils';
 import { ConfigType } from '@nestjs/config';
+import { UserSessionDto } from '../dto/user-session.dto';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { UnauthorizedException } from '@nestjs/common';
 
 describe('JwtService', () => {
   let jwtService: JwtService;
@@ -16,6 +19,12 @@ describe('JwtService', () => {
     const module = await Test.createTestingModule({
       providers: [
         JwtService,
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: {
+            info: jest.fn(),
+          },
+        },
         {
           provide: authConfig.KEY,
           useValue: {
@@ -30,6 +39,7 @@ describe('JwtService', () => {
           provide: UserAuthRepository,
           useValue: {
             updateUserAuthByUserSessionDto: jest.fn(),
+            getUserSessionDto: jest.fn(),
           },
         },
       ],
@@ -40,12 +50,12 @@ describe('JwtService', () => {
     userAuthRepository = module.get(UserAuthRepository);
   });
 
-  describe('createToken', () => {
+  describe('create Token', () => {
     it('create new token', async () => {
       const expectUid = 'uid@test.com';
-      const role = UserRole.USER;
+      const userRole = UserRole.USER;
 
-      const accessToken = (await jwtService.create(expectUid, role))
+      const accessToken = (await jwtService.create(expectUid, userRole))
         .accessToken;
 
       const actualUid = CryptoUtils.decryptPostPK(
@@ -54,6 +64,46 @@ describe('JwtService', () => {
       );
 
       expect(actualUid).toEqual(expectUid);
+    });
+  });
+
+  describe('Reissue Token', () => {
+    it('Test reissue access token', async () => {
+      const expectUid = 'uid@test.com';
+      const userRole = UserRole.USER;
+      const refreshToken = (await jwtService.create(expectUid, userRole))
+        .refreshToken;
+      const userSessionDto = new UserSessionDto(
+        expectUid,
+        refreshToken,
+        userRole,
+      );
+
+      const accessToken = (
+        await jwtService.reissueJwtByUserSessionDto(userSessionDto)
+      ).accessToken;
+      const actualUid = CryptoUtils.decryptPostPK(
+        (jwt.verify(accessToken, config.jwtSecretKey) as jwt.JwtPayload)['uid'],
+        config.pkSecretKey,
+      );
+
+      expect(actualUid).toEqual(expectUid);
+    });
+
+    it('Test verify refresh token throw error', async () => {
+      const expectUid = 'uid@test.com';
+      const userRole = UserRole.USER;
+      const refreshToken = (await jwtService.create(expectUid, userRole))
+        .refreshToken;
+      const userSessionDto = new UserSessionDto(expectUid, null, userRole);
+
+      userAuthRepository.getUserSessionDtoByUid = jest
+        .fn()
+        .mockResolvedValue(userSessionDto);
+
+      await expect(jwtService.verifyRefreshToken(refreshToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });
