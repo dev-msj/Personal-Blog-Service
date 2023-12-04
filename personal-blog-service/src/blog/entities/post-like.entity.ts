@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { PostEntity } from './post.entity';
+import { UserAuthEntity } from '../../user/entities/user-auth.entity';
 
 @Entity('POST_LIKE')
 export class PostLikeEntity {
@@ -28,12 +29,13 @@ export class PostLikeEntity {
   })
   readonly modifyDatetime: Date;
 
-  @ManyToOne(() => PostEntity, (postEntity) => postEntity.postLikeEntitys)
-  @JoinColumn([
-    { name: 'POST_UID', referencedColumnName: 'postUid' },
-    { name: 'POST_ID', referencedColumnName: 'postId' },
-  ])
+  @ManyToOne(() => PostEntity, (postEntity) => postEntity.postId)
+  @JoinColumn({ name: 'POST_ID', referencedColumnName: 'postId' })
   readonly postEntity: PostEntity;
+
+  @ManyToOne(() => UserAuthEntity, (userAuthEntity) => userAuthEntity.uid)
+  @JoinColumn({ name: 'UID', referencedColumnName: 'uid' })
+  readonly userAuthEntity: UserAuthEntity;
 
   constructor(postId: number, uid: string) {
     this.postId = postId;

@@ -2,10 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  OneToOne,
   PrimaryColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
+import { UserAuthEntity } from './user-auth.entity';
 
 @Entity('USER_INFO')
 @Unique(['nickname'])
@@ -30,4 +33,8 @@ export class UserInfoEntity {
     type: 'datetime',
   })
   readonly modifyDatetime: Date;
+
+  @OneToOne(() => UserAuthEntity, (userAuthEntity) => userAuthEntity.uid)
+  @JoinColumn({ name: 'UID', referencedColumnName: 'uid' })
+  readonly userAuthEntity: UserAuthEntity;
 }

@@ -3,11 +3,14 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { PostLikeEntity } from './post-like.entity';
+import { UserAuthEntity } from '../../user/entities/user-auth.entity';
 
 @Entity('POST')
 export class PostEntity {
@@ -48,4 +51,8 @@ export class PostEntity {
     { onDelete: 'CASCADE' },
   )
   readonly postLikeEntitys: PostLikeEntity[];
+
+  @ManyToOne(() => UserAuthEntity, (userAuthEntity) => userAuthEntity.uid)
+  @JoinColumn({ name: 'POST_UID', referencedColumnName: 'uid' })
+  readonly userAuthEntity: UserAuthEntity;
 }
