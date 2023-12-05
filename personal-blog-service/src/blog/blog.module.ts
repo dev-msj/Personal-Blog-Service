@@ -8,12 +8,12 @@ import { PostLikeService } from './service/post-like.serivce';
 import { UserInfoEntity } from '../user/entities/user-info.entity';
 import { PostRepository } from './repository/post.repository';
 import { PostLikeRepository } from './repository/post-like.repository';
-import { ExportUserModule } from '../user/export/export-user.module';
+import { ExportUserInfoModule } from '../user/export/export-user-info.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PostEntity, PostLikeEntity, UserInfoEntity]),
-    ExportUserModule,
+    ExportUserInfoModule,
   ],
   controllers: [PostController],
   providers: [PostService, PostLikeService, PostRepository, PostLikeRepository],
