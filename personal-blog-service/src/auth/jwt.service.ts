@@ -1,14 +1,14 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { ConfigType } from '@nestjs/config';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { Logger } from 'winston';
+import { JwtDto } from '../user/dto/jwt.dto';
+import { CryptoUtils } from '../utils/crypto.utils';
 import authConfig from '../config/authConfig';
 import { UserRole } from '../constant/user-role.enum';
-import { JwtDto } from '../user/dto/jwt.dto';
-import { UserSessionDto } from '../user/dto/user-session.dto';
 import { UserAuthRepository } from '../user/repository/user-auth.repository';
-import { CryptoUtils } from '../utils/crypto.utils';
+import { UserSessionDto } from '../user/dto/user-session.dto';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 @Injectable()
 export class JwtService {
@@ -34,7 +34,7 @@ export class JwtService {
     return new JwtDto(accessToken, refreshToken);
   }
 
-  async verifyAccessToken(accessToken: string): Promise<void> {
+  async verifyAccessToken(accessToken: string): Promise<void | Error> {
     try {
       const decodedJwt = this.decodeToken(accessToken);
 
@@ -43,17 +43,18 @@ export class JwtService {
       );
     } catch (e) {
       if (e instanceof jwt.TokenExpiredError) {
-        throw new jwt.TokenExpiredError(
-          `Access Token is expired! - ${accessToken}`,
-          e.expiredAt,
-        );
+        this.logger.warn(`The access token has expired. - [${accessToken}]`);
+      } else {
+        this.logger.error(JSON.stringify(e, null, 2));
       }
 
-      throw new UnauthorizedException(e);
+      return e;
     }
   }
 
-  async verifyRefreshToken(refreshToken: string): Promise<UserSessionDto> {
+  async verifyRefreshToken(
+    refreshToken: string,
+  ): Promise<UserSessionDto | Error> {
     try {
       const decodedJwt = this.decodeToken(refreshToken);
 
@@ -63,7 +64,9 @@ export class JwtService {
         );
 
       if (refreshToken !== userSessionDto.refreshToken) {
-        throw new UnauthorizedException(
+        this.logger.error(`Refresh Token does not match! - [${refreshToken}]`);
+
+        return new UnauthorizedException(
           `Refresh Token does not match! - [${refreshToken}]`,
         );
       }
@@ -71,13 +74,12 @@ export class JwtService {
       return userSessionDto;
     } catch (e) {
       if (e instanceof jwt.TokenExpiredError) {
-        throw new jwt.TokenExpiredError(
-          `Access Token is expired! - ${refreshToken}`,
-          e.expiredAt,
-        );
+        this.logger.warn(`The refresh token has expired. - [${refreshToken}]`);
+      } else {
+        this.logger.error(JSON.stringify(e, null, 2));
       }
 
-      throw new UnauthorizedException(e);
+      return e;
     }
   }
 
