@@ -3,10 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserAuthEntity } from '../entities/user-auth.entity';
 import { DataSource, Repository } from 'typeorm';
 import { UserSessionDto } from '../dto/user-session.dto';
-import { TimeUtils } from '../../utils/time.utills';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { TimeUtils } from '../../utils/time.utills';
 
 @Injectable()
 export class UserAuthRepository {
@@ -32,6 +32,10 @@ export class UserAuthRepository {
         )
         .getRawOne<UserSessionDto>()) ||
       (() => {
+        this.dataSource.queryResultCache.remove([
+          CacheIdUtils.getUserSessionDtoCacheId(uid),
+        ]);
+
         throw new NotFoundException(`User does not exist! - [${uid}]`);
       })()
     );
