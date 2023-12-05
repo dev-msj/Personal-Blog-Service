@@ -1,12 +1,12 @@
 import { Test } from '@nestjs/testing';
 import { JwtService } from './jwt.service';
-import authConfig from '../../config/authConfig';
-import { UserRole } from '../../constant/user-role.enum';
-import { UserAuthRepository } from '../repository/user-auth.repository';
+import authConfig from '../config/authConfig';
+import { UserRole } from '../constant/user-role.enum';
+import { UserAuthRepository } from '../user/repository/user-auth.repository';
 import * as jwt from 'jsonwebtoken';
-import { CryptoUtils } from './../../utils/crypto.utils';
+import { CryptoUtils } from '../utils/crypto.utils';
 import { ConfigType } from '@nestjs/config';
-import { UserSessionDto } from '../dto/user-session.dto';
+import { UserSessionDto } from '../user/dto/user-session.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UnauthorizedException } from '@nestjs/common';
 

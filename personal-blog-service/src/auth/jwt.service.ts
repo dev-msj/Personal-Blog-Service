@@ -1,14 +1,14 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { ConfigType } from '@nestjs/config';
-import { JwtDto } from '../dto/jwt.dto';
-import { CryptoUtils } from './../../utils/crypto.utils';
-import authConfig from '../../config/authConfig';
-import { UserRole } from '../../constant/user-role.enum';
-import { UserAuthRepository } from '../repository/user-auth.repository';
-import { UserSessionDto } from '../dto/user-session.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import authConfig from '../config/authConfig';
+import { UserRole } from '../constant/user-role.enum';
+import { JwtDto } from '../user/dto/jwt.dto';
+import { UserSessionDto } from '../user/dto/user-session.dto';
+import { UserAuthRepository } from '../user/repository/user-auth.repository';
+import { CryptoUtils } from '../utils/crypto.utils';
 
 @Injectable()
 export class JwtService {
