@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
@@ -43,6 +43,29 @@ export class UserAuthService {
     );
 
     return jwtDto;
+  }
+
+  async login(userAuthRequestDto: UserAuthRequestDto): Promise<JwtDto> {
+    const userAuthDto = await this.userAuthRepository.getUserAuthDto(
+      userAuthRequestDto.uid,
+    );
+
+    const hashedPassword = this.hashingPassword(
+      userAuthRequestDto.password,
+      userAuthDto.salt,
+    );
+
+    if (hashedPassword !== userAuthDto.password) {
+      throw new UnauthorizedException(
+        `Password does not match. - [${JSON.stringify(
+          userAuthRequestDto,
+          null,
+          2,
+        )}]`,
+      );
+    }
+
+    return this.jwtService.create(userAuthDto.uid, userAuthDto.userRole);
   }
 
   private hashingPassword(password: string, salt: string): string {
