@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { JwtService } from '../../auth/jwt.service';
 import { UserJoinRequestDto } from './../dto/user-join-request.dto';
 import { UserAuthRepository } from '../repository/user-auth.repository';
 import { UserRole } from '../../constant/user-role.enum';
 import { JwtDto } from '../dto/jwt.dto';
 import { SHA256 } from 'crypto-js';
 import { UserAuthDao } from './../dao/user-auth.dao';
+import { JwtService } from './jwt.service';
 
 @Injectable()
 export class UserAuthService {

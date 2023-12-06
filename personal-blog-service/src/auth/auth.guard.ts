@@ -4,7 +4,6 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import { JwtService } from './jwt.service';
 import { Request } from 'express';
 import { TokenExpiredError } from 'jsonwebtoken';
 import { TokenReissuedException } from '../exception/token-reissued.exception';
@@ -12,6 +11,7 @@ import { ErrorCode } from '../constant/error-code.enum';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '../user/service/jwt.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
