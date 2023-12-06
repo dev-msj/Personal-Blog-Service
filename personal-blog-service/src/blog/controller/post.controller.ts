@@ -14,9 +14,9 @@ import { PostLikeService } from '../service/post-like.serivce';
 import { PaginationDto } from '../dto/pagination.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';
-import { DecryptionPostPKPipe } from '../../pipe/decryptionPostPk.pipe';
 import { Roles } from '../../decorator/roles.decorator';
 import { UserRole } from '../../constant/user-role.enum';
+import { DecryptionPrimaryKeyPipe } from '../../pipe/decryption-primary-key.pipe';
 
 @Roles(UserRole.USER)
 @Controller('posts')
@@ -38,7 +38,8 @@ export class PostController {
 
   @Get('users/:postUid')
   async getLatestPostPageListByPostPageRequestDto(
-    @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
+    @Param(DecryptionPrimaryKeyPipe)
+    postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
       postPageRequestDto,
@@ -47,7 +48,8 @@ export class PostController {
 
   @Get('users/:postUid/:page')
   async getPostPageListByPostPageRequestDto(
-    @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
+    @Param(DecryptionPrimaryKeyPipe)
+    postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
       postPageRequestDto,

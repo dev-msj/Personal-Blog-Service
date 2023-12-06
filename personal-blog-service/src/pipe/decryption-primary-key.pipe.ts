@@ -14,7 +14,7 @@ import { CryptoUtils } from '../utils/crypto.utils';
 import { PostPageRequestDto } from '../blog/dto/post-page-request.dto';
 
 @Injectable()
-export class DecryptionPostPKPipe implements PipeTransform {
+export class DecryptionPrimaryKeyPipe implements PipeTransform {
   @Inject(authConfig.KEY)
   private config: ConfigType<typeof authConfig>;
 
@@ -27,7 +27,7 @@ export class DecryptionPostPKPipe implements PipeTransform {
     }
 
     if (Object.keys(value).includes('postUid')) {
-      value['postUid'] = CryptoUtils.decryptPostPK(
+      value['postUid'] = CryptoUtils.decryptPrimaryKey(
         value['postUid'],
         this.config.pkSecretKey,
       );
@@ -42,7 +42,7 @@ export class DecryptionPostPKPipe implements PipeTransform {
       return postPageRequestDto;
     } else {
       return Number(
-        CryptoUtils.decryptPostPK(value as string, this.config.pkSecretKey),
+        CryptoUtils.decryptPrimaryKey(value as string, this.config.pkSecretKey),
       );
     }
   }
