@@ -18,6 +18,10 @@ export class UserAuthRepository {
     private readonly dataSource: DataSource,
   ) {}
 
+  async saveUserAuthEntity(userAuthEntity: UserAuthEntity) {
+    await this.userAuthRepository.save(userAuthEntity);
+  }
+
   async getUserSessionDtoByUid(uid: string): Promise<UserSessionDto> {
     return (
       (await this.userAuthRepository
