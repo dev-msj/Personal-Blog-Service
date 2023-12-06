@@ -15,7 +15,10 @@ import { PaginationDto } from '../dto/pagination.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';
 import { DecryptionPostPKPipe } from '../../pipe/decryptionPostPk.pipe';
+import { Roles } from '../../decorator/roles.decorator';
+import { UserRole } from '../../constant/user-role.enum';
 
+@Roles(UserRole.USER)
 @Controller('posts')
 export class PostController {
   constructor(
