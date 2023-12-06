@@ -17,6 +17,7 @@ import { PostPageRequestDto } from '../dto/post-page-request.dto';
 import { Roles } from '../../decorator/roles.decorator';
 import { UserRole } from '../../constant/user-role.enum';
 import { DecryptionPrimaryKeyPipe } from '../../pipe/decryption-primary-key.pipe';
+import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 
 @Roles(UserRole.USER)
 @Controller('posts')
@@ -58,7 +59,7 @@ export class PostController {
 
   @Post('likes')
   async addPostLikeUser(
-    @Headers('authenticatedUser') authUid: string,
+    @AuthenticatedUserValidation() authUid: string,
     @Body('postId') postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.addPostLikeUser(
@@ -70,7 +71,7 @@ export class PostController {
 
   @Delete('likes')
   async deletePostLikeUser(
-    @Headers('authenticatedUser') authUid: string,
+    @AuthenticatedUserValidation() authUid: string,
     @Body('postId') postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.removePostLikeUser(
