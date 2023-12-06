@@ -20,6 +20,9 @@ export class UserAuthEntity {
   @Column({ name: 'PASSWORD', length: 1000 })
   readonly password: string;
 
+  @Column({ name: 'SALT', length: 50 })
+  readonly salt: string;
+
   @Column({ name: 'SOCIAL_YN', type: 'char', length: 1 })
   readonly socialYN: string;
 
@@ -55,4 +58,20 @@ export class UserAuthEntity {
     onDelete: 'CASCADE',
   })
   readonly postLikeEntitys: PostLikeEntity[];
+
+  constructor(
+    uid: string,
+    password: string,
+    salt: string,
+    socialYN: string,
+    refreshToken: string,
+    userRole: UserRole,
+  ) {
+    this.uid = uid;
+    this.password = password;
+    this.salt = salt;
+    this.socialYN = socialYN;
+    this.refreshToken = refreshToken;
+    this.userRole = userRole;
+  }
 }
