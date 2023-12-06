@@ -1,4 +1,5 @@
 import { UserRole } from '../../constant/user-role.enum';
+import { UserAuthDto } from '../dto/user-auth.dto';
 import { UserAuthEntity } from '../entities/user-auth.entity';
 import { UserAuthInterface } from './../dto/interface/user-auth.interface';
 
@@ -23,6 +24,17 @@ export class UserAuthDao {
 
   toUserAuthEntity(): UserAuthEntity {
     return new UserAuthEntity(
+      this.uid,
+      this.password,
+      this.salt,
+      this.socialYN,
+      this.refreshToken,
+      this.userRole,
+    );
+  }
+
+  toUserAuthDto(): UserAuthDto {
+    return new UserAuthDto(
       this.uid,
       this.password,
       this.salt,
