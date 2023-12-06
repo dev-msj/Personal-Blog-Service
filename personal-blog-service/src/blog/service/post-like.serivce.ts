@@ -22,13 +22,13 @@ export class PostLikeService {
   }
 
   async addPostLikeUser(postLikeDto: PostLikeDto): Promise<void> {
-    this.logger.info(`addPostLikeUser - ${JSON.stringify(postLikeDto)}`);
+    this.logger.info(`addPostLikeUser - [${JSON.stringify(postLikeDto)}]`);
 
     await this.postLikeRepository.savePostLikeDto(postLikeDto);
   }
 
   async removePostLikeUser(postLikeDto: PostLikeDto): Promise<void> {
-    this.logger.info(`removePostLikeUser - ${JSON.stringify(postLikeDto)}`);
+    this.logger.info(`removePostLikeUser - [${JSON.stringify(postLikeDto)}]`);
 
     await this.postLikeRepository.removePostLikeDto(postLikeDto);
   }
