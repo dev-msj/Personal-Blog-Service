@@ -7,6 +7,8 @@ import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { TimeUtils } from '../../utils/time.utills';
+import { UserAuthDao } from '../dao/user-auth.dao';
+import { UserAuthDto } from '../dto/user-auth.dto';
 
 @Injectable()
 export class UserAuthRepository {
@@ -20,6 +22,22 @@ export class UserAuthRepository {
 
   async saveUserAuthEntity(userAuthEntity: UserAuthEntity) {
     await this.userAuthRepository.save(userAuthEntity);
+  }
+
+  async getUserAuthDto(uid: string): Promise<UserAuthDto> {
+    const userAuthEntity =
+      (await this.userAuthRepository.findOne({
+        where: { uid: uid },
+      })) ||
+      (() => {
+        this.dataSource.queryResultCache.remove([
+          CacheIdUtils.getUserAuthEntityCacheId(uid),
+        ]);
+
+        throw new NotFoundException(`User does not exist! - [${uid}]`);
+      })();
+
+    return UserAuthDao.from({ ...userAuthEntity }).toUserAuthDto();
   }
 
   async getUserSessionDtoByUid(uid: string): Promise<UserSessionDto> {
