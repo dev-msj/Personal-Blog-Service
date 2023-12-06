@@ -37,8 +37,8 @@ export class PostDao {
 
   toPostDto(pkSecretKey: string): PostDto {
     return new PostDto(
-      CryptoUtils.encryptPostPK(this.postId.toString(), pkSecretKey),
-      CryptoUtils.encryptPostPK(this.postUid, pkSecretKey),
+      CryptoUtils.encryptPrimaryKey(this.postId.toString(), pkSecretKey),
+      CryptoUtils.encryptPrimaryKey(this.postUid, pkSecretKey),
       this.title,
       this.writeDatetime,
       this.contents,

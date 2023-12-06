@@ -58,7 +58,7 @@ describe('JwtService', () => {
       const accessToken = (await jwtService.create(expectUid, userRole))
         .accessToken;
 
-      const actualUid = CryptoUtils.decryptPostPK(
+      const actualUid = CryptoUtils.decryptPrimaryKey(
         (jwt.verify(accessToken, config.jwtSecretKey) as jwt.JwtPayload)['uid'],
         config.pkSecretKey,
       );
@@ -82,7 +82,7 @@ describe('JwtService', () => {
       const accessToken = (
         await jwtService.reissueJwtByUserSessionDto(userSessionDto)
       ).accessToken;
-      const actualUid = CryptoUtils.decryptPostPK(
+      const actualUid = CryptoUtils.decryptPrimaryKey(
         (jwt.verify(accessToken, config.jwtSecretKey) as jwt.JwtPayload)['uid'],
         config.pkSecretKey,
       );

@@ -39,7 +39,7 @@ export class JwtService {
       const decodedJwt = this.decodeToken(accessToken);
 
       await this.userAuthRepository.getUserSessionDtoByUid(
-        CryptoUtils.decryptPostPK(decodedJwt['uid'], this.config.pkSecretKey),
+        CryptoUtils.decryptPrimaryKey(decodedJwt['uid'], this.config.pkSecretKey),
       );
     } catch (e) {
       if (e instanceof jwt.TokenExpiredError) {
@@ -60,7 +60,7 @@ export class JwtService {
 
       const userSessionDto =
         await this.userAuthRepository.getUserSessionDtoByUid(
-          CryptoUtils.decryptPostPK(decodedJwt['uid'], this.config.pkSecretKey),
+          CryptoUtils.decryptPrimaryKey(decodedJwt['uid'], this.config.pkSecretKey),
         );
 
       if (refreshToken !== userSessionDto.refreshToken) {
@@ -106,7 +106,7 @@ export class JwtService {
   }
 
   private generateToken(uid: string, tokenType: string): string {
-    uid = CryptoUtils.encryptPostPK(uid, this.config.pkSecretKey);
+    uid = CryptoUtils.encryptPrimaryKey(uid, this.config.pkSecretKey);
     const expiresIn =
       tokenType === JwtService.ACCESS_TOKEN
         ? this.config.accessTokenExpireTime
