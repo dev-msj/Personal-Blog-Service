@@ -77,6 +77,20 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
+    this.logger.warn(
+      `Do not have role to this path.. - [${JSON.stringify(
+        {
+          method: request.method,
+          url: request.url,
+          role: roles,
+          user: userSessionDto.uid,
+          userRole: userSessionDto.userRole,
+        },
+        null,
+        2,
+      )}]`,
+    );
+
     return false;
   }
 }
