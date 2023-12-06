@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { UserJoinRequestDto } from './../dto/user-join-request.dto';
+import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
 import { UserAuthRepository } from '../repository/user-auth.repository';
 import { UserRole } from '../../constant/user-role.enum';
 import { JwtDto } from '../dto/jwt.dto';
@@ -18,14 +18,14 @@ export class UserAuthService {
     private readonly userAuthRepository: UserAuthRepository,
   ) {}
 
-  async createNewUser(userJoinRequestDto: UserJoinRequestDto): Promise<JwtDto> {
+  async createNewUser(userAuthRequestDto: UserAuthRequestDto): Promise<JwtDto> {
     const userRole = UserRole.USER;
     const salt = new Date().getTime().toString();
 
     await this.userAuthRepository.saveUserAuthEntity(
       UserAuthDao.from({
-        uid: userJoinRequestDto.uid,
-        password: this.hashingPassword(userJoinRequestDto.password, salt),
+        uid: userAuthRequestDto.uid,
+        password: this.hashingPassword(userAuthRequestDto.password, salt),
         salt: salt,
         socialYN: 'N',
         refreshToken: '',
@@ -34,12 +34,12 @@ export class UserAuthService {
     );
 
     const jwtDto = await this.jwtService.create(
-      userJoinRequestDto.uid,
+      userAuthRequestDto.uid,
       userRole,
     );
 
     this.logger.info(
-      `A new user has been created. - [${userJoinRequestDto.uid}]`,
+      `A new user has been created. - [${userAuthRequestDto.uid}]`,
     );
 
     return jwtDto;
