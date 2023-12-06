@@ -53,7 +53,7 @@ export class PostController {
 
   @Post('likes')
   async addPostLikeUser(
-    @Headers('uid') authUid: string,
+    @Headers('authenticatedUser') authUid: string,
     @Body('postId') postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.addPostLikeUser(
@@ -65,7 +65,7 @@ export class PostController {
 
   @Delete('likes')
   async deletePostLikeUser(
-    @Headers('uid') authUid: string,
+    @Headers('authenticatedUser') authUid: string,
     @Body('postId') postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.removePostLikeUser(
