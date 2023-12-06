@@ -11,12 +11,14 @@ import { TokenReissuedException } from '../exception/token-reissued.exception';
 import { ErrorCode } from '../constant/error-code.enum';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER)
     private readonly logger: Logger,
+    private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -63,6 +65,18 @@ export class AuthGuard implements CanActivate {
       );
     }
 
-    return true;
+    const roles = this.reflector.getAllAndMerge<string[]>('roles', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    // 토큰이 검증된 유저의 Role을 확인하여 헤더에 uid를 등록한다.
+    if (roles?.includes(userSessionDto.userRole) ?? true) {
+      request.headers['authenticatedUser'] = userSessionDto.uid;
+
+      return true;
+    }
+
+    return false;
   }
 }
