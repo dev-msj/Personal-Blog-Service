@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, NotAcceptableException, UnauthorizedException } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
@@ -25,6 +25,15 @@ export class UserAuthService {
   ) {}
 
   async createNewUser(userAuthRequestDto: UserAuthRequestDto): Promise<JwtDto> {
+    const isExist = await this.userAuthRepository.isExist(
+      userAuthRequestDto.uid,
+    );
+    if (isExist) {
+      throw new NotAcceptableException(
+        `User already exists. - [${userAuthRequestDto.uid}]`,
+      );
+    }
+
     const userRole = UserRole.USER;
     const salt = new Date().getTime().toString();
 
