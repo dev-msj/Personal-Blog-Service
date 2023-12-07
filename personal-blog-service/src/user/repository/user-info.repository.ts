@@ -28,7 +28,7 @@ export class UserInfoRepository {
           CacheIdUtils.getUserSessionDtoCacheId(uid),
         ]);
 
-        throw new NotFoundException(`User('${uid}') does not exist!`);
+        throw new NotFoundException(`User does not exist! - [${uid}]`);
       })();
 
     return UserInfoDao.from({ ...userInfoEntity });

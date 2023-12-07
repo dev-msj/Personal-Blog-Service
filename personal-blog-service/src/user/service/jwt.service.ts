@@ -72,9 +72,7 @@ export class JwtService {
       if (refreshToken !== userSessionDto.refreshToken) {
         this.logger.error(`Refresh Token does not match! - [${refreshToken}]`);
 
-        return new UnauthorizedException(
-          `Refresh Token does not match! - [${refreshToken}]`,
-        );
+        return new UnauthorizedException('Refresh Token does not match!');
       }
 
       return userSessionDto;

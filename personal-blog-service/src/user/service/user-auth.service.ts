@@ -56,13 +56,7 @@ export class UserAuthService {
     );
 
     if (hashedPassword !== userAuthDto.password) {
-      throw new UnauthorizedException(
-        `Password does not match. - [${JSON.stringify(
-          userAuthRequestDto,
-          null,
-          2,
-        )}]`,
-      );
+      throw new UnauthorizedException('Password does not match.');
     }
 
     return this.jwtService.create(userAuthDto.uid, userAuthDto.userRole);
