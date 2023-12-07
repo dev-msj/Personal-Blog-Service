@@ -74,7 +74,7 @@ describe('PostService', () => {
       // Then
       expect(
         Number(
-          CryptoUtils.decryptPostPK(actual.data[0].postId, config.pkSecretKey),
+          CryptoUtils.decryptPrimaryKey(actual.data[0].postId, config.pkSecretKey),
         ),
       ).toEqual(expected);
     });
@@ -125,7 +125,7 @@ describe('PostService', () => {
       // Then
       expect(
         Number(
-          CryptoUtils.decryptPostPK(actual.data[0].postId, config.pkSecretKey),
+          CryptoUtils.decryptPrimaryKey(actual.data[0].postId, config.pkSecretKey),
         ),
       ).toEqual(expected);
     });

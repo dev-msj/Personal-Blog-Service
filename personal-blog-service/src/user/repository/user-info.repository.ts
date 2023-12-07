@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfoEntity } from '../entities/user-info.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { UserInfoDao } from '../dao/user-info.dao';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utills';
@@ -11,6 +11,7 @@ export class UserInfoRepository {
   constructor(
     @InjectRepository(UserInfoEntity)
     private readonly userInfoRepository: Repository<UserInfoEntity>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findUserInfoDao(uid: string): Promise<UserInfoDao> {
@@ -23,7 +24,11 @@ export class UserInfoRepository {
         },
       })) ||
       (() => {
-        throw new NotFoundException(`User('${uid}') does not exist!`);
+        this.dataSource.queryResultCache.remove([
+          CacheIdUtils.getUserSessionDtoCacheId(uid),
+        ]);
+
+        throw new NotFoundException(`User does not exist! - [${uid}]`);
       })();
 
     return UserInfoDao.from({ ...userInfoEntity });

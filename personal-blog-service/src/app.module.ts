@@ -10,11 +10,11 @@ import { redisConfig } from './config/redisConfig';
 import { BlogModule } from './blog/blog.module';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
-import { AuthModule } from './auth/auth.module';
 import authConfig from './config/authConfig';
 import { validationEnv } from './config/validationEnv';
 import { HttpExceptionFilter } from './filter/http-exception.filter';
 import { winstonConfig } from './config/winstonConfig';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { winstonConfig } from './config/winstonConfig';
     WinstonModule.forRootAsync(winstonConfig),
     CacheModule.registerAsync(redisConfig),
     BlogModule,
-    AuthModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [

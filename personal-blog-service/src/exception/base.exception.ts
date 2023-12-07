@@ -6,7 +6,7 @@ export abstract class BaseException extends Error {
   readonly value?: string;
 
   constructor(errorCode: ErrorCode, message: string, value?: string) {
-    super(message);
+    super();
 
     this.errorCode = errorCode;
     this.message = message;

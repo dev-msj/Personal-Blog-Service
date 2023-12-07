@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Headers,
-  Param,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { PostService } from '../service/post.serivce';
 import { PostDto } from '../dto/post.dto';
 import { PostLikeDto } from '../dto/post-like.dto';
@@ -14,8 +6,12 @@ import { PostLikeService } from '../service/post-like.serivce';
 import { PaginationDto } from '../dto/pagination.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';
-import { DecryptionPostPKPipe } from '../../pipe/decryptionPostPk.pipe';
+import { Roles } from '../../decorator/roles.decorator';
+import { UserRole } from '../../constant/user-role.enum';
+import { DecryptionPrimaryKeyPipe } from '../../pipe/decryption-primary-key.pipe';
+import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 
+@Roles(UserRole.USER)
 @Controller('posts')
 export class PostController {
   constructor(
@@ -35,7 +31,8 @@ export class PostController {
 
   @Get('users/:postUid')
   async getLatestPostPageListByPostPageRequestDto(
-    @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
+    @Param(DecryptionPrimaryKeyPipe)
+    postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
       postPageRequestDto,
@@ -44,7 +41,8 @@ export class PostController {
 
   @Get('users/:postUid/:page')
   async getPostPageListByPostPageRequestDto(
-    @Param(DecryptionPostPKPipe) postPageRequestDto: PostPageRequestDto,
+    @Param(DecryptionPrimaryKeyPipe)
+    postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
       postPageRequestDto,
@@ -53,7 +51,7 @@ export class PostController {
 
   @Post('likes')
   async addPostLikeUser(
-    @Headers('uid') authUid: string,
+    @AuthenticatedUserValidation() authUid: string,
     @Body('postId') postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.addPostLikeUser(
@@ -65,7 +63,7 @@ export class PostController {
 
   @Delete('likes')
   async deletePostLikeUser(
-    @Headers('uid') authUid: string,
+    @AuthenticatedUserValidation() authUid: string,
     @Body('postId') postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.removePostLikeUser(

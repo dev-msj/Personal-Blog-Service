@@ -8,14 +8,21 @@ import { PostLikeService } from './service/post-like.serivce';
 import { UserInfoEntity } from '../user/entities/user-info.entity';
 import { PostRepository } from './repository/post.repository';
 import { PostLikeRepository } from './repository/post-like.repository';
-import { ExportUserModule } from '../user/export/export-user.module';
+import { UserInfoRepository } from '../user/repository/user-info.repository';
+import { UserInfoService } from '../user/service/user-info.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PostEntity, PostLikeEntity, UserInfoEntity]),
-    ExportUserModule,
   ],
   controllers: [PostController],
-  providers: [PostService, PostLikeService, PostRepository, PostLikeRepository],
+  providers: [
+    PostService,
+    PostLikeService,
+    PostRepository,
+    PostLikeRepository,
+    UserInfoService,
+    UserInfoRepository,
+  ],
 })
 export class BlogModule {}
