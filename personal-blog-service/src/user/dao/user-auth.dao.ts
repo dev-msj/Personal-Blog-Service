@@ -16,6 +16,7 @@ export class UserAuthDao {
     userAuthDao.uid = userAuthInterface.uid;
     userAuthDao.password = userAuthInterface.password;
     userAuthDao.salt = userAuthInterface.salt;
+    userAuthDao.socialYN = userAuthInterface.socialYN;
     userAuthDao.refreshToken = userAuthInterface.refreshToken;
     userAuthDao.userRole = userAuthInterface.userRole;
 
