@@ -1,4 +1,3 @@
-import { ConfigType } from '@nestjs/config';
 import authConfig from '../../config/authConfig';
 import { JwtService } from './jwt.service';
 import { Test } from '@nestjs/testing';
@@ -13,7 +12,6 @@ import { UserAuthEntity } from '../entities/user-auth.entity';
 
 describe('UserAuthService', () => {
   let userAuthService: UserAuthService;
-  let config: ConfigType<typeof authConfig>;
   let jwtService: JwtService;
   let userAuthRepository: UserAuthRepository;
 
@@ -30,9 +28,7 @@ describe('UserAuthService', () => {
         },
         {
           provide: authConfig.KEY,
-          useValue: {
-            googleClientId: 'id',
-          },
+          useValue: {},
         },
         {
           provide: JwtService,
@@ -52,7 +48,6 @@ describe('UserAuthService', () => {
     }).compile();
 
     userAuthService = module.get(UserAuthService);
-    config = module.get(authConfig.KEY);
     jwtService = module.get(JwtService);
     userAuthRepository = module.get(UserAuthRepository);
   });
