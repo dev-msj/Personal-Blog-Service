@@ -114,7 +114,9 @@ export class UserAuthService {
         audience: this.config.googleClientId,
       });
     } catch (e) {
-      this.logger.warn(`This token is not allowed. - [${credentialToken}]`);
+      this.logger.warn(
+        `CredentialToken is not allowed. - [${credentialToken}]`,
+      );
 
       throw new UnauthorizedException('This token is not allowed.');
     }
