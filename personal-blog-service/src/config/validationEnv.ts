@@ -7,4 +7,5 @@ export const validationEnv = Joi.object({
   JWT_ACCESSTOKEN_EXPIRE_TIME: Joi.string().required(),
   JWT_REFRESHTOKEN_EXPIRE_TIME: Joi.string().required(),
   JWT_REFRESHTOKEN_REISSUE_TIME: Joi.number().required(),
+  GOOGLE_CLIENT_ID: Joi.string().required(),
 });

@@ -7,4 +7,5 @@ export default registerAs('config', () => ({
   accessTokenExpireTime: process.env.JWT_ACCESSTOKEN_EXPIRE_TIME,
   refreshTokenExpireTime: process.env.JWT_REFRESHTOKEN_EXPIRE_TIME,
   refreshTokenReissueTime: process.env.JWT_REFRESHTOKEN_REISSUE_TIME,
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
 }));
