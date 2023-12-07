@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PostLikeEntity } from '../entities/post-like.entity';
 import { PostLikeDao } from '../dao/post-like.dao';
-import { PostLikeDto } from '../dto/post-like.dto';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utills';
 
