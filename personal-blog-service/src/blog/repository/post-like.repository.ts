@@ -15,31 +15,29 @@ export class PostLikeRepository {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findPostLikeDaoList(postId: number): Promise<PostLikeDao[]> {
-    return (
-      await this.postLikeRepository.find({
-        where: { postId: postId },
-        cache: {
-          id: CacheIdUtils.getPostLikeEntityListCacheId(postId),
-          milliseconds: TimeUtils.getTicTimeHMS(24),
-        },
-      })
-    ).map((postLikeEntiy) => PostLikeDao.from({ ...postLikeEntiy }));
+  async findPostLikeEntityList(postId: number): Promise<PostLikeEntity[]> {
+    return await this.postLikeRepository.find({
+      where: { postId: postId },
+      cache: {
+        id: CacheIdUtils.getPostLikeEntityListCacheId(postId),
+        milliseconds: TimeUtils.getTicTimeHMS(24),
+      },
+    });
   }
 
-  async savePostLikeDto(postLikeDto: PostLikeDto): Promise<void> {
-    await this.removePostLikeEntityListCache(postLikeDto.postId);
+  async savePostLikeEntity(postLikeEntity: PostLikeEntity): Promise<void> {
+    await this.removePostLikeEntityListCache(postLikeEntity.postId);
 
     await this.postLikeRepository.save(
-      PostLikeDao.from({ ...postLikeDto }).toPostLikeEntity(),
+      PostLikeDao.from({ ...postLikeEntity }).toPostLikeEntity(),
     );
   }
 
-  async removePostLikeDto(postLikeDto: PostLikeDto): Promise<void> {
-    await this.removePostLikeEntityListCache(postLikeDto.postId);
+  async removePostLikeDto(postLikeEntity: PostLikeEntity): Promise<void> {
+    await this.removePostLikeEntityListCache(postLikeEntity.postId);
 
     await this.postLikeRepository.remove(
-      PostLikeDao.from({ ...postLikeDto }).toPostLikeEntity(),
+      PostLikeDao.from({ ...postLikeEntity }).toPostLikeEntity(),
     );
   }
 

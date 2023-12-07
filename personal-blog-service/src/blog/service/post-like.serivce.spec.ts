@@ -22,7 +22,7 @@ describe('PostLikeService', () => {
         {
           provide: PostLikeRepository,
           useValue: {
-            findPostLikeDaoList: jest.fn(),
+            findPostLikeEntityList: jest.fn(),
           },
         },
         {
@@ -46,7 +46,7 @@ describe('PostLikeService', () => {
       const uid = 'uid';
       const expected = 'nickname';
 
-      postLikeRepository.findPostLikeDaoList = jest
+      postLikeRepository.findPostLikeEntityList = jest
         .fn()
         .mockResolvedValue([PostLikeDao.from({ postId, uid })]);
 
@@ -63,7 +63,9 @@ describe('PostLikeService', () => {
 
     it('Test when there is no post like user.', async () => {
       // Given
-      postLikeRepository.findPostLikeDaoList = jest.fn().mockResolvedValue([]);
+      postLikeRepository.findPostLikeEntityList = jest
+        .fn()
+        .mockResolvedValue([]);
 
       // When
       const actual = await postLikeService.getPostLikeNicknameList(0);
