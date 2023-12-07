@@ -55,4 +55,20 @@ export class PostEntity {
   @ManyToOne(() => UserAuthEntity, (userAuthEntity) => userAuthEntity.uid)
   @JoinColumn({ name: 'POST_UID', referencedColumnName: 'uid' })
   readonly userAuthEntity: UserAuthEntity;
+
+  constructor(
+    postId: number,
+    postUid: string,
+    title: string,
+    writeDatetime: Date,
+    contents: string,
+    hits: number,
+  ) {
+    this.postId = postId;
+    this.postUid = postUid;
+    this.title = title;
+    this.writeDatetime = writeDatetime;
+    this.contents = contents;
+    this.hits = hits;
+  }
 }

@@ -3,10 +3,10 @@ import { PostLikeService } from './post-like.serivce';
 import { PostService } from './post.serivce';
 import authConfig from '../../config/authConfig';
 import { Test } from '@nestjs/testing';
-import { PostDao } from '../dao/post.dao';
 import { ConfigType } from '@nestjs/config';
 import { CryptoUtils } from '../../utils/crypto.utils';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';
+import { PostEntity } from '../entities/post.entity';
 
 describe('PostService', () => {
   let postService: PostService;
@@ -27,7 +27,7 @@ describe('PostService', () => {
         {
           provide: PostRepository,
           useValue: {
-            findPostDaoListAndCount: jest.fn(),
+            findPostEntityListAndCount: jest.fn(),
           },
         },
         {
@@ -50,18 +50,18 @@ describe('PostService', () => {
       // Given
       const expected = 1;
 
-      postRepository.findPostDaoListAndCountByPage = jest
+      postRepository.findPostEntityListAndCountByPage = jest
         .fn()
         .mockResolvedValue([
           [
-            PostDao.from({
-              postId: expected,
-              postUid: 'postUid',
-              title: 'title',
-              writeDatetime: new Date(),
-              contents: 'contents',
-              hits: 0,
-            }),
+            new PostEntity(
+              expected,
+              'postUid',
+              'title',
+              new Date(),
+              'contents',
+              0,
+            ),
           ],
           1,
         ]);
@@ -74,14 +74,17 @@ describe('PostService', () => {
       // Then
       expect(
         Number(
-          CryptoUtils.decryptPrimaryKey(actual.data[0].postId, config.pkSecretKey),
+          CryptoUtils.decryptPrimaryKey(
+            actual.data[0].postId,
+            config.pkSecretKey,
+          ),
         ),
       ).toEqual(expected);
     });
 
     it('Test when there is no post.', async () => {
       // Given
-      postRepository.findPostDaoListAndCountByPage = jest
+      postRepository.findPostEntityListAndCountByPage = jest
         .fn()
         .mockResolvedValue([[], 0]);
 
@@ -99,18 +102,18 @@ describe('PostService', () => {
       const expected = 1;
       const postUid = 'postUid';
 
-      postRepository.findPostDaoListAndCountByPostPageRequestDto = jest
+      postRepository.findPostEntityListAndCountByPostPageRequestDto = jest
         .fn()
         .mockResolvedValue([
           [
-            PostDao.from({
-              postId: expected,
-              postUid: postUid,
-              title: 'title',
-              writeDatetime: new Date(),
-              contents: 'contents',
-              hits: 0,
-            }),
+            new PostEntity(
+              expected,
+              'postUid',
+              'title',
+              new Date(),
+              'contents',
+              0,
+            ),
           ],
           1,
         ]);
@@ -125,14 +128,17 @@ describe('PostService', () => {
       // Then
       expect(
         Number(
-          CryptoUtils.decryptPrimaryKey(actual.data[0].postId, config.pkSecretKey),
+          CryptoUtils.decryptPrimaryKey(
+            actual.data[0].postId,
+            config.pkSecretKey,
+          ),
         ),
       ).toEqual(expected);
     });
 
     it("Test when there is no postUid's post.", async () => {
       // Given
-      postRepository.findPostDaoListAndCountByPostPageRequestDto = jest
+      postRepository.findPostEntityListAndCountByPostPageRequestDto = jest
         .fn()
         .mockResolvedValue([[], 0]);
 

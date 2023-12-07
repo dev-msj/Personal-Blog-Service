@@ -7,7 +7,7 @@ import authConfig from '../../config/authConfig';
 import { UserRole } from '../../constant/user-role.enum';
 import { CryptoUtils } from '../../utils/crypto.utils';
 import { JwtDto } from '../dto/jwt.dto';
-import { UserSessionDto } from '../dto/user-session.dto';
+import { UserSessionEntity } from '../entities/user-session.dto';
 import { UserAuthRepository } from '../repository/user-auth.repository';
 
 @Injectable()
@@ -27,8 +27,8 @@ export class JwtService {
     const accessToken = this.generateToken(uid, JwtService.ACCESS_TOKEN);
     const refreshToken = this.generateToken(uid, JwtService.REFRESH_TOKEN);
 
-    await this.userAuthRepository.updateUserAuthByUserSessionDto(
-      new UserSessionDto(uid, refreshToken, userRole),
+    await this.userAuthRepository.updateUserAuthByUserSessionEntity(
+      new UserSessionEntity(uid, refreshToken, userRole),
     );
 
     return new JwtDto(accessToken, refreshToken);
@@ -38,7 +38,7 @@ export class JwtService {
     try {
       const decodedJwt = this.decodeToken(accessToken);
 
-      await this.userAuthRepository.getUserSessionDtoByUid(
+      await this.userAuthRepository.getUserSessionEntityByUid(
         CryptoUtils.decryptPrimaryKey(
           decodedJwt['uid'],
           this.config.pkSecretKey,
@@ -57,25 +57,25 @@ export class JwtService {
 
   async verifyRefreshToken(
     refreshToken: string,
-  ): Promise<UserSessionDto | Error> {
+  ): Promise<UserSessionEntity | Error> {
     try {
       const decodedJwt = this.decodeToken(refreshToken);
 
-      const userSessionDto =
-        await this.userAuthRepository.getUserSessionDtoByUid(
+      const userSessionEntity =
+        await this.userAuthRepository.getUserSessionEntityByUid(
           CryptoUtils.decryptPrimaryKey(
             decodedJwt['uid'],
             this.config.pkSecretKey,
           ),
         );
 
-      if (refreshToken !== userSessionDto.refreshToken) {
+      if (refreshToken !== userSessionEntity.refreshToken) {
         this.logger.error(`Refresh Token does not match! - [${refreshToken}]`);
 
         return new UnauthorizedException('Refresh Token does not match!');
       }
 
-      return userSessionDto;
+      return userSessionEntity;
     } catch (e) {
       if (e instanceof jwt.TokenExpiredError) {
         this.logger.warn(`The refresh token has expired. - [${refreshToken}]`);
@@ -87,25 +87,28 @@ export class JwtService {
     }
   }
 
-  async reissueJwtByUserSessionDto(
-    userSessionDto: UserSessionDto,
+  async reissueJwtByUserSessionEntity(
+    userSessionEntity: UserSessionEntity,
   ): Promise<JwtDto> {
-    const decodedJwt = this.decodeToken(userSessionDto.refreshToken);
+    const decodedJwt = this.decodeToken(userSessionEntity.refreshToken);
     const expiresAt = decodedJwt.exp * 1000;
 
     if (this.willExpire(expiresAt)) {
-      this.logger.info(`JWT has been reissued. - [${userSessionDto.uid}]`);
+      this.logger.info(`JWT has been reissued. - [${userSessionEntity.uid}]`);
 
-      return await this.create(userSessionDto.uid, userSessionDto.userRole);
+      return await this.create(
+        userSessionEntity.uid,
+        userSessionEntity.userRole,
+      );
     }
 
     this.logger.info(
-      `Access Token has been reissued. - [${userSessionDto.uid}]`,
+      `Access Token has been reissued. - [${userSessionEntity.uid}]`,
     );
 
     return new JwtDto(
-      this.generateToken(userSessionDto.uid, JwtService.ACCESS_TOKEN),
-      userSessionDto.refreshToken,
+      this.generateToken(userSessionEntity.uid, JwtService.ACCESS_TOKEN),
+      userSessionEntity.refreshToken,
     );
   }
 

@@ -7,7 +7,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import authConfig from '../../config/authConfig';
 import { UserRole } from '../../constant/user-role.enum';
 import { CryptoUtils } from '../../utils/crypto.utils';
-import { UserSessionDto } from '../dto/user-session.dto';
+import { UserSessionEntity } from '../entities/user-session.dto';
 import { UserAuthRepository } from '../repository/user-auth.repository';
 
 describe('JwtService', () => {
@@ -38,8 +38,8 @@ describe('JwtService', () => {
         {
           provide: UserAuthRepository,
           useValue: {
-            updateUserAuthByUserSessionDto: jest.fn(),
-            getUserSessionDto: jest.fn(),
+            updateUserAuthByUserSessionEntity: jest.fn(),
+            getUserSessionEntity: jest.fn(),
           },
         },
       ],
@@ -73,14 +73,14 @@ describe('JwtService', () => {
       const userRole = UserRole.USER;
       const refreshToken = (await jwtService.create(expectUid, userRole))
         .refreshToken;
-      const userSessionDto = new UserSessionDto(
+      const userSessionEntity = new UserSessionEntity(
         expectUid,
         refreshToken,
         userRole,
       );
 
       const accessToken = (
-        await jwtService.reissueJwtByUserSessionDto(userSessionDto)
+        await jwtService.reissueJwtByUserSessionEntity(userSessionEntity)
       ).accessToken;
       const actualUid = CryptoUtils.decryptPrimaryKey(
         (jwt.verify(accessToken, config.jwtSecretKey) as jwt.JwtPayload)['uid'],
@@ -95,11 +95,15 @@ describe('JwtService', () => {
       const userRole = UserRole.USER;
       const refreshToken = (await jwtService.create(expectUid, userRole))
         .refreshToken;
-      const userSessionDto = new UserSessionDto(expectUid, null, userRole);
+      const userSessionEntity = new UserSessionEntity(
+        expectUid,
+        null,
+        userRole,
+      );
 
-      userAuthRepository.getUserSessionDtoByUid = jest
+      userAuthRepository.getUserSessionEntityByUid = jest
         .fn()
-        .mockResolvedValue(userSessionDto);
+        .mockResolvedValue(userSessionEntity);
 
       await expect(jwtService.verifyRefreshToken(refreshToken)).rejects.toThrow(
         UnauthorizedException,

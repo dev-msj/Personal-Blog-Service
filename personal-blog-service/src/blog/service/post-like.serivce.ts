@@ -4,6 +4,7 @@ import { PostLikeDto } from '../dto/post-like.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { PostLikeRepository } from '../repository/post-like.repository';
+import { PostLikeEntity } from '../entities/post-like.entity';
 import { PostLikeDao } from '../dao/post-like.dao';
 
 @Injectable()
@@ -17,29 +18,33 @@ export class PostLikeService {
 
   async getPostLikeNicknameList(postId: number): Promise<string[]> {
     return await this.getNicknameList(
-      await this.postLikeRepository.findPostLikeDaoList(postId),
+      await this.postLikeRepository.findPostLikeEntityList(postId),
     );
   }
 
   async addPostLikeUser(postLikeDto: PostLikeDto): Promise<void> {
     this.logger.info(`addPostLikeUser - [${JSON.stringify(postLikeDto)}]`);
 
-    await this.postLikeRepository.savePostLikeDto(postLikeDto);
+    await this.postLikeRepository.savePostLikeEntity(
+      PostLikeDao.from({ ...postLikeDto }).toPostLikeEntity(),
+    );
   }
 
   async removePostLikeUser(postLikeDto: PostLikeDto): Promise<void> {
     this.logger.info(`removePostLikeUser - [${JSON.stringify(postLikeDto)}]`);
 
-    await this.postLikeRepository.removePostLikeDto(postLikeDto);
+    await this.postLikeRepository.removePostLikeDto(
+      PostLikeDao.from({ ...postLikeDto }).toPostLikeEntity(),
+    );
   }
 
   private async getNicknameList(
-    postLikeDaoList: PostLikeDao[],
+    postLikeEntityList: PostLikeEntity[],
   ): Promise<string[]> {
     const nicknameList = [];
-    for (const postLikeDao of postLikeDaoList) {
+    for (const postLikeEntity of postLikeEntityList) {
       nicknameList.push(
-        (await this.userInfoService.getUserInfoDto(postLikeDao.getUid))
+        (await this.userInfoService.getUserInfoDto(postLikeEntity.uid))
           .nickname,
       );
     }

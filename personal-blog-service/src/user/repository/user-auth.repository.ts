@@ -2,13 +2,11 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserAuthEntity } from '../entities/user-auth.entity';
 import { DataSource, Repository } from 'typeorm';
-import { UserSessionDto } from '../dto/user-session.dto';
+import { UserSessionEntity } from '../entities/user-session.dto';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { TimeUtils } from '../../utils/time.utills';
-import { UserAuthDao } from '../dao/user-auth.dao';
-import { UserAuthDto } from '../dto/user-auth.dto';
 
 @Injectable()
 export class UserAuthRepository {
@@ -24,8 +22,8 @@ export class UserAuthRepository {
     await this.userAuthRepository.save(userAuthEntity);
   }
 
-  async getUserAuthDto(uid: string): Promise<UserAuthDto> {
-    const userAuthEntity =
+  async getUserAuthEntity(uid: string): Promise<UserAuthEntity> {
+    return (
       (await this.userAuthRepository.findOne({
         where: { uid: uid },
       })) ||
@@ -35,16 +33,15 @@ export class UserAuthRepository {
         ]);
 
         throw new NotFoundException(`User does not exist! - [${uid}]`);
-      })();
-
-    return UserAuthDao.from({ ...userAuthEntity }).toUserAuthDto();
+      })()
+    );
   }
 
   async isExist(uid: string): Promise<boolean> {
     return await this.userAuthRepository.exist({ where: { uid: uid } });
   }
 
-  async getUserSessionDtoByUid(uid: string): Promise<UserSessionDto> {
+  async getUserSessionEntityByUid(uid: string): Promise<UserSessionEntity> {
     return (
       (await this.userAuthRepository
         .createQueryBuilder('userAuthEntity')
@@ -53,13 +50,13 @@ export class UserAuthRepository {
         .addSelect('userAuthEntity.userRole', 'userRole')
         .where({ uid: uid })
         .cache(
-          CacheIdUtils.getUserSessionDtoCacheId(uid),
+          CacheIdUtils.getUserSessionEntityCacheId(uid),
           TimeUtils.getTicTimeHMS(6),
         )
-        .getRawOne<UserSessionDto>()) ||
+        .getRawOne<UserSessionEntity>()) ||
       (() => {
         this.dataSource.queryResultCache.remove([
-          CacheIdUtils.getUserSessionDtoCacheId(uid),
+          CacheIdUtils.getUserSessionEntityCacheId(uid),
         ]);
 
         throw new NotFoundException(`User does not exist! - [${uid}]`);
@@ -67,22 +64,22 @@ export class UserAuthRepository {
     );
   }
 
-  async updateUserAuthByUserSessionDto(
-    userSessionDto: UserSessionDto,
+  async updateUserAuthByUserSessionEntity(
+    userSessionEntity: UserSessionEntity,
   ): Promise<void> {
     this.dataSource.queryResultCache.remove([
-      CacheIdUtils.getUserSessionDtoCacheId(userSessionDto.uid),
+      CacheIdUtils.getUserSessionEntityCacheId(userSessionEntity.uid),
     ]);
 
     this.userAuthRepository.update(
       {
-        uid: userSessionDto.uid,
+        uid: userSessionEntity.uid,
       },
-      userSessionDto,
+      userSessionEntity,
     );
 
     this.logger.info(
-      `UserAuthEntity is updated. - [${JSON.stringify(userSessionDto)}]`,
+      `UserAuthEntity is updated. - [${JSON.stringify(userSessionEntity)}]`,
     );
   }
 }

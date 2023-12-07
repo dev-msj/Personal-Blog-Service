@@ -53,16 +53,16 @@ export class AuthGuard implements CanActivate {
       return false;
     }
 
-    const userSessionDto =
+    const userSessionEntity =
       await this.jwtService.verifyRefreshToken(refreshToken);
 
-    if (userSessionDto instanceof Error) {
+    if (userSessionEntity instanceof Error) {
       return false;
     }
 
     if (verifyResult instanceof TokenExpiredError) {
       const jwtDto =
-        await this.jwtService.reissueJwtByUserSessionDto(userSessionDto);
+        await this.jwtService.reissueJwtByUserSessionEntity(userSessionEntity);
       throw new TokenReissuedException(
         ErrorCode.NOT_ACCEPTABLE,
         'Token is reissued!',
@@ -76,8 +76,8 @@ export class AuthGuard implements CanActivate {
     ]);
 
     // 토큰이 검증된 유저의 Role을 확인하여 헤더에 uid를 등록한다.
-    if (roles?.includes(userSessionDto.userRole) ?? true) {
-      request.headers['authenticatedUser'] = userSessionDto.uid;
+    if (roles?.includes(userSessionEntity.userRole) ?? true) {
+      request.headers['authenticatedUser'] = userSessionEntity.uid;
 
       return true;
     }
@@ -88,8 +88,8 @@ export class AuthGuard implements CanActivate {
           method: request.method,
           url: request.url,
           role: roles,
-          user: userSessionDto.uid,
-          userRole: userSessionDto.userRole,
+          user: userSessionEntity.uid,
+          userRole: userSessionEntity.userRole,
         },
         null,
         2,
