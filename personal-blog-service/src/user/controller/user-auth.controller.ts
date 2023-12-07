@@ -22,4 +22,11 @@ export class UserAuthController {
   ): Promise<JwtDto> {
     return await this.userAuthService.login(userAuthRequestDto);
   }
+
+  @Post('oauth')
+  async googleOauthLogin(
+    @Body('credentialToken') credentialToken: string,
+  ): Promise<JwtDto> {
+    return await this.userAuthService.googleOauthLogin(credentialToken);
+  }
 }
