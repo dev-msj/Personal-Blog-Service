@@ -1,7 +1,7 @@
-import { UserInfoDao } from '../dao/user-info.dao';
 import { UserInfoRepository } from '../repository/user-info.repository';
 import { Test } from '@nestjs/testing';
 import { UserInfoService } from './user-info.service';
+import { UserInfoEntity } from '../entities/user-info.entity';
 
 describe('UserInfoService', () => {
   let userInfoService: UserInfoService;
@@ -14,7 +14,7 @@ describe('UserInfoService', () => {
         {
           provide: UserInfoRepository,
           useValue: {
-            findUserInfoDao: jest.fn(),
+            findUserInfoEntity: jest.fn(),
           },
         },
       ],
@@ -28,13 +28,9 @@ describe('UserInfoService', () => {
     it('Test getUserInfoDto', async () => {
       const uid = 'uid';
 
-      userInfoRepository.findUserInfoDao = jest.fn().mockResolvedValue(
-        UserInfoDao.from({
-          uid,
-          nickname: 'nickname',
-          introduce: 'introduce',
-        }),
-      );
+      userInfoRepository.findUserInfoEntity = jest
+        .fn()
+        .mockResolvedValue(new UserInfoEntity(uid, 'nickname', 'introduce'));
 
       const userInfoDto = await userInfoService.getUserInfoDto(uid);
 

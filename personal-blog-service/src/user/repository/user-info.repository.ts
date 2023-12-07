@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfoEntity } from '../entities/user-info.entity';
 import { DataSource, Repository } from 'typeorm';
-import { UserInfoDao } from '../dao/user-info.dao';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utills';
 
@@ -14,8 +13,8 @@ export class UserInfoRepository {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findUserInfoDao(uid: string): Promise<UserInfoDao> {
-    const userInfoEntity =
+  async findUserInfoEntity(uid: string): Promise<UserInfoEntity> {
+    return (
       (await this.userInfoRepository.findOne({
         where: { uid: uid },
         cache: {
@@ -29,8 +28,7 @@ export class UserInfoRepository {
         ]);
 
         throw new NotFoundException(`User does not exist! - [${uid}]`);
-      })();
-
-    return UserInfoDao.from({ ...userInfoEntity });
+      })()
+    );
   }
 }
