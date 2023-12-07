@@ -8,6 +8,7 @@ import { JwtDto } from '../dto/jwt.dto';
 import { SHA256 } from 'crypto-js';
 import { UserAuthDao } from './../dao/user-auth.dao';
 import { JwtService } from './jwt.service';
+import * as CryptoJS from 'crypto-js';
 
 @Injectable()
 export class UserAuthService {
