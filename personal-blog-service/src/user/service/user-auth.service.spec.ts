@@ -2,7 +2,6 @@ import { ConfigType } from '@nestjs/config';
 import authConfig from '../../config/authConfig';
 import { JwtService } from './jwt.service';
 import { Test } from '@nestjs/testing';
-import { UserAuthDto } from '../dto/user-auth.dto';
 import { UserRole } from '../../constant/user-role.enum';
 import { UserAuthService } from './user-auth.service';
 import { UserAuthRepository } from './../repository/user-auth.repository';
@@ -10,6 +9,7 @@ import { JwtDto } from '../dto/jwt.dto';
 import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UnauthorizedException } from '@nestjs/common';
+import { UserAuthEntity } from '../entities/user-auth.entity';
 
 describe('UserAuthService', () => {
   let userAuthService: UserAuthService;
@@ -43,7 +43,7 @@ describe('UserAuthService', () => {
         {
           provide: UserAuthRepository,
           useValue: {
-            getUserAuthDto: jest.fn(),
+            getUserAuthEntity: jest.fn(),
             saveUserAuthEntity: jest.fn(),
             isExist: jest.fn(),
           },
@@ -82,10 +82,10 @@ describe('UserAuthService', () => {
       const uid = 'uid';
       const password = 'password';
 
-      userAuthRepository.getUserAuthDto = jest
+      userAuthRepository.getUserAuthEntity = jest
         .fn()
         .mockResolvedValue(
-          new UserAuthDto(
+          new UserAuthEntity(
             uid,
             password,
             'salt',
@@ -112,10 +112,10 @@ describe('UserAuthService', () => {
       const uid = 'uid';
       const password = 'password';
 
-      userAuthRepository.getUserAuthDto = jest
+      userAuthRepository.getUserAuthEntity = jest
         .fn()
         .mockResolvedValue(
-          new UserAuthDto(
+          new UserAuthEntity(
             uid,
             password,
             'salt',

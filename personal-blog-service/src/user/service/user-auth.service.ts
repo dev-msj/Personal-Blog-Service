@@ -52,20 +52,20 @@ export class UserAuthService {
   }
 
   async login(userAuthRequestDto: UserAuthRequestDto): Promise<JwtDto> {
-    const userAuthDto = await this.userAuthRepository.getUserAuthDto(
+    const userAuthEntity = await this.userAuthRepository.getUserAuthEntity(
       userAuthRequestDto.uid,
     );
 
     const hashedPassword = this.hashingPassword(
       userAuthRequestDto.password,
-      userAuthDto.salt,
+      userAuthEntity.salt,
     );
 
-    if (hashedPassword !== userAuthDto.password) {
+    if (hashedPassword !== userAuthEntity.password) {
       throw new UnauthorizedException('Password does not match.');
     }
 
-    return this.jwtService.create(userAuthDto.uid, userAuthDto.userRole);
+    return this.jwtService.create(userAuthEntity.uid, userAuthEntity.userRole);
   }
 
   async googleOauthLogin(credentialToken: string): Promise<JwtDto> {
@@ -89,9 +89,9 @@ export class UserAuthService {
       this.logger.info(`A new social user has been created. - [${uid}]`);
     }
 
-    const userAuthDto = await this.userAuthRepository.getUserAuthDto(uid);
+    const userAuthEntity = await this.userAuthRepository.getUserAuthEntity(uid);
 
-    return this.jwtService.create(userAuthDto.uid, userAuthDto.userRole);
+    return this.jwtService.create(userAuthEntity.uid, userAuthEntity.userRole);
   }
 
   private hashingPassword(password: string, salt: string): string {

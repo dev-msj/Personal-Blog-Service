@@ -25,7 +25,7 @@ export class UserInfoRepository {
       })) ||
       (() => {
         this.dataSource.queryResultCache.remove([
-          CacheIdUtils.getUserSessionDtoCacheId(uid),
+          CacheIdUtils.getUserSessionEntityCacheId(uid),
         ]);
 
         throw new NotFoundException(`User does not exist! - [${uid}]`);
