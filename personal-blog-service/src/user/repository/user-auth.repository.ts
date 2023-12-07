@@ -40,6 +40,10 @@ export class UserAuthRepository {
     return UserAuthDao.from({ ...userAuthEntity }).toUserAuthDto();
   }
 
+  async isExist(uid: string): Promise<boolean> {
+    return await this.userAuthRepository.exist({ where: { uid: uid } });
+  }
+
   async getUserSessionDtoByUid(uid: string): Promise<UserSessionDto> {
     return (
       (await this.userAuthRepository
