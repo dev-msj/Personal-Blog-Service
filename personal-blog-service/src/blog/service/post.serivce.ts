@@ -8,6 +8,7 @@ import { PostRepository } from '../repository/post.repository';
 import authConfig from '../../config/authConfig';
 import { PaginationUtils } from '../../utils/pagination.utils';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';
+import { PostEntity } from '../entities/post.entity';
 
 @Injectable()
 export class PostService {
@@ -19,10 +20,10 @@ export class PostService {
   ) {}
 
   async getPostPageListByPage(page: number = 1) {
-    const [postDaoList, total] =
-      await this.postRepository.findPostDaoListAndCountByPage(page);
+    const [postEntityList, total] =
+      await this.postRepository.findPostEntityListAndCountByPage(page);
 
-    await this.setPostLikeUidList(postDaoList);
+    const postDaoList = await this.toPostDaoList(postEntityList);
 
     return PaginationUtils.toPaginationDto<PostDto>(
       postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
@@ -34,12 +35,12 @@ export class PostService {
   async getPostPageListByPostPageRequestDto(
     postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
-    const [postDaoList, total] =
-      await this.postRepository.findPostDaoListAndCountByPostPageRequestDto(
+    const [postEntityList, total] =
+      await this.postRepository.findPostEntityListAndCountByPostPageRequestDto(
         postPageRequestDto,
       );
 
-    await this.setPostLikeUidList(postDaoList);
+    const postDaoList = await this.toPostDaoList(postEntityList);
 
     return PaginationUtils.toPaginationDto<PostDto>(
       postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
@@ -48,10 +49,18 @@ export class PostService {
     );
   }
 
-  private async setPostLikeUidList(postDaoList: PostDao[]) {
+  private async toPostDaoList(
+    postEntityList: PostEntity[],
+  ): Promise<PostDao[]> {
+    const postDaoList = postEntityList.map((postEntity) =>
+      PostDao.from({ ...postEntity }),
+    );
+
     for (const postDao of postDaoList) {
       postDao.setPostLikeUidList =
         await this.postLikeService.getPostLikeNicknameList(postDao.getPostId);
     }
+
+    return postDaoList;
   }
 }
