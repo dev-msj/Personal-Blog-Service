@@ -6,4 +6,9 @@ export class UserAuthRequestDto {
 
   @IsString()
   readonly password: string;
+
+  constructor(uid: string, password: string) {
+    this.uid = uid;
+    this.password = password;
+  }
 }
