@@ -23,6 +23,8 @@ describe('JwtService', () => {
           provide: WINSTON_MODULE_PROVIDER,
           useValue: {
             info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
           },
         },
         {
@@ -52,23 +54,26 @@ describe('JwtService', () => {
 
   describe('create Token', () => {
     it('create new token', async () => {
+      // Given
       const expectUid = 'uid@test.com';
       const userRole = UserRole.USER;
 
+      // When
       const accessToken = (await jwtService.create(expectUid, userRole))
         .accessToken;
-
       const actualUid = CryptoUtils.decryptPrimaryKey(
         (jwt.verify(accessToken, config.jwtSecretKey) as jwt.JwtPayload)['uid'],
         config.pkSecretKey,
       );
 
+      // Then
       expect(actualUid).toEqual(expectUid);
     });
   });
 
   describe('Reissue Token', () => {
     it('Test reissue access token', async () => {
+      // Given
       const expectUid = 'uid@test.com';
       const userRole = UserRole.USER;
       const refreshToken = (await jwtService.create(expectUid, userRole))
@@ -79,6 +84,7 @@ describe('JwtService', () => {
         userRole,
       );
 
+      // When
       const accessToken = (
         await jwtService.reissueJwtByUserSessionEntity(userSessionEntity)
       ).accessToken;
@@ -87,10 +93,12 @@ describe('JwtService', () => {
         config.pkSecretKey,
       );
 
+      // Then
       expect(actualUid).toEqual(expectUid);
     });
 
     it('Test verify refresh token throw error', async () => {
+      // Given
       const expectUid = 'uid@test.com';
       const userRole = UserRole.USER;
       const refreshToken = (await jwtService.create(expectUid, userRole))
@@ -105,9 +113,11 @@ describe('JwtService', () => {
         .fn()
         .mockResolvedValue(userSessionEntity);
 
-      await expect(jwtService.verifyRefreshToken(refreshToken)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      // When
+      const actualException = await jwtService.verifyRefreshToken(refreshToken);
+
+      // Then
+      expect(actualException).toBeInstanceOf(UnauthorizedException);
     });
   });
 });

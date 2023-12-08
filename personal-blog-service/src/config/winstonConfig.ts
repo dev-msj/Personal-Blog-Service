@@ -13,8 +13,9 @@ export const winstonConfig: WinstonModuleAsyncOptions = {
         new winston.transports.Console({
           level: process.env.NODE_ENV === 'production' ? 'info' : 'silly',
         }),
-        new winstonDaily(dailyOption('info')),
-        new winstonDaily(dailyOption('error')),
+        process.env.NODE_ENV === 'production'
+          ? new winstonDaily(dailyOption('error'))
+          : new winstonDaily(dailyOption('info')),
       ],
     };
   },
