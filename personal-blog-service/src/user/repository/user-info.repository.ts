@@ -47,6 +47,12 @@ export class UserInfoRepository {
     );
   }
 
+  async deleteUserInfoByUid(uid: string): Promise<void> {
+    this.removeUserInfoCache(uid);
+
+    await this.userInfoRepository.delete({ uid: uid });
+  }
+
   private removeUserInfoCache(uid: string): void {
     this.dataSource.queryResultCache.remove([
       CacheIdUtils.getUserInfoEntityCacheId(uid),
