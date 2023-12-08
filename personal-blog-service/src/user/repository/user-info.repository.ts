@@ -31,12 +31,25 @@ export class UserInfoRepository {
         },
       })) ||
       (() => {
-        this.dataSource.queryResultCache.remove([
-          CacheIdUtils.getUserSessionEntityCacheId(uid),
-        ]);
+        this.removeUserInfoCache(uid);
 
         throw new NotFoundException(`User does not exist! - [${uid}]`);
       })()
     );
+  }
+
+  async updateUserInfoEntity(userInfoEntity: UserInfoEntity): Promise<void> {
+    this.removeUserInfoCache(userInfoEntity.uid);
+
+    await this.userInfoRepository.update(
+      { uid: userInfoEntity.uid },
+      userInfoEntity,
+    );
+  }
+
+  private removeUserInfoCache(uid: string): void {
+    this.dataSource.queryResultCache.remove([
+      CacheIdUtils.getUserInfoEntityCacheId(uid),
+    ]);
   }
 }
