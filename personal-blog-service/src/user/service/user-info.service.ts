@@ -33,4 +33,10 @@ export class UserInfoService {
       await this.userInfoRepository.findUserInfoEntity(uid),
     ).toUserInfoDto();
   }
+
+  async updateUserInfo(userInfoDto: UserInfoDto): Promise<void> {
+    await this.userInfoRepository.saveUserInfoEntity(
+      UserInfoDao.from({ ...userInfoDto }).toUserInfoEntity(),
+    );
+  }
 }
