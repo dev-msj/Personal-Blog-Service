@@ -26,6 +26,6 @@ export class UserInfoController {
   async getUserInfo(
     @AuthenticatedUserValidation() authUid: string,
   ): Promise<void> {
-    this.userInfoService.getUserInfoDto(authUid);
+    this.userInfoService.getUserInfoByUid(authUid);
   }
 }

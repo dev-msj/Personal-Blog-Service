@@ -28,7 +28,7 @@ describe('PostLikeService', () => {
         {
           provide: UserInfoService,
           useValue: {
-            getUserInfoDto: jest.fn(),
+            getUserInfoByUid: jest.fn(),
           },
         },
       ],
@@ -50,7 +50,7 @@ describe('PostLikeService', () => {
         .fn()
         .mockResolvedValue([PostLikeDao.from({ postId, uid })]);
 
-      userInfoService.getUserInfoDto = jest
+      userInfoService.getUserInfoByUid = jest
         .fn()
         .mockResolvedValue(new UserInfoDto(uid, expected, 'introduce'));
 

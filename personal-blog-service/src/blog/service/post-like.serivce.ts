@@ -44,7 +44,7 @@ export class PostLikeService {
     const nicknameList = [];
     for (const postLikeEntity of postLikeEntityList) {
       nicknameList.push(
-        (await this.userInfoService.getUserInfoDto(postLikeEntity.uid))
+        (await this.userInfoService.getUserInfoByUid(postLikeEntity.uid))
           .nickname,
       );
     }

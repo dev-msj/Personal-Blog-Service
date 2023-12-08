@@ -24,15 +24,15 @@ describe('UserInfoService', () => {
     userInfoRepository = module.get(UserInfoRepository);
   });
 
-  describe('getUserInfoDto', () => {
-    it('Test getUserInfoDto', async () => {
+  describe('getUserInfoByUid', () => {
+    it('Test getUserInfoByUid', async () => {
       const uid = 'uid';
 
       userInfoRepository.findUserInfoEntity = jest
         .fn()
         .mockResolvedValue(new UserInfoEntity(uid, 'nickname', 'introduce'));
 
-      const userInfoDto = await userInfoService.getUserInfoDto(uid);
+      const userInfoDto = await userInfoService.getUserInfoByUid(uid);
 
       expect(userInfoDto.uid).toEqual(uid);
     });

@@ -28,7 +28,7 @@ export class UserInfoService {
     this.logger.info(`UserInfo has been created. - [${userInfoDto.uid}]`);
   }
 
-  async getUserInfoDto(uid: string): Promise<UserInfoDto> {
+  async getUserInfoByUid(uid: string): Promise<UserInfoDto> {
     return UserInfoDao.from(
       await this.userInfoRepository.findUserInfoEntity(uid),
     ).toUserInfoDto();
