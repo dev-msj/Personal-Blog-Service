@@ -38,5 +38,13 @@ export class UserInfoService {
     await this.userInfoRepository.saveUserInfoEntity(
       UserInfoDao.from({ ...userInfoDto }).toUserInfoEntity(),
     );
+
+    this.logger.info(`UserInfo has been updated. - [${userInfoDto.uid}]`);
+  }
+
+  async deleteUserInfoByUid(uid: string): Promise<void> {
+    await this.userInfoRepository.deleteUserInfoByUid(uid);
+
+    this.logger.info(`UserInfo has been deleted. - [${uid}]`);
   }
 }
