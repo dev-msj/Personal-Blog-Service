@@ -1,4 +1,4 @@
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, ValidationPipe } from '@nestjs/common';
 import { UserInfoService } from '../service/user-info.service';
 import { UserInfoRequestDto } from '../dto/user-info-request.dto';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
@@ -20,5 +20,12 @@ export class UserInfoController {
         userInfoRequestDto.introduce,
       ),
     );
+  }
+
+  @Get()
+  async getUserInfo(
+    @AuthenticatedUserValidation() authUid: string,
+  ): Promise<void> {
+    this.userInfoService.getUserInfoDto(authUid);
   }
 }
