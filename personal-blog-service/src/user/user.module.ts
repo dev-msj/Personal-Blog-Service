@@ -8,10 +8,11 @@ import { UserAuthRepository } from './repository/user-auth.repository';
 import { UserAuthController } from './controller/user-auth.controller';
 import { UserAuthService } from './service/user-auth.service';
 import { JwtService } from './service/jwt.service';
+import { UserInfoController } from './controller/user-info.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserInfoEntity, UserAuthEntity])],
-  controllers: [UserAuthController],
+  controllers: [UserAuthController, UserInfoController],
   providers: [
     UserInfoService,
     UserInfoRepository,
