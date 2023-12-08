@@ -13,6 +13,10 @@ export class UserInfoRepository {
     private readonly dataSource: DataSource,
   ) {}
 
+  async isExist(uid: string): Promise<boolean> {
+    return await this.userInfoRepository.exist({ where: { uid: uid } });
+  }
+
   async findUserInfoEntity(uid: string): Promise<UserInfoEntity> {
     return (
       (await this.userInfoRepository.findOne({
