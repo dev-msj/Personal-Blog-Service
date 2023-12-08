@@ -17,6 +17,7 @@ import * as CryptoJS from 'crypto-js';
 import authConfig from '../../config/authConfig';
 import { ConfigType } from '@nestjs/config';
 import { LoginTicket, OAuth2Client } from 'google-auth-library';
+import { OauthRequestDto } from '../dto/oauth-request.dto';
 
 @Injectable()
 export class UserAuthService {
@@ -82,8 +83,10 @@ export class UserAuthService {
     return this.jwtService.create(userAuthEntity.uid, userAuthEntity.userRole);
   }
 
-  async googleOauthLogin(credentialToken: string): Promise<JwtDto> {
-    const ticket = await this.decodeCredentialToken(credentialToken);
+  async googleOauthLogin(oauthRequestDto: OauthRequestDto): Promise<JwtDto> {
+    const ticket = await this.decodeCredentialToken(
+      oauthRequestDto.credentialToken,
+    );
     const uid = ticket.getPayload().email;
     const isExist = await this.userAuthRepository.isExist(uid);
 

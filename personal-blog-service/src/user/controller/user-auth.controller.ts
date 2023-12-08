@@ -6,12 +6,12 @@ import { Public } from '../../decorator/public.decorator';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
-  ApiNotAcceptableResponse,
   ApiNotFoundResponse,
   ApiResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { OauthRequestDto } from '../dto/oauth-request.dto';
 
 @Public()
 @Controller('users/auth')
@@ -56,8 +56,8 @@ export class UserAuthController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async googleOauthLogin(
-    @Body('credentialToken') credentialToken: string,
+    @Body(ValidationPipe) oauthRequestDto: OauthRequestDto,
   ): Promise<JwtDto> {
-    return await this.userAuthService.googleOauthLogin(credentialToken);
+    return await this.userAuthService.googleOauthLogin(oauthRequestDto);
   }
 }
