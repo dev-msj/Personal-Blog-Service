@@ -1,15 +1,50 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotAcceptableException } from '@nestjs/common';
 import { UserInfoDto } from '../dto/user-info.dto';
 import { UserInfoRepository } from '../repository/user-info.repository';
 import { UserInfoDao } from '../dao/user-info.dao';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 @Injectable()
 export class UserInfoService {
-  constructor(private readonly userInfoRepository: UserInfoRepository) {}
+  constructor(
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
+    private readonly userInfoRepository: UserInfoRepository,
+  ) {}
 
-  async getUserInfoDto(uid: string): Promise<UserInfoDto> {
+  async createUserInfo(userInfoDto: UserInfoDto): Promise<void> {
+    const isExist = await this.userInfoRepository.isExist(userInfoDto.uid);
+    if (isExist) {
+      throw new NotAcceptableException(
+        `UserInfo already exist. - [${userInfoDto.uid}]`,
+      );
+    }
+
+    await this.userInfoRepository.saveUserInfoEntity(
+      UserInfoDao.from({ ...userInfoDto }).toUserInfoEntity(),
+    );
+
+    this.logger.info(`UserInfo has been created. - [${userInfoDto.uid}]`);
+  }
+
+  async getUserInfoByUid(uid: string): Promise<UserInfoDto> {
     return UserInfoDao.from(
       await this.userInfoRepository.findUserInfoEntity(uid),
     ).toUserInfoDto();
+  }
+
+  async updateUserInfo(userInfoDto: UserInfoDto): Promise<void> {
+    await this.userInfoRepository.saveUserInfoEntity(
+      UserInfoDao.from({ ...userInfoDto }).toUserInfoEntity(),
+    );
+
+    this.logger.info(`UserInfo has been updated. - [${userInfoDto.uid}]`);
+  }
+
+  async deleteUserInfoByUid(uid: string): Promise<void> {
+    await this.userInfoRepository.deleteUserInfoByUid(uid);
+
+    this.logger.info(`UserInfo has been deleted. - [${uid}]`);
   }
 }

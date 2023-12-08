@@ -1,10 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class UserInfoDto {
-  @IsString()
-  @IsNotEmpty()
-  readonly uid: string;
-
+export class UserInfoRequestDto {
   @IsString()
   @IsNotEmpty()
   readonly nickname: string;
@@ -13,8 +9,7 @@ export class UserInfoDto {
   @IsNotEmpty()
   readonly introduce: string;
 
-  constructor(uid: string, nickname: string, introduce: string) {
-    this.uid = uid;
+  constructor(nickname: string, introduce: string) {
     this.nickname = nickname;
     this.introduce = introduce;
   }
