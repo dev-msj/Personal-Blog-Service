@@ -17,7 +17,7 @@ export class UserInfoRepository {
     return await this.userInfoRepository.exist({ where: { uid: uid } });
   }
 
-  async saveUserInfoEntity(userInfoEntity: UserInfoEntity) {
+  async saveUserInfoEntity(userInfoEntity: UserInfoEntity): Promise<void> {
     await this.userInfoRepository.save(userInfoEntity);
   }
 

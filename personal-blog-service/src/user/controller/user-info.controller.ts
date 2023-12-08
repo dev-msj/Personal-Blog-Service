@@ -12,7 +12,7 @@ export class UserInfoController {
   async createUserInfo(
     @AuthenticatedUserValidation() authUid: string,
     @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
-  ) {
+  ): Promise<void> {
     this.userInfoService.createUserInfo(
       new UserInfoDto(
         authUid,

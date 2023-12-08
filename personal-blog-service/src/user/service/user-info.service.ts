@@ -13,7 +13,7 @@ export class UserInfoService {
     private readonly userInfoRepository: UserInfoRepository,
   ) {}
 
-  async createUserInfo(userInfoDto: UserInfoDto) {
+  async createUserInfo(userInfoDto: UserInfoDto): Promise<void> {
     const isExist = await this.userInfoRepository.isExist(userInfoDto.uid);
     if (isExist) {
       throw new NotAcceptableException(
