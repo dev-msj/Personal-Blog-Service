@@ -1,5 +1,6 @@
 import { UserInfoInterface } from '../dto/interface/user-info.interface';
 import { UserInfoDto } from '../dto/user-info.dto';
+import { UserInfoEntity } from '../entities/user-info.entity';
 
 export class UserInfoDao {
   private uid: string;
@@ -17,5 +18,9 @@ export class UserInfoDao {
 
   toUserInfoDto(): UserInfoDto {
     return new UserInfoDto(this.uid, this.nickname, this.introduce);
+  }
+
+  toUserInfoEntity(): UserInfoEntity {
+    return new UserInfoEntity(this.uid, this.nickname, this.introduce);
   }
 }
