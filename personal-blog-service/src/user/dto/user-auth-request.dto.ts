@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class UserAuthRequestDto {
   @ApiProperty({
@@ -7,12 +7,14 @@ export class UserAuthRequestDto {
     example: 'example@email.com',
   })
   @IsEmail()
+  @IsNotEmpty()
   readonly uid: string;
 
   @ApiProperty({
     example: 'example password',
   })
   @IsString()
+  @IsNotEmpty()
   readonly password: string;
 
   constructor(uid: string, password: string) {
