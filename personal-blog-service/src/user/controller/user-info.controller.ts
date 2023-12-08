@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Post, ValidationPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  ValidationPipe,
+} from '@nestjs/common';
 import { UserInfoService } from '../service/user-info.service';
 import { UserInfoRequestDto } from '../dto/user-info-request.dto';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
@@ -27,5 +34,19 @@ export class UserInfoController {
     @AuthenticatedUserValidation() authUid: string,
   ): Promise<void> {
     this.userInfoService.getUserInfoByUid(authUid);
+  }
+
+  @Patch()
+  async updateUserInfo(
+    @AuthenticatedUserValidation() authUid: string,
+    @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
+  ): Promise<void> {
+    this.userInfoService.createUserInfo(
+      new UserInfoDto(
+        authUid,
+        userInfoRequestDto.nickname,
+        userInfoRequestDto.introduce,
+      ),
+    );
   }
 }
