@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Patch,
   Post,
@@ -48,5 +49,12 @@ export class UserInfoController {
         userInfoRequestDto.introduce,
       ),
     );
+  }
+
+  @Delete()
+  async deleteUserInfo(
+    @AuthenticatedUserValidation() authUid: string,
+  ): Promise<void> {
+    this.userInfoService.deleteUserInfoByUid(authUid);
   }
 }
