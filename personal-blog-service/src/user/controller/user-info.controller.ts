@@ -64,6 +64,9 @@ export class UserInfoController {
     description: 'success',
     type: SuccessResponse,
   })
+  @ApiNotFoundResponse({
+    description: 'UserInfo does not exist. - [uid]',
+  })
   async updateUserInfo(
     @AuthenticatedUserValidation() authUid: string,
     @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
@@ -84,6 +87,9 @@ export class UserInfoController {
   @ApiResponse({
     description: 'success',
     type: SuccessResponse,
+  })
+  @ApiNotFoundResponse({
+    description: 'UserInfo does not exist. - [uid]',
   })
   async deleteUserInfo(
     @AuthenticatedUserValidation() authUid: string,
