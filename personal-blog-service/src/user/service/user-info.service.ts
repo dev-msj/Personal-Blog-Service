@@ -55,6 +55,11 @@ export class UserInfoService {
   }
 
   async deleteUserInfoByUid(uid: string): Promise<void> {
+    const isExist = await this.userInfoRepository.isExist(uid);
+    if (!isExist) {
+      throw new NotFoundException(`UserInfo does not exist. - [${uid}]`);
+    }
+
     await this.userInfoRepository.deleteUserInfoByUid(uid);
 
     this.logger.info(`UserInfo has been deleted. - [${uid}]`);
