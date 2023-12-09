@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotAcceptableException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotAcceptableException,
+  NotFoundException,
+} from '@nestjs/common';
 import { UserInfoDto } from '../dto/user-info.dto';
 import { UserInfoRepository } from '../repository/user-info.repository';
 import { UserInfoDao } from '../dao/user-info.dao';
@@ -35,7 +40,14 @@ export class UserInfoService {
   }
 
   async updateUserInfo(userInfoDto: UserInfoDto): Promise<void> {
-    await this.userInfoRepository.saveUserInfoEntity(
+    const isExist = await this.userInfoRepository.isExist(userInfoDto.uid);
+    if (!isExist) {
+      throw new NotFoundException(
+        `UserInfo does not exist. - [${userInfoDto.uid}]`,
+      );
+    }
+
+    await this.userInfoRepository.updateUserInfoEntity(
       UserInfoDao.from({ ...userInfoDto }).toUserInfoEntity(),
     );
 
@@ -43,6 +55,11 @@ export class UserInfoService {
   }
 
   async deleteUserInfoByUid(uid: string): Promise<void> {
+    const isExist = await this.userInfoRepository.isExist(uid);
+    if (!isExist) {
+      throw new NotFoundException(`UserInfo does not exist. - [${uid}]`);
+    }
+
     await this.userInfoRepository.deleteUserInfoByUid(uid);
 
     this.logger.info(`UserInfo has been deleted. - [${uid}]`);
