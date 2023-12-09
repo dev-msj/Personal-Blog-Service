@@ -47,7 +47,7 @@ export class UserInfoService {
       );
     }
 
-    await this.userInfoRepository.saveUserInfoEntity(
+    await this.userInfoRepository.updateUserInfoEntity(
       UserInfoDao.from({ ...userInfoDto }).toUserInfoEntity(),
     );
 
