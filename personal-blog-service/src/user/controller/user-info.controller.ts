@@ -7,19 +7,20 @@ import {
   Post,
   ValidationPipe,
 } from '@nestjs/common';
+import {
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiNotAcceptableResponse,
+  ApiNotFoundResponse,
+  ApiTags,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { UserInfoService } from '../service/user-info.service';
 import { UserInfoRequestDto } from '../dto/user-info-request.dto';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 import { UserInfoDto } from '../dto/user-info.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
-import {
-  ApiOperation,
-  ApiCreatedResponse,
-  ApiNotAcceptableResponse,
-  ApiResponse,
-  ApiNotFoundResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { successResponseOpions } from '../../response/swagger/success-response-options';
 
 @Controller('users/info')
 @ApiTags('users/info')
@@ -47,7 +48,7 @@ export class UserInfoController {
 
   @Get()
   @ApiOperation({ description: '유저 정보 요청 API' })
-  @ApiResponse({
+  @ApiOkResponse({
     description: 'Response UserInfoDto',
     type: UserInfoDto,
   })
@@ -60,10 +61,7 @@ export class UserInfoController {
 
   @Patch()
   @ApiOperation({ description: '유저 정보 수정 API' })
-  @ApiResponse({
-    description: 'success',
-    type: SuccessResponse,
-  })
+  @ApiOkResponse(successResponseOpions)
   @ApiNotFoundResponse({
     description: 'UserInfo does not exist. - [uid]',
   })
@@ -84,10 +82,7 @@ export class UserInfoController {
 
   @Delete()
   @ApiOperation({ description: '유저 정보 삭제 API' })
-  @ApiResponse({
-    description: 'success',
-    type: SuccessResponse,
-  })
+  @ApiOkResponse(successResponseOpions)
   @ApiNotFoundResponse({
     description: 'UserInfo does not exist. - [uid]',
   })
