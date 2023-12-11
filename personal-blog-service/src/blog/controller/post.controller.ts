@@ -18,7 +18,6 @@ import { Roles } from '../../decorator/roles.decorator';
 import { UserRole } from '../../constant/user-role.enum';
 import { DecryptionPrimaryKeyPipe } from '../../pipe/decryption-primary-key.pipe';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
-import { FailureResponse } from '../../response/failure-response.dto';
 import { successResponseOpions } from '../../response/swagger/success-response-options';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
 
