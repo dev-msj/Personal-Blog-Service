@@ -1,8 +1,4 @@
 import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
-import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
-import { UserAuthService } from './../service/user-auth.service';
-import { JwtDto } from '../dto/jwt.dto';
-import { Public } from '../../decorator/public.decorator';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -13,6 +9,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
+import { UserAuthService } from './../service/user-auth.service';
+import { JwtDto } from '../dto/jwt.dto';
+import { Public } from '../../decorator/public.decorator';
 import { OauthRequestDto } from '../dto/oauth-request.dto';
 
 @Public()
