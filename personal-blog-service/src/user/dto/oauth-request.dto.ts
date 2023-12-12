@@ -8,4 +8,8 @@ export class OauthRequestDto {
   @IsString()
   @IsNotEmpty()
   readonly credentialToken: string;
+
+  constructor(credentialToken: string) {
+    this.credentialToken = credentialToken;
+  }
 }
