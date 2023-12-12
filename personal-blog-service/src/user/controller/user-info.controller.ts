@@ -16,6 +16,7 @@ import {
   ApiConflictResponse,
   ApiCookieAuth,
   ApiBearerAuth,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { UserInfoService } from '../service/user-info.service';
 import { UserInfoRequestDto } from '../dto/user-info-request.dto';
@@ -35,6 +36,7 @@ export class UserInfoController {
   @ApiOperation({ description: '유저 정보 생성 API' })
   @ApiCreatedResponse({ description: 'success', type: SuccessResponse })
   @ApiConflictResponse({ description: 'UserInfo already exist. - [uid]' })
+  @ApiBadRequestResponse({ description: 'Request body error' })
   async createUserInfo(
     @AuthenticatedUserValidation() authUid: string,
     @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
@@ -69,6 +71,7 @@ export class UserInfoController {
   @ApiConflictResponse({
     description: 'UserInfo does not exist. - [uid]',
   })
+  @ApiBadRequestResponse({ description: 'Request body error' })
   async updateUserInfo(
     @AuthenticatedUserValidation() authUid: string,
     @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
