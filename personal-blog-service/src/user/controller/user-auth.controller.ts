@@ -1,8 +1,8 @@
 import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiCreatedResponse,
-  ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
@@ -28,7 +28,7 @@ export class UserAuthController {
     description: 'Response JWT(Access Token & Refresh Token)',
     type: JwtDto,
   })
-  @ApiInternalServerErrorResponse({
+  @ApiConflictResponse({
     description: 'User already exists. - [uid]',
   })
   @ApiBadRequestResponse({ description: 'Request body error' })
@@ -63,7 +63,7 @@ export class UserAuthController {
     description: 'Response JWT(Access Token & Refresh Token)',
     type: JwtDto,
   })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiUnauthorizedResponse({ description: 'This token is not allowed.' })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async googleOauthLogin(
     @Body(ValidationPipe) oauthRequestDto: OauthRequestDto,
