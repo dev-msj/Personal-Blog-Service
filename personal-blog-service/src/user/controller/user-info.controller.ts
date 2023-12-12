@@ -10,10 +10,10 @@ import {
 import {
   ApiOperation,
   ApiCreatedResponse,
-  ApiNotAcceptableResponse,
   ApiNotFoundResponse,
   ApiTags,
   ApiOkResponse,
+  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { UserInfoService } from '../service/user-info.service';
 import { UserInfoRequestDto } from '../dto/user-info-request.dto';
@@ -30,7 +30,7 @@ export class UserInfoController {
   @Post()
   @ApiOperation({ description: '유저 정보 생성 API' })
   @ApiCreatedResponse({ description: 'success', type: SuccessResponse })
-  @ApiNotAcceptableResponse({ description: 'UserInfo already exist. - [uid]' })
+  @ApiConflictResponse({ description: 'UserInfo already exist. - [uid]' })
   async createUserInfo(
     @AuthenticatedUserValidation() authUid: string,
     @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
@@ -62,7 +62,7 @@ export class UserInfoController {
   @Patch()
   @ApiOperation({ description: '유저 정보 수정 API' })
   @ApiOkResponse(successResponseOpions)
-  @ApiNotFoundResponse({
+  @ApiConflictResponse({
     description: 'UserInfo does not exist. - [uid]',
   })
   async updateUserInfo(
@@ -83,7 +83,7 @@ export class UserInfoController {
   @Delete()
   @ApiOperation({ description: '유저 정보 삭제 API' })
   @ApiOkResponse(successResponseOpions)
-  @ApiNotFoundResponse({
+  @ApiConflictResponse({
     description: 'UserInfo does not exist. - [uid]',
   })
   async deleteUserInfo(
