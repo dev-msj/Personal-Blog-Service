@@ -1,5 +1,4 @@
 import { PostLikeInteface } from '../dto/interface/post-like.interface';
-import { PostLikeDto } from '../dto/post-like.dto';
 import { PostLikeEntity } from '../entities/post-like.entity';
 
 export class PostLikeDao {
@@ -16,10 +15,6 @@ export class PostLikeDao {
 
   get getUid() {
     return this.uid;
-  }
-
-  toPostLikeDto(): PostLikeDto {
-    return new PostLikeDto(this.postId, this.uid);
   }
 
   toPostLikeEntity(): PostLikeEntity {

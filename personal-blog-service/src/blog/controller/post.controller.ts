@@ -1,6 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  ValidationPipe,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -20,6 +29,7 @@ import { DecryptionPrimaryKeyPipe } from '../../pipe/decryption-primary-key.pipe
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 import { successResponseOpions } from '../../response/swagger/success-response-options';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
+import { PostLikeRequestDto } from '../dto/post-like-request.dto';
 
 @Roles(UserRole.USER)
 @Controller('posts')
@@ -97,12 +107,15 @@ export class PostController {
     description: '특정 유저의 블로그에 좋아요를 누른 유저를 추가한다.',
   })
   @ApiOkResponse(successResponseOpions)
+  @ApiConflictResponse({
+    description: 'PostId is already exist!',
+  })
   async addPostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
-    @Body('postId') postId: number,
+    @Body(ValidationPipe) postLikeRequestDto: PostLikeRequestDto,
   ): Promise<SuccessResponse> {
     await this.postLikeService.addPostLikeUser(
-      new PostLikeDto(postId, authUid),
+      new PostLikeDto(postLikeRequestDto.encryptedPostId, authUid),
     );
 
     return new SuccessResponse();
@@ -113,12 +126,15 @@ export class PostController {
     description: '특정 유저의 블로그에 좋아요를 누른 유저를 삭제한다.',
   })
   @ApiOkResponse(successResponseOpions)
+  @ApiConflictResponse({
+    description: 'PostId is does not exist!',
+  })
   async deletePostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
-    @Body('postId') postId: number,
+    @Body(ValidationPipe) postLikeRequestDto: PostLikeRequestDto,
   ): Promise<SuccessResponse> {
     await this.postLikeService.removePostLikeUser(
-      new PostLikeDto(postId, authUid),
+      new PostLikeDto(postLikeRequestDto.encryptedPostId, authUid),
     );
 
     return new SuccessResponse();
