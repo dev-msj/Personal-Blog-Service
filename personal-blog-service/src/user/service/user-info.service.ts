@@ -1,9 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  NotAcceptableException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { UserInfoDto } from '../dto/user-info.dto';
 import { UserInfoRepository } from '../repository/user-info.repository';
 import { UserInfoDao } from '../dao/user-info.dao';
@@ -21,7 +16,7 @@ export class UserInfoService {
   async createUserInfo(userInfoDto: UserInfoDto): Promise<void> {
     const isExist = await this.userInfoRepository.isExist(userInfoDto.uid);
     if (isExist) {
-      throw new NotAcceptableException(
+      throw new ConflictException(
         `UserInfo already exist. - [${userInfoDto.uid}]`,
       );
     }
@@ -42,7 +37,7 @@ export class UserInfoService {
   async updateUserInfo(userInfoDto: UserInfoDto): Promise<void> {
     const isExist = await this.userInfoRepository.isExist(userInfoDto.uid);
     if (!isExist) {
-      throw new NotFoundException(
+      throw new ConflictException(
         `UserInfo does not exist. - [${userInfoDto.uid}]`,
       );
     }
@@ -57,7 +52,7 @@ export class UserInfoService {
   async deleteUserInfoByUid(uid: string): Promise<void> {
     const isExist = await this.userInfoRepository.isExist(uid);
     if (!isExist) {
-      throw new NotFoundException(`UserInfo does not exist. - [${uid}]`);
+      throw new ConflictException(`UserInfo does not exist. - [${uid}]`);
     }
 
     await this.userInfoRepository.deleteUserInfoByUid(uid);

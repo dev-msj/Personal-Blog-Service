@@ -1,5 +1,6 @@
-import { UserInfoRepository } from '../repository/user-info.repository';
 import { Test } from '@nestjs/testing';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { UserInfoRepository } from '../repository/user-info.repository';
 import { UserInfoService } from './user-info.service';
 import { UserInfoEntity } from '../entities/user-info.entity';
 
@@ -11,6 +12,12 @@ describe('UserInfoService', () => {
     const module = await Test.createTestingModule({
       providers: [
         UserInfoService,
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: {
+            info: jest.fn(),
+          },
+        },
         {
           provide: UserInfoRepository,
           useValue: {
