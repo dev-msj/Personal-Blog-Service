@@ -1,22 +1,22 @@
 import {
+  ConflictException,
   Inject,
   Injectable,
-  NotAcceptableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import * as CryptoJS from 'crypto-js';
+import { SHA256 } from 'crypto-js';
+import { LoginTicket, OAuth2Client } from 'google-auth-library';
 import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
 import { UserAuthRepository } from '../repository/user-auth.repository';
 import { UserRole } from '../../constant/user-role.enum';
 import { JwtDto } from '../dto/jwt.dto';
-import { SHA256 } from 'crypto-js';
 import { UserAuthDao } from './../dao/user-auth.dao';
 import { JwtService } from './jwt.service';
-import * as CryptoJS from 'crypto-js';
 import authConfig from '../../config/authConfig';
-import { ConfigType } from '@nestjs/config';
-import { LoginTicket, OAuth2Client } from 'google-auth-library';
 import { OauthRequestDto } from '../dto/oauth-request.dto';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class UserAuthService {
       userAuthRequestDto.uid,
     );
     if (isExist) {
-      throw new NotAcceptableException(
+      throw new ConflictException(
         `User already exists. - [${userAuthRequestDto.uid}]`,
       );
     }
