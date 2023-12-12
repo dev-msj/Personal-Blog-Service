@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -97,6 +98,9 @@ export class PostController {
     description: '특정 유저의 블로그에 좋아요를 누른 유저를 추가한다.',
   })
   @ApiOkResponse(successResponseOpions)
+  @ApiConflictResponse({
+    description: 'PostId is already exist!',
+  })
   async addPostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
     @Body('postId') postId: number,
@@ -113,6 +117,9 @@ export class PostController {
     description: '특정 유저의 블로그에 좋아요를 누른 유저를 삭제한다.',
   })
   @ApiOkResponse(successResponseOpions)
+  @ApiConflictResponse({
+    description: 'PostId is does not exist!',
+  })
   async deletePostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
     @Body('postId') postId: number,
