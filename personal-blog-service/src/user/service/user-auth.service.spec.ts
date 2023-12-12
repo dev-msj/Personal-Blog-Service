@@ -1,14 +1,15 @@
+import { UnauthorizedException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import authConfig from '../../config/authConfig';
 import { JwtService } from './jwt.service';
-import { Test } from '@nestjs/testing';
 import { UserRole } from '../../constant/user-role.enum';
 import { UserAuthService } from './user-auth.service';
 import { UserAuthRepository } from './../repository/user-auth.repository';
 import { JwtDto } from '../dto/jwt.dto';
 import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { UnauthorizedException } from '@nestjs/common';
 import { UserAuthEntity } from '../entities/user-auth.entity';
+import { OauthRequestDto } from '../dto/oauth-request.dto';
 
 describe('UserAuthService', () => {
   let userAuthService: UserAuthService;
@@ -146,8 +147,9 @@ describe('UserAuthService', () => {
       jwtService.create = jest.fn().mockResolvedValue(expectJwtDto);
 
       // When
-      const actualJwtDto =
-        await userAuthService.googleOauthLogin('credentialToken');
+      const actualJwtDto = await userAuthService.googleOauthLogin(
+        new OauthRequestDto('credentialToken'),
+      );
 
       // Then
       expect(actualJwtDto.accessToken).toEqual(actualJwtDto.accessToken);
@@ -167,8 +169,9 @@ describe('UserAuthService', () => {
       jwtService.create = jest.fn().mockResolvedValue(expectJwtDto);
 
       // When
-      const actualJwtDto =
-        await userAuthService.googleOauthLogin('credentialToken');
+      const actualJwtDto = await userAuthService.googleOauthLogin(
+        new OauthRequestDto('credentialToken'),
+      );
 
       // Then
       expect(userAuthRepository.saveUserAuthEntity).toHaveBeenCalled();
