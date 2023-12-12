@@ -5,6 +5,7 @@ import { PostLikeDao } from '../dao/post-like.dao';
 import { UserInfoService } from '../../user/service/user-info.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UserInfoDto } from '../../user/dto/user-info.dto';
+import authConfig from '../../config/authConfig';
 
 describe('PostLikeService', () => {
   let postLikeService: PostLikeService;
@@ -17,6 +18,10 @@ describe('PostLikeService', () => {
         PostLikeService,
         {
           provide: WINSTON_MODULE_PROVIDER,
+          useValue: {},
+        },
+        {
+          provide: authConfig.KEY,
           useValue: {},
         },
         {
