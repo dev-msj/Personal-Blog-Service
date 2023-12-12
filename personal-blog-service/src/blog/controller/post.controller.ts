@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  ValidationPipe,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
@@ -21,6 +29,7 @@ import { DecryptionPrimaryKeyPipe } from '../../pipe/decryption-primary-key.pipe
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 import { successResponseOpions } from '../../response/swagger/success-response-options';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
+import { PostLikeRequestDto } from '../dto/post-like-request.dto';
 
 @Roles(UserRole.USER)
 @Controller('posts')
@@ -103,10 +112,10 @@ export class PostController {
   })
   async addPostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
-    @Body('postId') postId: number,
+    @Body(ValidationPipe) postLikeRequestDto: PostLikeRequestDto,
   ): Promise<SuccessResponse> {
     await this.postLikeService.addPostLikeUser(
-      new PostLikeDto(postId, authUid),
+      new PostLikeDto(postLikeRequestDto.encryptedPostId, authUid),
     );
 
     return new SuccessResponse();
@@ -122,10 +131,10 @@ export class PostController {
   })
   async deletePostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
-    @Body('postId') postId: number,
+    @Body(ValidationPipe) postLikeRequestDto: PostLikeRequestDto,
   ): Promise<SuccessResponse> {
     await this.postLikeService.removePostLikeUser(
-      new PostLikeDto(postId, authUid),
+      new PostLikeDto(postLikeRequestDto.encryptedPostId, authUid),
     );
 
     return new SuccessResponse();
