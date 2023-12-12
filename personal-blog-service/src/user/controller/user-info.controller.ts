@@ -69,7 +69,7 @@ export class UserInfoController {
     @AuthenticatedUserValidation() authUid: string,
     @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
   ): Promise<SuccessResponse> {
-    await this.userInfoService.createUserInfo(
+    await this.userInfoService.updateUserInfo(
       new UserInfoDto(
         authUid,
         userInfoRequestDto.nickname,
