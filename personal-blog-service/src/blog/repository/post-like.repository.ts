@@ -14,6 +14,12 @@ export class PostLikeRepository {
     private readonly dataSource: DataSource,
   ) {}
 
+  async isExist(postLikeEntity: PostLikeEntity): Promise<boolean> {
+    return await this.postLikeRepository.exist({
+      where: { postId: postLikeEntity.postId, uid: postLikeEntity.uid },
+    });
+  }
+
   async findPostLikeEntityList(postId: number): Promise<PostLikeEntity[]> {
     return await this.postLikeRepository.find({
       where: { postId: postId },
