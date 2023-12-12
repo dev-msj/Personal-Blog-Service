@@ -14,6 +14,8 @@ import {
   ApiTags,
   ApiOkResponse,
   ApiConflictResponse,
+  ApiCookieAuth,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { UserInfoService } from '../service/user-info.service';
 import { UserInfoRequestDto } from '../dto/user-info-request.dto';
@@ -24,6 +26,8 @@ import { successResponseOpions } from '../../response/swagger/success-response-o
 
 @Controller('users/info')
 @ApiTags('users/info')
+@ApiBearerAuth('accessToken')
+@ApiCookieAuth('refreshToken')
 export class UserInfoController {
   constructor(private readonly userInfoService: UserInfoService) {}
 
