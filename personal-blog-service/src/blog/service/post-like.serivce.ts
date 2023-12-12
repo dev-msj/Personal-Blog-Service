@@ -27,7 +27,7 @@ export class PostLikeService {
       PostLikeDao.from({ ...postLikeDto }).toPostLikeEntity(),
     );
     if (isExist) {
-      throw new ConflictException('PostId and uid is already exist!');
+      throw new ConflictException('PostId is already exist!');
     }
 
     await this.postLikeRepository.savePostLikeEntity(
@@ -42,7 +42,7 @@ export class PostLikeService {
       PostLikeDao.from({ ...postLikeDto }).toPostLikeEntity(),
     );
     if (!isExist) {
-      throw new ConflictException('PostId and uid does not exist!');
+      throw new ConflictException('PostId does not exist!');
     }
 
     await this.postLikeRepository.removePostLikeDto(
