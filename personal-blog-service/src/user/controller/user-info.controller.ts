@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Patch,
-  Post,
-  ValidationPipe,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post } from '@nestjs/common';
 import {
   ApiOperation,
   ApiCreatedResponse,
@@ -14,6 +6,9 @@ import {
   ApiTags,
   ApiOkResponse,
   ApiConflictResponse,
+  ApiCookieAuth,
+  ApiBearerAuth,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { UserInfoService } from '../service/user-info.service';
 import { UserInfoRequestDto } from '../dto/user-info-request.dto';
@@ -24,6 +19,8 @@ import { successResponseOpions } from '../../response/swagger/success-response-o
 
 @Controller('users/info')
 @ApiTags('users/info')
+@ApiBearerAuth('accessToken')
+@ApiCookieAuth('refreshToken')
 export class UserInfoController {
   constructor(private readonly userInfoService: UserInfoService) {}
 
@@ -31,9 +28,10 @@ export class UserInfoController {
   @ApiOperation({ description: '유저 정보 생성 API' })
   @ApiCreatedResponse({ description: 'success', type: SuccessResponse })
   @ApiConflictResponse({ description: 'UserInfo already exist. - [uid]' })
+  @ApiBadRequestResponse({ description: 'Request body error' })
   async createUserInfo(
     @AuthenticatedUserValidation() authUid: string,
-    @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
+    @Body() userInfoRequestDto: UserInfoRequestDto,
   ): Promise<SuccessResponse> {
     await this.userInfoService.createUserInfo(
       new UserInfoDto(
@@ -65,9 +63,10 @@ export class UserInfoController {
   @ApiConflictResponse({
     description: 'UserInfo does not exist. - [uid]',
   })
+  @ApiBadRequestResponse({ description: 'Request body error' })
   async updateUserInfo(
     @AuthenticatedUserValidation() authUid: string,
-    @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
+    @Body() userInfoRequestDto: UserInfoRequestDto,
   ): Promise<SuccessResponse> {
     await this.userInfoService.updateUserInfo(
       new UserInfoDto(

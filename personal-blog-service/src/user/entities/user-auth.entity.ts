@@ -29,7 +29,7 @@ export class UserAuthEntity {
   @Column({ name: 'REFRESH_TOKEN', length: 500 })
   readonly refreshToken: string;
 
-  @Column({ name: 'USER_ROLE', length: 50 })
+  @Column({ name: 'USER_ROLE', type: 'enum', enum: UserRole })
   readonly userRole: UserRole;
 
   @CreateDateColumn({

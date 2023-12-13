@@ -1,14 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { PostDto } from '../dto/post.dto';
-import { PostDao } from '../dao/post.dao';
-import { PostLikeService } from './post-like.serivce';
 import { ConfigType } from '@nestjs/config';
-import { PaginationDto } from '../dto/pagination.dto';
-import { PostRepository } from '../repository/post.repository';
 import authConfig from '../../config/authConfig';
-import { PaginationUtils } from '../../utils/pagination.utils';
+import { PostLikeService } from './post-like.serivce';
+import { PostRepository } from '../repository/post.repository';
+import { PostDto } from '../dto/post.dto';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';
+import { PostPageDto } from '../dto/post-page.dto';
+import { PaginationDto } from '../dto/pagination.dto';
+import { PostDao } from '../dao/post.dao';
 import { PostEntity } from '../entities/post.entity';
+import { PaginationUtils } from '../../utils/pagination.utils';
+import { CryptoUtils } from '../../utils/crypto.utils';
 
 @Injectable()
 export class PostService {
@@ -36,8 +38,14 @@ export class PostService {
     postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     const [postEntityList, total] =
-      await this.postRepository.findPostEntityListAndCountByPostPageRequestDto(
-        postPageRequestDto,
+      await this.postRepository.findPostEntityListAndCountByPostPageDto(
+        new PostPageDto(
+          CryptoUtils.decryptPrimaryKey(
+            postPageRequestDto.encryptedPostUid,
+            this.config.pkSecretKey,
+          ),
+          postPageRequestDto.page,
+        ),
       );
 
     const postDaoList = await this.toPostDaoList(postEntityList);

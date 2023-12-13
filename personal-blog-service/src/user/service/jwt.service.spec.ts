@@ -7,7 +7,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import authConfig from '../../config/authConfig';
 import { UserRole } from '../../constant/user-role.enum';
 import { CryptoUtils } from '../../utils/crypto.utils';
-import { UserSessionEntity } from '../entities/user-session.dto';
+import { UserSessionEntity } from '../entities/user-session.entity';
 import { UserAuthRepository } from '../repository/user-auth.repository';
 
 describe('JwtService', () => {

@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserAuthEntity } from '../entities/user-auth.entity';
 import { DataSource, Repository } from 'typeorm';
-import { UserSessionEntity } from '../entities/user-session.dto';
+import { UserSessionEntity } from '../entities/user-session.entity';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
