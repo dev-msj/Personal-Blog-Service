@@ -28,6 +28,7 @@ describe('PostService', () => {
           provide: PostRepository,
           useValue: {
             findPostEntityListAndCount: jest.fn(),
+            findPostEntityListAndCountByPostPageDto: jest.fn(),
           },
         },
         {
@@ -102,7 +103,7 @@ describe('PostService', () => {
       const expected = 1;
       const postUid = 'postUid';
 
-      postRepository.findPostEntityListAndCountByPostPageRequestDto = jest
+      postRepository.findPostEntityListAndCountByPostPageDto = jest
         .fn()
         .mockResolvedValue([
           [
@@ -138,13 +139,13 @@ describe('PostService', () => {
 
     it("Test when there is no postUid's post.", async () => {
       // Given
-      postRepository.findPostEntityListAndCountByPostPageRequestDto = jest
+      postRepository.findPostEntityListAndCountByPostPageDto = jest
         .fn()
         .mockResolvedValue([[], 0]);
 
       // When
       const actual = await postService.getPostPageListByPostPageRequestDto(
-        new PostPageRequestDto('postUid', 1),
+        new PostPageRequestDto('encryptedPostUid', 1),
       );
 
       // Then
