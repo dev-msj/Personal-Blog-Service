@@ -1,9 +1,7 @@
-import { IsArray } from 'class-validator';
 import { PaginationMetaDto } from './pagination-meta.dto';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class PaginationDto<T> {
-  @IsArray()
   readonly data: T[];
 
   @ApiProperty({
