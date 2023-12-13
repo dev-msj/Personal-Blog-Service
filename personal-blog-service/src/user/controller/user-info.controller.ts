@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Patch,
-  Post,
-  ValidationPipe,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post } from '@nestjs/common';
 import {
   ApiOperation,
   ApiCreatedResponse,
@@ -39,7 +31,7 @@ export class UserInfoController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async createUserInfo(
     @AuthenticatedUserValidation() authUid: string,
-    @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
+    @Body() userInfoRequestDto: UserInfoRequestDto,
   ): Promise<SuccessResponse> {
     await this.userInfoService.createUserInfo(
       new UserInfoDto(
@@ -74,7 +66,7 @@ export class UserInfoController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async updateUserInfo(
     @AuthenticatedUserValidation() authUid: string,
-    @Body(ValidationPipe) userInfoRequestDto: UserInfoRequestDto,
+    @Body() userInfoRequestDto: UserInfoRequestDto,
   ): Promise<SuccessResponse> {
     await this.userInfoService.updateUserInfo(
       new UserInfoDto(

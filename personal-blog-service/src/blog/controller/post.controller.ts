@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  ValidationPipe,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
@@ -75,7 +67,7 @@ export class PostController {
     description: 'User does not exist! - [uid]',
   })
   async getLatestPostPageListByPostPageRequestDto(
-    @Param(ValidationPipe)
+    @Param()
     postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
@@ -93,7 +85,7 @@ export class PostController {
     description: 'User does not exist! - [uid]',
   })
   async getPostPageListByPostPageRequestDto(
-    @Param(ValidationPipe)
+    @Param()
     postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
@@ -111,7 +103,7 @@ export class PostController {
   })
   async addPostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
-    @Body(ValidationPipe) postLikeRequestDto: PostLikeRequestDto,
+    @Body() postLikeRequestDto: PostLikeRequestDto,
   ): Promise<SuccessResponse> {
     await this.postLikeService.addPostLikeUser(
       new PostLikeDto(postLikeRequestDto.encryptedPostId, authUid),
@@ -130,7 +122,7 @@ export class PostController {
   })
   async deletePostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
-    @Body(ValidationPipe) postLikeRequestDto: PostLikeRequestDto,
+    @Body() postLikeRequestDto: PostLikeRequestDto,
   ): Promise<SuccessResponse> {
     await this.postLikeService.removePostLikeUser(
       new PostLikeDto(postLikeRequestDto.encryptedPostId, authUid),

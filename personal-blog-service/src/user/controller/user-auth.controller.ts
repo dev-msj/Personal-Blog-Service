@@ -1,4 +1,4 @@
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -32,9 +32,7 @@ export class UserAuthController {
     description: 'User already exists. - [uid]',
   })
   @ApiBadRequestResponse({ description: 'Request body error' })
-  async join(
-    @Body(ValidationPipe) userAuthRequestDto: UserAuthRequestDto,
-  ): Promise<JwtDto> {
+  async join(@Body() userAuthRequestDto: UserAuthRequestDto): Promise<JwtDto> {
     return await this.userAuthService.createNewUser(userAuthRequestDto);
   }
 
@@ -47,9 +45,7 @@ export class UserAuthController {
   @ApiNotFoundResponse({ description: 'User does not exist. - [uid]' })
   @ApiUnauthorizedResponse({ description: 'Password does not match.' })
   @ApiBadRequestResponse({ description: 'Request body error' })
-  async login(
-    @Body(ValidationPipe) userAuthRequestDto: UserAuthRequestDto,
-  ): Promise<JwtDto> {
+  async login(@Body() userAuthRequestDto: UserAuthRequestDto): Promise<JwtDto> {
     return await this.userAuthService.login(userAuthRequestDto);
   }
 
@@ -66,7 +62,7 @@ export class UserAuthController {
   @ApiUnauthorizedResponse({ description: 'This token is not allowed.' })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async googleOauthLogin(
-    @Body(ValidationPipe) oauthRequestDto: OauthRequestDto,
+    @Body() oauthRequestDto: OauthRequestDto,
   ): Promise<JwtDto> {
     return await this.userAuthService.googleOauthLogin(oauthRequestDto);
   }
