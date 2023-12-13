@@ -1,14 +1,12 @@
-import { PostPageRequestDto } from '../blog/dto/post-page-request.dto';
+import { PostPageDto } from '../blog/dto/post-page.dto';
 
 export class CacheIdUtils {
   static getPostEntityListByPageCacheId(page: number) {
     return `getPostEntityListByPage_${page}`;
   }
 
-  static getPostEntityListByPostPageRequestDtoCacheId(
-    PostPageRequestDto: PostPageRequestDto,
-  ) {
-    return `getPostEntityListByPostPageRequestDto_${PostPageRequestDto.postUid}_${PostPageRequestDto.page}`;
+  static getPostEntityListByPostPageDtoCacheId(postPageDto: PostPageDto) {
+    return `getPostEntityListByPostPageDto_${postPageDto.postUid}_${postPageDto.page}`;
   }
 
   static getPostLikeEntityListCacheId(postId: number) {
