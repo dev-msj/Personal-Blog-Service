@@ -25,7 +25,6 @@ import { SuccessResponse } from '../../response/success-response.dto';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';
 import { Roles } from '../../decorator/roles.decorator';
 import { UserRole } from '../../constant/user-role.enum';
-import { DecryptionPrimaryKeyPipe } from '../../pipe/decryption-primary-key.pipe';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 import { successResponseOpions } from '../../response/swagger/success-response-options';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
@@ -76,7 +75,7 @@ export class PostController {
     description: 'User does not exist! - [uid]',
   })
   async getLatestPostPageListByPostPageRequestDto(
-    @Param(DecryptionPrimaryKeyPipe)
+    @Param(ValidationPipe)
     postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
@@ -94,7 +93,7 @@ export class PostController {
     description: 'User does not exist! - [uid]',
   })
   async getPostPageListByPostPageRequestDto(
-    @Param(DecryptionPrimaryKeyPipe)
+    @Param(ValidationPipe)
     postPageRequestDto: PostPageRequestDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
