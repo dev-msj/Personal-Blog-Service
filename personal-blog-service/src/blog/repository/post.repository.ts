@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { PaginationUtils } from '../../utils/pagination.utils';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utills';
-import { PostPageRequestDto } from '../dto/post-page-request.dto';
+import { PostPageDto } from '../dto/post-page.dto';
 
 @Injectable()
 export class PostRepository {
@@ -30,18 +30,16 @@ export class PostRepository {
     return [postEntityList, count];
   }
 
-  async findPostEntityListAndCountByPostPageRequestDto(
-    postPageRequestDto: PostPageRequestDto,
+  async findPostEntityListAndCountByPostPageDto(
+    postPageDto: PostPageDto,
   ): Promise<[PostEntity[], number]> {
     const [postEntityList, count] = await this.postRepository.findAndCount({
-      where: { postUid: postPageRequestDto.postUid },
+      where: { postUid: postPageDto.postUid },
       take: PaginationUtils.TAKE,
-      skip: (postPageRequestDto.page - 1) * PaginationUtils.TAKE,
+      skip: (postPageDto.page - 1) * PaginationUtils.TAKE,
       order: { postId: 'DESC' },
       cache: {
-        id: CacheIdUtils.getPostEntityListByPostPageRequestDtoCacheId(
-          postPageRequestDto,
-        ),
+        id: CacheIdUtils.getPostEntityListByPostPageDtoCacheId(postPageDto),
         milliseconds: TimeUtils.getTicTimeHMS(24),
       },
     });
