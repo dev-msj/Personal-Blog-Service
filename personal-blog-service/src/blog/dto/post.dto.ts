@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CryptoUtils } from '../../utils/crypto.utils';
 
 export class PostDto {
-  @ApiProperty({ example: CryptoUtils.encryptPrimaryKey('1', 'example') })
+  @ApiProperty({
+    example: 'U2FsdGVkX1%2BZUpmujgDXgSs%2BPqpQUdWxjlgu%2FESLUlQ%3D',
+  })
   readonly postId: string;
 
   @ApiProperty({
