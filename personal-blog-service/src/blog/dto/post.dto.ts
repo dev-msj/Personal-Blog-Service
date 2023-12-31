@@ -5,7 +5,9 @@ export class PostDto {
   @ApiProperty({ example: CryptoUtils.encryptPrimaryKey('1', 'example') })
   readonly postId: string;
 
-  @ApiProperty({ example: 'example1@email.com' })
+  @ApiProperty({
+    example: 'U2FsdGVkX18LAR9DqL2ix0kCNjn9zvceXoSyrKHkl4QRf8hgyRIWObotjECRakTV',
+  })
   readonly postUid: string;
 
   @ApiProperty({ example: 'Hello World!' })
