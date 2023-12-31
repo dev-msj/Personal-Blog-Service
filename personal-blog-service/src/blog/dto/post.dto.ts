@@ -1,27 +1,47 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CryptoUtils } from '../../utils/crypto.utils';
 
 export class PostDto {
-  @ApiProperty({ example: CryptoUtils.encryptPrimaryKey('1', 'example') })
+  @ApiProperty({
+    description: 'Server에서 암호화하여 보내준 postId 값',
+    example: 'U2FsdGVkX1%2BZUpmujgDXgSs%2BPqpQUdWxjlgu%2FESLUlQ%3D',
+  })
   readonly postId: string;
 
-  @ApiProperty({ example: 'example1@email.com' })
+  @ApiProperty({
+    description: 'Server에서 암호화하여 보내준 postUid 값',
+    example: 'U2FsdGVkX18LAR9DqL2ix0kCNjn9zvceXoSyrKHkl4QRf8hgyRIWObotjECRakTV',
+  })
   readonly postUid: string;
 
-  @ApiProperty({ example: 'Hello World!' })
+  @ApiProperty({
+    description: '글 제목',
+    example: 'Hello World!',
+  })
   readonly title: string;
 
-  @ApiProperty({ example: new Date() })
+  @ApiProperty({
+    description: '글을 작성한 날짜와 시각',
+    example: '2023-12-31T12:26:57.991Z',
+  })
   readonly writeDatetime: Date;
 
-  @ApiProperty({ example: 'Example Contents.' })
+  @ApiProperty({
+    description: '작성한 글',
+    example: 'Example Contents.',
+  })
   readonly contents: string;
 
-  @ApiProperty({ example: 11 })
+  @ApiProperty({
+    description: '글 조회수',
+    example: 11,
+  })
   readonly hits: number;
 
-  @ApiProperty({ examples: ['nickname1', 'nickname2', 'nickname3'] })
-  readonly postLikeUidList: string[];
+  @ApiProperty({
+    description: '글에 좋아요를 누른 유저들의 닉네임 목록',
+    examples: ['nickname1', 'nickname2', 'nickname3'],
+  })
+  readonly postLikeNicknameList: string[];
 
   constructor(
     postId: string,
@@ -30,7 +50,7 @@ export class PostDto {
     writeDateTime: Date,
     contents: string,
     hits: number,
-    postLikeUidList: string[],
+    postLikeNicknameList: string[],
   ) {
     this.postId = postId;
     this.postUid = postUid;
@@ -38,6 +58,6 @@ export class PostDto {
     this.writeDatetime = writeDateTime;
     this.contents = contents;
     this.hits = hits;
-    this.postLikeUidList = postLikeUidList;
+    this.postLikeNicknameList = postLikeNicknameList;
   }
 }

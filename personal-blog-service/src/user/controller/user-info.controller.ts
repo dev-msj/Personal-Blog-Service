@@ -26,7 +26,7 @@ export class UserInfoController {
 
   @Post()
   @ApiOperation({ description: '유저 정보 생성 API' })
-  @ApiCreatedResponse({ description: 'success', type: SuccessResponse })
+  @ApiCreatedResponse(successResponseOpions)
   @ApiConflictResponse({ description: 'UserInfo already exist. - [uid]' })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async createUserInfo(

@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
@@ -66,6 +67,7 @@ export class PostController {
   @ApiNotFoundResponse({
     description: 'User does not exist! - [uid]',
   })
+  @ApiBadRequestResponse({ description: 'Request body error' })
   async getLatestPostPageListByPostPageRequestDto(
     @Param()
     postPageRequestDto: PostPageRequestDto,
@@ -84,6 +86,7 @@ export class PostController {
   @ApiNotFoundResponse({
     description: 'User does not exist! - [uid]',
   })
+  @ApiBadRequestResponse({ description: 'Request body error' })
   async getPostPageListByPostPageRequestDto(
     @Param()
     postPageRequestDto: PostPageRequestDto,
@@ -101,6 +104,7 @@ export class PostController {
   @ApiConflictResponse({
     description: 'PostId is already exist!',
   })
+  @ApiBadRequestResponse({ description: 'Request body error' })
   async addPostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
     @Body() postLikeRequestDto: PostLikeRequestDto,
@@ -120,6 +124,7 @@ export class PostController {
   @ApiConflictResponse({
     description: 'PostId is does not exist!',
   })
+  @ApiBadRequestResponse({ description: 'Request body error' })
   async deletePostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
     @Body() postLikeRequestDto: PostLikeRequestDto,
