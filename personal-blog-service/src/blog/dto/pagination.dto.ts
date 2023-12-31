@@ -4,9 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class PaginationDto<T> {
   readonly data: T[];
 
-  @ApiProperty({
-    description: '페이징 정보',
-  })
+  @ApiProperty({ description: '페이징 정보' })
   readonly paginationMeta: PaginationMetaDto;
 
   constructor(data: T[], paginationMetaDto: PaginationMetaDto) {
