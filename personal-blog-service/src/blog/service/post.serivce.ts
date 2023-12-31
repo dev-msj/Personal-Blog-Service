@@ -65,7 +65,7 @@ export class PostService {
     );
 
     for (const postDao of postDaoList) {
-      postDao.setPostLikeUidList =
+      postDao.setPostLikeNicknameList =
         await this.postLikeService.getPostLikeNicknameList(postDao.getPostId);
     }
 

@@ -41,7 +41,7 @@ export class PostDto {
     description: '글에 좋아요를 누른 유저들의 닉네임 목록',
     examples: ['nickname1', 'nickname2', 'nickname3'],
   })
-  readonly postLikeUidList: string[];
+  readonly postLikeNicknameList: string[];
 
   constructor(
     postId: string,
@@ -50,7 +50,7 @@ export class PostDto {
     writeDateTime: Date,
     contents: string,
     hits: number,
-    postLikeUidList: string[],
+    postLikeNicknameList: string[],
   ) {
     this.postId = postId;
     this.postUid = postUid;
@@ -58,6 +58,6 @@ export class PostDto {
     this.writeDatetime = writeDateTime;
     this.contents = contents;
     this.hits = hits;
-    this.postLikeUidList = postLikeUidList;
+    this.postLikeNicknameList = postLikeNicknameList;
   }
 }

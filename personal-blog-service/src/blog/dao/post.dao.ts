@@ -9,7 +9,7 @@ export class PostDao {
   private writeDatetime: Date;
   private contents: string;
   private hits: number;
-  private postLikeUidList: string[];
+  private postLikeNicknameList: string[];
 
   static from(postInterface: PostInterface): PostDao {
     const postDao = new PostDao();
@@ -31,8 +31,8 @@ export class PostDao {
     return this.postUid;
   }
 
-  set setPostLikeUidList(postLikeUidList: string[]) {
-    this.postLikeUidList = postLikeUidList;
+  set setPostLikeNicknameList(postLikeNicknameList: string[]) {
+    this.postLikeNicknameList = postLikeNicknameList;
   }
 
   toPostDto(pkSecretKey: string): PostDto {
@@ -43,7 +43,7 @@ export class PostDao {
       this.writeDatetime,
       this.contents,
       this.hits,
-      this.postLikeUidList,
+      this.postLikeNicknameList,
     );
   }
 }
