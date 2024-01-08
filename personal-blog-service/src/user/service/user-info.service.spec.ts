@@ -3,6 +3,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UserInfoRepository } from '../repository/user-info.repository';
 import { UserInfoService } from './user-info.service';
 import { UserInfoEntity } from '../entities/user-info.entity';
+import authConfig from '../../config/authConfig';
 
 describe('UserInfoService', () => {
   let userInfoService: UserInfoService;
@@ -16,6 +17,12 @@ describe('UserInfoService', () => {
           provide: WINSTON_MODULE_PROVIDER,
           useValue: {
             info: jest.fn(),
+          },
+        },
+        {
+          provide: authConfig.KEY,
+          useValue: {
+            pkSecretKey: 'pkSecretKey',
           },
         },
         {
@@ -33,11 +40,13 @@ describe('UserInfoService', () => {
 
   describe('getUserInfoByUid', () => {
     it('Test getUserInfoByUid', async () => {
-      const uid = 'uid';
+      const uid = 'encrypted uid';
 
       userInfoRepository.findUserInfoEntity = jest
         .fn()
-        .mockResolvedValue(new UserInfoEntity(uid, 'nickname', 'introduce'));
+        .mockResolvedValue(
+          new UserInfoEntity('decrypted uid', 'nickname', 'introduce'),
+        );
 
       const userInfoDto = await userInfoService.getUserInfoByUid(uid);
 
