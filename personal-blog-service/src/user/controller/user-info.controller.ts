@@ -16,6 +16,7 @@ import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-
 import { UserInfoDto } from '../dto/user-info.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { successResponseOpions } from '../../response/swagger/success-response-options';
+import { UserInfoGetRequestDto } from '../dto/user-info-get-request.dto';
 
 @Controller('users/info')
 @ApiTags('users/info')
@@ -52,9 +53,9 @@ export class UserInfoController {
   })
   @ApiNotFoundResponse({ description: 'User does not exist! - [uid]' })
   async getUserInfo(
-    @AuthenticatedUserValidation() authUid: string,
+    @Body() userInfoGetRequest: UserInfoGetRequestDto,
   ): Promise<UserInfoDto> {
-    return await this.userInfoService.getUserInfoByUid(authUid);
+    return await this.userInfoService.getUserInfoByUid(userInfoGetRequest.uid);
   }
 
   @Patch()
