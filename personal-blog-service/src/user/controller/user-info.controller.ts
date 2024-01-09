@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   ApiOperation,
   ApiCreatedResponse,
@@ -9,6 +17,7 @@ import {
   ApiCookieAuth,
   ApiBearerAuth,
   ApiBadRequestResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { UserInfoService } from '../service/user-info.service';
 import { UserInfoRequestDto } from '../dto/user-info-request.dto';
@@ -16,7 +25,6 @@ import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-
 import { UserInfoDto } from '../dto/user-info.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { successResponseOpions } from '../../response/swagger/success-response-options';
-import { UserInfoGetRequestDto } from '../dto/user-info-get-request.dto';
 
 @Controller('users/info')
 @ApiTags('users/info')
@@ -45,17 +53,20 @@ export class UserInfoController {
     return new SuccessResponse();
   }
 
-  @Get()
+  @Get(':uid')
+  @ApiParam({
+    name: 'uid',
+    description: 'Server에서 암호화하여 보내준 uid 값',
+    example: 'U2FsdGVkX18LAR9DqL2ix0kCNjn9zvceXoSyrKHkl4QRf8hgyRIWObotjECRakTV',
+  })
   @ApiOperation({ description: '유저 정보 요청 API' })
   @ApiOkResponse({
     description: 'Response UserInfoDto',
     type: UserInfoDto,
   })
   @ApiNotFoundResponse({ description: 'User does not exist! - [uid]' })
-  async getUserInfo(
-    @Body() userInfoGetRequest: UserInfoGetRequestDto,
-  ): Promise<UserInfoDto> {
-    return await this.userInfoService.getUserInfoByUid(userInfoGetRequest.uid);
+  async getUserInfo(@Param('uid') uid: string): Promise<UserInfoDto> {
+    return await this.userInfoService.getUserInfoByUid(uid);
   }
 
   @Patch()
