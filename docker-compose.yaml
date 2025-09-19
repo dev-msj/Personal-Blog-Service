@@ -2,25 +2,29 @@ version: '3.8'
 
 services:
   mysql:
-    image: mysql:8
+    image: mysql:8.0
     container_name: personal-blog-mysql
-    restart: unless-stopped
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: personal_blog
       MYSQL_USER: alex
       MYSQL_PASSWORD: password
+      TZ: Asia/Seoul
+      LANG: C.UTF-8
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --authentication_policy=mysql_native_password
+    
     ports:
       - "3306:3306"
     volumes:
       - ./data/mysql:/var/lib/mysql
-      - ./data/init:/docker-entrypoint-initdb.d
-    command: --default-authentication-plugin=mysql_native_password
 
   redis:
     image: redis:7-alpine
     container_name: personal-blog-redis
-    restart: unless-stopped
+    restart: always
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
