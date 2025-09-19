@@ -40,3 +40,5 @@ lerna-debug.log*
 # Docker data directories
 /data/mysql
 /data/redis
+env/
+.vscode/
