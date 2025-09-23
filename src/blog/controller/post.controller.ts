@@ -9,10 +9,10 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { PostService } from '../service/post.serivce';
+import { PostService } from '../service/post.service';
 import { PostDto } from '../dto/post.dto';
 import { PostLikeDto } from '../dto/post-like.dto';
-import { PostLikeService } from '../service/post-like.serivce';
+import { PostLikeService } from '../service/post-like.service';
 import { PaginationDto } from '../dto/pagination.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';

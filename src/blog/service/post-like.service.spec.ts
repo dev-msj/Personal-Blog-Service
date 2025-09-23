@@ -1,4 +1,4 @@
-import { PostLikeService } from './post-like.serivce';
+import { PostLikeService } from './post-like.service';
 import { Test } from '@nestjs/testing';
 import { PostLikeRepository } from '../repository/post-like.repository';
 import { PostLikeDao } from '../dao/post-like.dao';

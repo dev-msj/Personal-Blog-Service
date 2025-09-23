@@ -1,6 +1,6 @@
 import { PostRepository } from '../repository/post.repository';
-import { PostLikeService } from './post-like.serivce';
-import { PostService } from './post.serivce';
+import { PostLikeService } from './post-like.service';
+import { PostService } from './post.service';
 import authConfig from '../../config/authConfig';
 import { Test } from '@nestjs/testing';
 import { ConfigType } from '@nestjs/config';

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import authConfig from '../../config/authConfig';
-import { PostLikeService } from './post-like.serivce';
+import { PostLikeService } from './post-like.service';
 import { PostRepository } from '../repository/post.repository';
 import { PostDto } from '../dto/post.dto';
 import { PostPageRequestDto } from '../dto/post-page-request.dto';

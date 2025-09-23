@@ -4,7 +4,7 @@ import { PostEntity } from '../entities/post.entity';
 import { Repository } from 'typeorm';
 import { PaginationUtils } from '../../utils/pagination.utils';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
-import { TimeUtils } from '../../utils/time.utills';
+import { TimeUtils } from '../../utils/time.utils';
 import { PostPageDto } from '../dto/post-page.dto';
 
 @Injectable()

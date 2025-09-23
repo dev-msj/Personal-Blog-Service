@@ -6,7 +6,7 @@ import { UserSessionEntity } from '../entities/user-session.entity';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { TimeUtils } from '../../utils/time.utills';
+import { TimeUtils } from '../../utils/time.utils';
 
 @Injectable()
 export class UserAuthRepository {
