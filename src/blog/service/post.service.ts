@@ -11,6 +11,7 @@ import { PostDao } from '../dao/post.dao';
 import { PostEntity } from '../entities/post.entity';
 import { PaginationUtils } from '../../utils/pagination.utils';
 import { CryptoUtils } from '../../utils/crypto.utils';
+import { CreatePostDto } from '../dto/create-post.dto';
 
 @Injectable()
 export class PostService {
@@ -20,6 +21,13 @@ export class PostService {
     private readonly postRepository: PostRepository,
     private readonly postLikeService: PostLikeService,
   ) {}
+
+  async createPost(
+    authUid: string,
+    createPostDto: CreatePostDto,
+  ): Promise<void> {
+    await this.postRepository.createPost(authUid, createPostDto);
+  }
 
   async getPostPageListByPage(page: number = 1) {
     const [postEntityList, total] =
