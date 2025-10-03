@@ -6,6 +6,7 @@ import { PaginationUtils } from '../../utils/pagination.utils';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utils';
 import { PostPageDto } from '../dto/post-page.dto';
+import { CreatePostDto } from '../dto/create-post.dto';
 
 @Injectable()
 export class PostRepository {
@@ -13,6 +14,15 @@ export class PostRepository {
     @InjectRepository(PostEntity)
     private readonly postRepository: Repository<PostEntity>,
   ) {}
+
+  async createPost(authUid: string, createPostDto: CreatePostDto) {
+    await this.postRepository.insert(
+      this.postRepository.create({
+        postUid: authUid,
+        ...createPostDto,
+      }),
+    );
+  }
 
   async findPostEntityListAndCountByPage(
     page: number,
