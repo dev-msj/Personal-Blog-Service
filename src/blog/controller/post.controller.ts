@@ -22,6 +22,7 @@ import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-
 import { successResponseOpions } from '../../response/swagger/success-response-options';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
 import { PostLikeRequestDto } from '../dto/post-like-request.dto';
+import { CreatePostDto } from '../dto/create-post.dto';
 
 @Roles(UserRole.USER)
 @Controller('posts')
@@ -33,6 +34,19 @@ export class PostController {
     private readonly postService: PostService,
     private readonly postLikeService: PostLikeService,
   ) {}
+
+  @Post()
+  @ApiOperation({ description: '새로운 글을 생성한다.' })
+  @ApiOkResponse(successResponseOpions)
+  @ApiBadRequestResponse({ description: 'Request body error' })
+  async createPost(
+    @AuthenticatedUserValidation() authUid: string,
+    @Body() createPostDto: CreatePostDto,
+  ): Promise<SuccessResponse> {
+    await this.postService.createPost(authUid, createPostDto);
+
+    return new SuccessResponse();
+  }
 
   @Get('all-users')
   @ApiOperation({
