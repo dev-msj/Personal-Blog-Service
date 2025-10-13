@@ -7,6 +7,8 @@ import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utils';
 import { PostPageDto } from '../dto/post-page.dto';
 import { CreatePostDto } from '../dto/create-post.dto';
+import { DecryptedPatchPostDto } from '../dto/decrypted-patch-post.dto';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 @Injectable()
 export class PostRepository {
@@ -55,5 +57,24 @@ export class PostRepository {
     });
 
     return [postEntityList, count];
+  }
+
+  async updatePost(
+    postUid: number,
+    decryptedPatchPostDto: DecryptedPatchPostDto,
+  ): Promise<void> {
+    const { title, contents, decryptedPostId } = decryptedPatchPostDto;
+
+    // readonly 속성 때문에 직접 대입 시 에러 발생
+    const updateData = {
+      ...(title !== undefined && { title }),
+      ...(contents !== undefined && { contents }),
+    } as QueryDeepPartialEntity<PostEntity>;
+
+    if (Object.keys(updateData).length === 0) {
+      return;
+    }
+
+    await this.postRepository.update(decryptedPostId, updateData);
   }
 }
