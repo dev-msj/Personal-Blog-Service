@@ -69,7 +69,7 @@ export class PostService {
 
   async updatePost(authUid: string, patchPostDto: PatchPostDto): Promise<void> {
     await this.postRepository.updatePost(
-      Number(authUid),
+      authUid,
       new DecryptedPatchPostDto(
         Number(
           CryptoUtils.decryptPrimaryKey(
