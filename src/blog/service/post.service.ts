@@ -13,7 +13,6 @@ import { PaginationUtils } from '../../utils/pagination.utils';
 import { CryptoUtils } from '../../utils/crypto.utils';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { PatchPostDto } from '../dto/patch-post.dto';
-import { DecryptedPatchPostDto } from '../dto/decrypted-patch-post.dto';
 
 @Injectable()
 export class PostService {
@@ -67,19 +66,17 @@ export class PostService {
     );
   }
 
-  async updatePost(authUid: string, patchPostDto: PatchPostDto): Promise<void> {
+  async updatePost(
+    authUid: string,
+    encryptedPostId: string,
+    patchPostDto: PatchPostDto,
+  ): Promise<void> {
     await this.postRepository.updatePost(
       authUid,
-      new DecryptedPatchPostDto(
-        Number(
-          CryptoUtils.decryptPrimaryKey(
-            patchPostDto.postId,
-            this.config.pkSecretKey,
-          ),
-        ),
-        patchPostDto.title,
-        patchPostDto.contents,
+      Number(
+        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
       ),
+      patchPostDto,
     );
   }
 

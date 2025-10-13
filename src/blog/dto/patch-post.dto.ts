@@ -1,15 +1,10 @@
-import { IntersectionType, PartialType, PickType } from '@nestjs/swagger';
+import { PartialType, PickType } from '@nestjs/swagger';
 import { PostDto } from './post.dto';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
-export class PatchPostDto extends IntersectionType(
-  PickType(PostDto, ['postId']),
-  PartialType(PickType(PostDto, ['title', 'contents'])),
+export class PatchPostDto extends PartialType(
+  PickType(PostDto, ['title', 'contents']),
 ) {
-  @IsString()
-  @IsNotEmpty()
-  readonly postId: string;
-
   @IsString()
   @IsOptional()
   readonly title?: string;

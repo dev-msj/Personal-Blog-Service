@@ -119,7 +119,7 @@ export class PostController {
     );
   }
 
-  @Patch()
+  @Patch(':encryptedPostId')
   @ApiOperation({ description: '블로그 글을 수정한다.' })
   @ApiOkResponse(successResponseOpions)
   @ApiNotFoundResponse({
@@ -128,9 +128,10 @@ export class PostController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async patchPost(
     @AuthenticatedUserValidation() authUid: string,
+    @Param('encryptedPostId') encryptedPostId: string,
     @Body() patchPostDto: PatchPostDto,
   ): Promise<SuccessResponse> {
-    await this.postService.updatePost(authUid, patchPostDto);
+    await this.postService.updatePost(authUid, encryptedPostId, patchPostDto);
 
     return new SuccessResponse();
   }
