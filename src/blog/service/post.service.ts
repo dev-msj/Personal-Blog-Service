@@ -80,6 +80,15 @@ export class PostService {
     );
   }
 
+  async deletePost(authUid: string, encryptedPostId: string): Promise<void> {
+    await this.postRepository.deletePost(
+      authUid,
+      Number(
+        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
+      ),
+    );
+  }
+
   private async toPostDaoList(
     postEntityList: PostEntity[],
   ): Promise<PostDao[]> {

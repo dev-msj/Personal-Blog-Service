@@ -81,4 +81,8 @@ export class PostRepository {
       updateData,
     );
   }
+
+  async deletePost(postUid: string, decryptedPostId: number): Promise<void> {
+    await this.postRepository.delete({ postId: decryptedPostId, postUid });
+  }
 }

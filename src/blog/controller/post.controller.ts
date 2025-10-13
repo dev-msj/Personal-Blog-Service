@@ -136,6 +136,22 @@ export class PostController {
     return new SuccessResponse();
   }
 
+  @Delete(':encryptedPostId')
+  @ApiOperation({ description: '블로그 글을 삭제한다.' })
+  @ApiOkResponse(successResponseOpions)
+  @ApiNotFoundResponse({
+    description: 'User does not exist! - [uid]',
+  })
+  @ApiBadRequestResponse({ description: 'Request body error' })
+  async deletePost(
+    @AuthenticatedUserValidation() authUid: string,
+    @Param('encryptedPostId') encryptedPostId: string,
+  ): Promise<SuccessResponse> {
+    await this.postService.deletePost(authUid, encryptedPostId);
+
+    return new SuccessResponse();
+  }
+
   @Post('likes')
   @ApiOperation({
     description: '특정 유저의 블로그에 좋아요를 누른 유저를 추가한다.',
