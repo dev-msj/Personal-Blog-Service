@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -23,6 +31,7 @@ import { successResponseOpions } from '../../response/swagger/success-response-o
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
 import { PostLikeRequestDto } from '../dto/post-like-request.dto';
 import { CreatePostDto } from '../dto/create-post.dto';
+import { PatchPostDto } from '../dto/patch-post.dto';
 
 @Roles(UserRole.USER)
 @Controller('posts')
@@ -108,6 +117,22 @@ export class PostController {
     return await this.postService.getPostPageListByPostPageRequestDto(
       postPageRequestDto,
     );
+  }
+
+  @Patch()
+  @ApiOperation({ description: '블로그 글을 수정한다.' })
+  @ApiOkResponse(successResponseOpions)
+  @ApiNotFoundResponse({
+    description: 'User does not exist! - [uid]',
+  })
+  @ApiBadRequestResponse({ description: 'Request body error' })
+  async patchPost(
+    @AuthenticatedUserValidation() authUid: string,
+    @Body() patchPostDto: PatchPostDto,
+  ): Promise<SuccessResponse> {
+    await this.postService.updatePost(authUid, patchPostDto);
+
+    return new SuccessResponse();
   }
 
   @Post('likes')
