@@ -16,8 +16,11 @@ import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-
 import { UserInfoDto } from '../dto/user-info.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { successResponseOpions } from '../../response/swagger/success-response-options';
+import { Roles } from 'src/decorator/roles.decorator';
+import { UserRole } from 'src/constant/user-role.enum';
 
 @Controller('users/info')
+@Roles(UserRole.USER, UserRole.ADMIN)
 @ApiTags('users/info')
 @ApiBearerAuth('accessToken')
 @ApiCookieAuth('refreshToken')
