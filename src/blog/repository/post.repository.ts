@@ -60,7 +60,7 @@ export class PostRepository {
   }
 
   async updatePost(
-    postUid: number,
+    postUid: string,
     decryptedPatchPostDto: DecryptedPatchPostDto,
   ): Promise<void> {
     const { title, contents, decryptedPostId } = decryptedPatchPostDto;
@@ -75,6 +75,9 @@ export class PostRepository {
       return;
     }
 
-    await this.postRepository.update(decryptedPostId, updateData);
+    await this.postRepository.update(
+      { postId: decryptedPostId, postUid },
+      updateData,
+    );
   }
 }
