@@ -12,6 +12,8 @@ import { PostEntity } from '../entities/post.entity';
 import { PaginationUtils } from '../../utils/pagination.utils';
 import { CryptoUtils } from '../../utils/crypto.utils';
 import { CreatePostDto } from '../dto/create-post.dto';
+import { PatchPostDto } from '../dto/patch-post.dto';
+import { DecryptedPatchPostDto } from '../dto/decrypted-patch-post.dto';
 
 @Injectable()
 export class PostService {
@@ -62,6 +64,22 @@ export class PostService {
       postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
       total,
       postPageRequestDto.page,
+    );
+  }
+
+  async updatePost(authUid: string, patchPostDto: PatchPostDto): Promise<void> {
+    await this.postRepository.updatePost(
+      Number(authUid),
+      new DecryptedPatchPostDto(
+        Number(
+          CryptoUtils.decryptPrimaryKey(
+            patchPostDto.postId,
+            this.config.pkSecretKey,
+          ),
+        ),
+        patchPostDto.title,
+        patchPostDto.contents,
+      ),
     );
   }
 
