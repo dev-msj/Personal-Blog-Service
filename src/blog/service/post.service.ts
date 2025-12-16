@@ -4,7 +4,6 @@ import authConfig from '../../config/authConfig';
 import { PostLikeService } from './post-like.service';
 import { PostRepository } from '../repository/post.repository';
 import { PostDto } from '../dto/post.dto';
-import { PostPageRequestDto } from '../dto/post-page-request.dto';
 import { PostPageDto } from '../dto/post-page.dto';
 import { PaginationDto } from '../dto/pagination.dto';
 import { PostDao } from '../dao/post.dao';
@@ -44,16 +43,17 @@ export class PostService {
   }
 
   async getPostPageListByPostPageRequestDto(
-    postPageRequestDto: PostPageRequestDto,
+    encryptedPostUid: string,
+    page: number = 1,
   ): Promise<PaginationDto<PostDto>> {
     const [postEntityList, total] =
       await this.postRepository.findPostEntityListAndCountByPostPageDto(
         new PostPageDto(
           CryptoUtils.decryptPrimaryKey(
-            postPageRequestDto.encryptedPostUid,
+            encryptedPostUid,
             this.config.pkSecretKey,
           ),
-          postPageRequestDto.page,
+          page,
         ),
       );
 
@@ -62,7 +62,7 @@ export class PostService {
     return PaginationUtils.toPaginationDto<PostDto>(
       postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
       total,
-      postPageRequestDto.page,
+      page,
     );
   }
 

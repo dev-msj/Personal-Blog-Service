@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -23,7 +24,6 @@ import { PostLikeDto } from '../dto/post-like.dto';
 import { PostLikeService } from '../service/post-like.service';
 import { PaginationDto } from '../dto/pagination.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
-import { PostPageRequestDto } from '../dto/post-page-request.dto';
 import { Roles } from '../../decorator/roles.decorator';
 import { UserRole } from '../../constant/user-role.enum';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
@@ -82,7 +82,7 @@ export class PostController {
     return await this.postService.getPostPageListByPage(page);
   }
 
-  @Get('users/:postUid')
+  @Get('users/:encryptedPostUid')
   @ApiOperation({
     description: '특정 유저의 블로그에서 최신 글 20개를 가져온다.',
   })
@@ -92,15 +92,14 @@ export class PostController {
   })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async getLatestPostPageListByPostPageRequestDto(
-    @Param()
-    postPageRequestDto: PostPageRequestDto,
+    @Param('encryptedPostUid') encryptedPostUid: string,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
-      postPageRequestDto,
+      encryptedPostUid,
     );
   }
 
-  @Get('users/:postUid/:page')
+  @Get('users/:encryptedPostUid/:page')
   @ApiOperation({
     description:
       '특정 유저의 블로그에서 요청된 페이지에 해당하는 글 20개를 가져온다.',
@@ -111,11 +110,12 @@ export class PostController {
   })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async getPostPageListByPostPageRequestDto(
-    @Param()
-    postPageRequestDto: PostPageRequestDto,
+    @Param('encryptedPostUid') encryptedPostUid: string,
+    @Param('page', new ParseIntPipe()) page: number,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
-      postPageRequestDto,
+      encryptedPostUid,
+      page,
     );
   }
 

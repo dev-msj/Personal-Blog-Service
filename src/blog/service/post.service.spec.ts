@@ -5,7 +5,6 @@ import authConfig from '../../config/authConfig';
 import { Test } from '@nestjs/testing';
 import { ConfigType } from '@nestjs/config';
 import { CryptoUtils } from '../../utils/crypto.utils';
-import { PostPageRequestDto } from '../dto/post-page-request.dto';
 import { PostEntity } from '../entities/post.entity';
 
 describe('PostService', () => {
@@ -101,7 +100,6 @@ describe('PostService', () => {
     it('Test getPostPageListByPostPageRequestDto', async () => {
       // Given
       const expected = 1;
-      const postUid = 'postUid';
 
       postRepository.findPostEntityListAndCountByPostPageDto = jest
         .fn()
@@ -123,7 +121,8 @@ describe('PostService', () => {
 
       // When
       const actual = await postService.getPostPageListByPostPageRequestDto(
-        new PostPageRequestDto(postUid, 1),
+        'encryptedPostUid',
+        1,
       );
 
       // Then
@@ -145,7 +144,8 @@ describe('PostService', () => {
 
       // When
       const actual = await postService.getPostPageListByPostPageRequestDto(
-        new PostPageRequestDto('encryptedPostUid', 1),
+        'encryptedPostUid',
+        1,
       );
 
       // Then
