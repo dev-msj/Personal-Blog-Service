@@ -42,3 +42,4 @@ lerna-debug.log*
 /data/redis
 env/
 .vscode/
+key/
