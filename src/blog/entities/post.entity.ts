@@ -30,7 +30,7 @@ export class PostEntity {
   @Column({ name: 'CONTENTS', type: 'text' })
   readonly contents: string;
 
-  @Column({ name: 'HITS' })
+  @Column({ name: 'HITS', default: 0 })
   readonly hits: number;
 
   @CreateDateColumn({
