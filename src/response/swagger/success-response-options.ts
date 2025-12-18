@@ -1,6 +1,6 @@
 import { ApiResponseOptions } from '@nestjs/swagger';
 
-export const successResponseOpions: ApiResponseOptions = {
+export const successResponseOptions: ApiResponseOptions = {
   description: 'Success Message',
   schema: {
     type: 'object',

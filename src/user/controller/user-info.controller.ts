@@ -15,7 +15,7 @@ import { UserInfoRequestDto } from '../dto/user-info-request.dto';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 import { UserInfoDto } from '../dto/user-info.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
-import { successResponseOpions } from '../../response/swagger/success-response-options';
+import { successResponseOptions } from '../../response/swagger/success-response-options';
 import { Roles } from 'src/decorator/roles.decorator';
 import { UserRole } from 'src/constant/user-role.enum';
 
@@ -29,7 +29,7 @@ export class UserInfoController {
 
   @Post()
   @ApiOperation({ description: '유저 정보 생성 API' })
-  @ApiCreatedResponse(successResponseOpions)
+  @ApiCreatedResponse(successResponseOptions)
   @ApiConflictResponse({ description: 'UserInfo already exist. - [uid]' })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async createUserInfo(
@@ -62,7 +62,7 @@ export class UserInfoController {
 
   @Patch()
   @ApiOperation({ description: '유저 정보 수정 API' })
-  @ApiOkResponse(successResponseOpions)
+  @ApiOkResponse(successResponseOptions)
   @ApiConflictResponse({
     description: 'UserInfo does not exist. - [uid]',
   })
@@ -84,7 +84,7 @@ export class UserInfoController {
 
   @Delete()
   @ApiOperation({ description: '유저 정보 삭제 API' })
-  @ApiOkResponse(successResponseOpions)
+  @ApiOkResponse(successResponseOptions)
   @ApiConflictResponse({
     description: 'UserInfo does not exist. - [uid]',
   })

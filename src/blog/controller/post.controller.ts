@@ -27,7 +27,7 @@ import { SuccessResponse } from '../../response/success-response.dto';
 import { Roles } from '../../decorator/roles.decorator';
 import { UserRole } from '../../constant/user-role.enum';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
-import { successResponseOpions } from '../../response/swagger/success-response-options';
+import { successResponseOptions } from '../../response/swagger/success-response-options';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
 import { PostLikeRequestDto } from '../dto/post-like-request.dto';
 import { CreatePostDto } from '../dto/create-post.dto';
@@ -46,7 +46,7 @@ export class PostController {
 
   @Post()
   @ApiOperation({ description: '새로운 글을 생성한다.' })
-  @ApiOkResponse(successResponseOpions)
+  @ApiOkResponse(successResponseOptions)
   @ApiBadRequestResponse({ description: 'Request body error' })
   async createPost(
     @AuthenticatedUserValidation() authUid: string,
@@ -121,7 +121,7 @@ export class PostController {
 
   @Patch(':encryptedPostId')
   @ApiOperation({ description: '블로그 글을 수정한다.' })
-  @ApiOkResponse(successResponseOpions)
+  @ApiOkResponse(successResponseOptions)
   @ApiNotFoundResponse({
     description: 'User does not exist! - [uid]',
   })
@@ -138,7 +138,7 @@ export class PostController {
 
   @Delete(':encryptedPostId')
   @ApiOperation({ description: '블로그 글을 삭제한다.' })
-  @ApiOkResponse(successResponseOpions)
+  @ApiOkResponse(successResponseOptions)
   @ApiNotFoundResponse({
     description: 'User does not exist! - [uid]',
   })
@@ -156,7 +156,7 @@ export class PostController {
   @ApiOperation({
     description: '특정 유저의 블로그에 좋아요를 누른 유저를 추가한다.',
   })
-  @ApiOkResponse(successResponseOpions)
+  @ApiOkResponse(successResponseOptions)
   @ApiConflictResponse({
     description: 'PostId is already exist!',
   })
@@ -176,7 +176,7 @@ export class PostController {
   @ApiOperation({
     description: '특정 유저의 블로그에 좋아요를 누른 유저를 삭제한다.',
   })
-  @ApiOkResponse(successResponseOpions)
+  @ApiOkResponse(successResponseOptions)
   @ApiConflictResponse({
     description: 'PostId is does not exist!',
   })
