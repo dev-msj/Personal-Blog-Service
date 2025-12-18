@@ -5,7 +5,6 @@ import {
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOperation,
-  ApiResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -23,8 +22,7 @@ export class UserAuthController {
 
   @Post('join')
   @ApiOperation({ description: '회원가입 요청 API' })
-  @ApiResponse({
-    status: 201,
+  @ApiCreatedResponse({
     description: 'Response JWT(Access Token & Refresh Token)',
     type: JwtDto,
   })
@@ -54,8 +52,7 @@ export class UserAuthController {
     description:
       'Google Oauth으로 발급받은 Id Token으로 로그인 요청 API. 가입된 정보가 없을 경우 자동으로 회원가입한다.',
   })
-  @ApiResponse({
-    status: 201,
+  @ApiCreatedResponse({
     description: 'Response JWT(Access Token & Refresh Token)',
     type: JwtDto,
   })
