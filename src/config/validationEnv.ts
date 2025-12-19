@@ -24,5 +24,12 @@ export const validationEnv = Joi.object({
       Joi.number().integer().positive(),
     )
     .required(),
+  COOKIE_MAX_AGE: Joi.alternatives()
+    .try(
+      Joi.string().pattern(/^\d+[smhdwy]$|^\d+$/), // s, m(분), h, d, w, y
+      Joi.number().integer().positive(),
+    )
+    .optional(),
+  COOKIE_SAME_SITE: Joi.string().valid('strict', 'lax', 'none').optional(),
   GOOGLE_CLIENT_ID: Joi.string().required(),
 });
