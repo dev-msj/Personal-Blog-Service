@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -13,8 +13,10 @@ import { UserAuthService } from './../service/user-auth.service';
 import { JwtDto } from '../dto/jwt.dto';
 import { Public } from '../../decorator/public.decorator';
 import { OauthRequestDto } from '../dto/oauth-request.dto';
+import { SetRefreshTokenCookieInterceptor } from '../interceptor/set-refresh-token-cookie.interceptor';
 
 @Public()
+@UseInterceptors(SetRefreshTokenCookieInterceptor)
 @Controller('users/auth')
 @ApiTags('users/auth')
 export class UserAuthController {
