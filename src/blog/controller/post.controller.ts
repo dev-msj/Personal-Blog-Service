@@ -7,11 +7,11 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiConflictResponse,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -19,19 +19,16 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { PostService } from '../service/post.service';
-import { PostDto } from '../dto/post.dto';
-import { PostLikeDto } from '../dto/post-like.dto';
-import { PostLikeService } from '../service/post-like.service';
-import { PaginationDto } from '../dto/pagination.dto';
 import { SuccessResponse } from '../../response/success-response.dto';
 import { Roles } from '../../decorator/roles.decorator';
 import { UserRole } from '../../constant/user-role.enum';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 import { successResponseOptions } from '../../response/swagger/success-response-options';
-import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
-import { PostLikeRequestDto } from '../dto/post-like-request.dto';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { PatchPostDto } from '../dto/patch-post.dto';
+import { PostDto } from '../dto/post.dto';
+import { PaginationDto } from '../dto/pagination.dto';
+import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
 
 @Roles(UserRole.USER)
 @Controller('posts')
@@ -39,10 +36,42 @@ import { PatchPostDto } from '../dto/patch-post.dto';
 @ApiBearerAuth('accessToken')
 @ApiCookieAuth('refreshToken')
 export class PostController {
-  constructor(
-    private readonly postService: PostService,
-    private readonly postLikeService: PostLikeService,
-  ) {}
+  constructor(private readonly postService: PostService) {}
+
+  @Get()
+  @ApiOperation({
+    description:
+      '모든 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
+  })
+  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostDto)
+  @ApiNotFoundResponse({
+    description: 'User does not exist! - [uid]',
+  })
+  async getAllPosts(
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+  ): Promise<PaginationDto<PostDto>> {
+    return await this.postService.getPostPageListByPage(page);
+  }
+
+  @Get('users/:encryptedPostUid')
+  @ApiOperation({
+    description:
+      '특정 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
+  })
+  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostDto)
+  @ApiNotFoundResponse({
+    description: 'User does not exist! - [uid]',
+  })
+  @ApiBadRequestResponse({ description: 'Request body error' })
+  async getUserPosts(
+    @Param('encryptedPostUid') encryptedPostUid: string,
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+  ): Promise<PaginationDto<PostDto>> {
+    return await this.postService.getPostPageListByPostPageRequestDto(
+      encryptedPostUid,
+      page,
+    );
+  }
 
   @Post()
   @ApiOperation({ description: '새로운 글을 생성한다.' })
@@ -57,67 +86,21 @@ export class PostController {
     return new SuccessResponse();
   }
 
-  @Get('all-users')
-  @ApiOperation({
-    description: '모든 유저의 블로그에서 최신 글 20개를 가져온다.',
-  })
-  @ApiOkResponsePaginationDto('블로그 리스트를 담은 첫번째 페이지', PostDto)
-  @ApiNotFoundResponse({
-    description: 'User does not exist! - [uid]',
-  })
-  async getLatestPostDtoList() {
-    return await this.postService.getPostPageListByPage();
-  }
-
-  @Get('all-users/:page')
-  @ApiOperation({
-    description:
-      '모든 유저의 블로그에서 요청된 페이지에 해당하는 글 20개를 가져온다.',
-  })
-  @ApiOkResponsePaginationDto('블로그 리스트를 담은 요청된 페이지', PostDto)
-  @ApiNotFoundResponse({
-    description: 'User does not exist! - [uid]',
-  })
-  async getPostDtoListByPage(@Param('page') page: number) {
-    return await this.postService.getPostPageListByPage(page);
-  }
-
-  @Get('users/:encryptedPostUid')
-  @ApiOperation({
-    description: '특정 유저의 블로그에서 최신 글 20개를 가져온다.',
-  })
-  @ApiOkResponsePaginationDto('블로그 리스트를 담은 첫번째 페이지', PostDto)
-  @ApiNotFoundResponse({
-    description: 'User does not exist! - [uid]',
-  })
-  @ApiBadRequestResponse({ description: 'Request body error' })
-  async getLatestPostPageListByPostPageRequestDto(
-    @Param('encryptedPostUid') encryptedPostUid: string,
-  ): Promise<PaginationDto<PostDto>> {
-    return await this.postService.getPostPageListByPostPageRequestDto(
-      encryptedPostUid,
-    );
-  }
-
-  @Get('users/:encryptedPostUid/:page')
-  @ApiOperation({
-    description:
-      '특정 유저의 블로그에서 요청된 페이지에 해당하는 글 20개를 가져온다.',
-  })
-  @ApiOkResponsePaginationDto('블로그 리스트를 담은 요청된 페이지', PostDto)
-  @ApiNotFoundResponse({
-    description: 'User does not exist! - [uid]',
-  })
-  @ApiBadRequestResponse({ description: 'Request body error' })
-  async getPostPageListByPostPageRequestDto(
-    @Param('encryptedPostUid') encryptedPostUid: string,
-    @Param('page', new ParseIntPipe()) page: number,
-  ): Promise<PaginationDto<PostDto>> {
-    return await this.postService.getPostPageListByPostPageRequestDto(
-      encryptedPostUid,
-      page,
-    );
-  }
+  // @Get(':encryptedPostId')
+  // @ApiOperation({ description: '블로그 글 하나를 가져온다.' })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: '블로그 글 하나를 담은 응답',
+  //   type: PostDto,
+  // })
+  // @ApiNotFoundResponse({ description: 'User does not exist! - [uid]' })
+  // @ApiBadRequestResponse({ description: 'Request body error' })
+  // async getPost(
+  //   @Param('encryptedPostId') encryptedPostId: string,
+  // ): Promise<SuccessResponse> {
+  //   // 특정 글 조회
+  //   return new SuccessResponse();
+  // }
 
   @Patch(':encryptedPostId')
   @ApiOperation({ description: '블로그 글을 수정한다.' })
@@ -148,46 +131,6 @@ export class PostController {
     @Param('encryptedPostId') encryptedPostId: string,
   ): Promise<SuccessResponse> {
     await this.postService.deletePost(authUid, encryptedPostId);
-
-    return new SuccessResponse();
-  }
-
-  @Post('likes')
-  @ApiOperation({
-    description: '특정 유저의 블로그에 좋아요를 누른 유저를 추가한다.',
-  })
-  @ApiOkResponse(successResponseOptions)
-  @ApiConflictResponse({
-    description: 'PostId is already exist!',
-  })
-  @ApiBadRequestResponse({ description: 'Request body error' })
-  async addPostLikeUser(
-    @AuthenticatedUserValidation() authUid: string,
-    @Body() postLikeRequestDto: PostLikeRequestDto,
-  ): Promise<SuccessResponse> {
-    await this.postLikeService.addPostLikeUser(
-      new PostLikeDto(postLikeRequestDto.encryptedPostId, authUid),
-    );
-
-    return new SuccessResponse();
-  }
-
-  @Delete('likes')
-  @ApiOperation({
-    description: '특정 유저의 블로그에 좋아요를 누른 유저를 삭제한다.',
-  })
-  @ApiOkResponse(successResponseOptions)
-  @ApiConflictResponse({
-    description: 'PostId is does not exist!',
-  })
-  @ApiBadRequestResponse({ description: 'Request body error' })
-  async deletePostLikeUser(
-    @AuthenticatedUserValidation() authUid: string,
-    @Body() postLikeRequestDto: PostLikeRequestDto,
-  ): Promise<SuccessResponse> {
-    await this.postLikeService.removePostLikeUser(
-      new PostLikeDto(postLikeRequestDto.encryptedPostId, authUid),
-    );
 
     return new SuccessResponse();
   }
