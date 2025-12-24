@@ -42,7 +42,7 @@ export class AuthGuard implements CanActivate {
     }
 
     const accessToken = request.headers.authorization.split('Bearer ')[1];
-    const refreshToken = request.cookies.RefreshToken;
+    const refreshToken = request.cookies.refreshToken;
     const verifyResult = await this.jwtService.verifyAccessToken(accessToken);
 
     // access token이 expired 상태여도 refresh token으로 reissue 할 수 있도록 pass 시킨다.
