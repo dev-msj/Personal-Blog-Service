@@ -49,7 +49,6 @@ export class PostController {
   async getAllPosts(
     @Param('page', new ParseIntPipe()) page: number,
   ): Promise<PaginationDto<PostDto>> {
-    console.log('getAllPosts page:', page);
     return await this.postService.getPostPageListByPage(page);
   }
 
