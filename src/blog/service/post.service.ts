@@ -44,7 +44,7 @@ export class PostService {
 
   async getPostPageListByPostPageRequestDto(
     encryptedPostUid: string,
-    page: number = 1,
+    page: number,
   ): Promise<PaginationDto<PostDto>> {
     const [postEntityList, total] =
       await this.postRepository.findPostEntityListAndCountByPostPageDto(

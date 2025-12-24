@@ -7,7 +7,6 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -38,7 +37,7 @@ import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagi
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  @Get()
+  @Get(':page')
   @ApiOperation({
     description:
       '모든 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
@@ -48,12 +47,13 @@ export class PostController {
     description: 'User does not exist! - [uid]',
   })
   async getAllPosts(
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Param('page', new ParseIntPipe()) page: number,
   ): Promise<PaginationDto<PostDto>> {
+    console.log('getAllPosts page:', page);
     return await this.postService.getPostPageListByPage(page);
   }
 
-  @Get('users/:encryptedPostUid')
+  @Get('users/:encryptedPostUid/:page')
   @ApiOperation({
     description:
       '특정 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
@@ -65,7 +65,7 @@ export class PostController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async getUserPosts(
     @Param('encryptedPostUid') encryptedPostUid: string,
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Param('page', new ParseIntPipe()) page: number,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
       encryptedPostUid,
