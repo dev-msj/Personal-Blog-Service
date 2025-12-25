@@ -66,6 +66,19 @@ export class PostService {
     );
   }
 
+  async getPostByEncryptedPostId(encryptedPostId: string): Promise<PostDto> {
+    const postEntity = await this.postRepository.findPostEntityByPostId(
+      Number(
+        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
+      ),
+    );
+    const postDao = PostDao.from({ ...postEntity });
+    postDao.setPostLikeNicknameList =
+      await this.postLikeService.getPostLikeNicknameList(postDao.getPostId);
+
+    return postDao.toPostDto(this.config.pkSecretKey);
+  }
+
   async updatePost(
     authUid: string,
     encryptedPostId: string,

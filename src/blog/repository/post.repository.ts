@@ -59,6 +59,10 @@ export class PostRepository {
     return [postEntityList, count];
   }
 
+  async findPostEntityByPostId(postId: number): Promise<PostEntity> {
+    return await this.postRepository.findOneByOrFail({ postId });
+  }
+
   async updatePost(
     postUid: string,
     decryptedPostId: number,

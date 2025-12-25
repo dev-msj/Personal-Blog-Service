@@ -16,6 +16,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { PostService } from '../service/post.service';
@@ -71,6 +72,21 @@ export class PostController {
       encryptedPostUid,
       page,
     );
+  }
+
+  @Get(':encryptedPostId')
+  @ApiOperation({ description: '블로그 글 하나를 가져온다.' })
+  @ApiResponse({
+    status: 200,
+    description: '블로그 글 하나를 담은 응답',
+    type: PostDto,
+  })
+  @ApiNotFoundResponse({ description: 'User does not exist! - [uid]' })
+  @ApiBadRequestResponse({ description: 'Request body error' })
+  async getPost(
+    @Param('encryptedPostId') encryptedPostId: string,
+  ): Promise<PostDto> {
+    return await this.postService.getPostByEncryptedPostId(encryptedPostId);
   }
 
   @Post()
