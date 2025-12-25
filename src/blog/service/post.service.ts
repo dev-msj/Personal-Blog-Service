@@ -29,7 +29,7 @@ export class PostService {
     await this.postRepository.createPost(authUid, createPostDto);
   }
 
-  async getPostPageListByPage(page: number = 1) {
+  async getPostPageListByPage(page: number): Promise<PaginationDto<PostDto>> {
     const [postEntityList, total] =
       await this.postRepository.findPostEntityListAndCountByPage(page);
 
