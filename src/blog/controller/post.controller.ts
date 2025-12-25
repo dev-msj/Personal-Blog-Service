@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -37,7 +38,7 @@ import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagi
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  @Get(':page')
+  @Get()
   @ApiOperation({
     description:
       '모든 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
@@ -47,12 +48,12 @@ export class PostController {
     description: 'User does not exist! - [uid]',
   })
   async getAllPosts(
-    @Param('page', new ParseIntPipe()) page: number,
+    @Query('page', new ParseIntPipe()) page: number,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPage(page);
   }
 
-  @Get('users/:encryptedPostUid/:page')
+  @Get('users/:encryptedPostUid')
   @ApiOperation({
     description:
       '특정 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
@@ -64,7 +65,7 @@ export class PostController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async getUserPosts(
     @Param('encryptedPostUid') encryptedPostUid: string,
-    @Param('page', new ParseIntPipe()) page: number,
+    @Query('page', new ParseIntPipe()) page: number,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
       encryptedPostUid,
@@ -84,22 +85,6 @@ export class PostController {
 
     return new SuccessResponse();
   }
-
-  // @Get(':encryptedPostId')
-  // @ApiOperation({ description: '블로그 글 하나를 가져온다.' })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: '블로그 글 하나를 담은 응답',
-  //   type: PostDto,
-  // })
-  // @ApiNotFoundResponse({ description: 'User does not exist! - [uid]' })
-  // @ApiBadRequestResponse({ description: 'Request body error' })
-  // async getPost(
-  //   @Param('encryptedPostId') encryptedPostId: string,
-  // ): Promise<SuccessResponse> {
-  //   // 특정 글 조회
-  //   return new SuccessResponse();
-  // }
 
   @Patch(':encryptedPostId')
   @ApiOperation({ description: '블로그 글을 수정한다.' })
