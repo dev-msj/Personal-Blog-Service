@@ -1,16 +1,15 @@
 import { PostLikeService } from './post-like.service';
 import { Test } from '@nestjs/testing';
 import { PostLikeRepository } from '../repository/post-like.repository';
-import { PostLikeDao } from '../dao/post-like.dao';
 import { UserInfoService } from '../../user/service/user-info.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { UserInfoDto } from '../../user/dto/user-info.dto';
 import authConfig from '../../config/authConfig';
+import { ConflictException } from '@nestjs/common';
+import { PostLikeDto } from '../dto/post-like.dto';
 
 describe('PostLikeService', () => {
   let postLikeService: PostLikeService;
   let postLikeRepository: PostLikeRepository;
-  let userInfoService: UserInfoService;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
@@ -18,16 +17,23 @@ describe('PostLikeService', () => {
         PostLikeService,
         {
           provide: WINSTON_MODULE_PROVIDER,
-          useValue: {},
+          useValue: {
+            info: jest.fn(),
+          },
         },
         {
           provide: authConfig.KEY,
-          useValue: {},
+          useValue: {
+            pkSecretKey: 'test-key',
+          },
         },
         {
           provide: PostLikeRepository,
           useValue: {
             findPostLikeEntityList: jest.fn(),
+            isExist: jest.fn(),
+            savePostLikeEntity: jest.fn(),
+            removePostLikeDto: jest.fn(),
           },
         },
         {
@@ -41,42 +47,59 @@ describe('PostLikeService', () => {
 
     postLikeService = module.get(PostLikeService);
     postLikeRepository = module.get(PostLikeRepository);
-    userInfoService = module.get(UserInfoService);
   });
 
-  describe('getPostLikeNicknameList', () => {
-    it('test get nickname list', async () => {
+  describe('addPostLikeUser', () => {
+    it('좋아요 추가 성공', async () => {
       // Given
-      const postId = 0;
-      const uid = 'uid';
-      const expected = 'nickname';
-
-      postLikeRepository.findPostLikeEntityList = jest
-        .fn()
-        .mockResolvedValue([PostLikeDao.from({ postId, uid })]);
-
-      userInfoService.getUserInfoByUid = jest
-        .fn()
-        .mockResolvedValue(new UserInfoDto(uid, expected, 'introduce'));
+      const postLikeDto = new PostLikeDto('encryptedPostId', 'uid');
+      postLikeRepository.isExist = jest.fn().mockResolvedValue(false);
+      postLikeRepository.savePostLikeEntity = jest.fn().mockResolvedValue(null);
 
       // When
-      const actual = await postLikeService.getPostLikeNicknameList(postId);
+      await postLikeService.addPostLikeUser(postLikeDto);
 
       // Then
-      expect(actual[0]).toEqual(expected);
+      expect(postLikeRepository.savePostLikeEntity).toHaveBeenCalled();
     });
 
-    it('Test when there is no post like user.', async () => {
+    it('이미 좋아요한 게시글에 중복 좋아요 시 ConflictException 발생', async () => {
       // Given
-      postLikeRepository.findPostLikeEntityList = jest
+      const postLikeDto = new PostLikeDto('encryptedPostId', 'uid');
+      postLikeRepository.isExist = jest.fn().mockResolvedValue(true);
+
+      // When & Then
+      await expect(
+        postLikeService.addPostLikeUser(postLikeDto),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('removePostLikeUser', () => {
+    it('좋아요 삭제 성공', async () => {
+      // Given
+      const postLikeDto = new PostLikeDto('encryptedPostId', 'uid');
+      postLikeRepository.isExist = jest
         .fn()
-        .mockResolvedValue([]);
+        .mockReturnValue(Promise.resolve(true));
+      postLikeRepository.removePostLikeDto = jest.fn().mockResolvedValue(null);
 
       // When
-      const actual = await postLikeService.getPostLikeNicknameList(0);
+      await postLikeService.removePostLikeUser(postLikeDto);
 
       // Then
-      expect(actual).toEqual([]);
+      expect(postLikeRepository.removePostLikeDto).toHaveBeenCalled();
+    });
+
+    it('좋아요하지 않은 게시글 삭제 시 ConflictException 발생', async () => {
+      // Given
+      const postLikeDto = new PostLikeDto('encryptedPostId', 'uid');
+      postLikeRepository.isExist = jest.fn().mockResolvedValue(false);
+
+      // When & Then
+      await expect(
+        postLikeService.removePostLikeUser(postLikeDto),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });
