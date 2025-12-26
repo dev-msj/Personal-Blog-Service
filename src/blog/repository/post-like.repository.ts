@@ -30,6 +30,19 @@ export class PostLikeRepository {
     });
   }
 
+  async findPostLikeEntitiesByPostIds(
+    postIds: number[],
+  ): Promise<PostLikeEntity[]> {
+    if (postIds.length === 0) {
+      return [];
+    }
+
+    return await this.postLikeRepository
+      .createQueryBuilder('postLike')
+      .where('postLike.postId IN (:...postIds)', { postIds })
+      .getMany();
+  }
+
   async savePostLikeEntity(postLikeEntity: PostLikeEntity): Promise<void> {
     await this.removePostLikeEntityListCache(postLikeEntity.postId);
 
