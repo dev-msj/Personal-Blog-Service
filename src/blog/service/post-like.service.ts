@@ -21,10 +21,33 @@ export class PostLikeService {
     private readonly userInfoService: UserInfoService,
   ) {}
 
-  async getPostLikeNicknameList(postId: number): Promise<string[]> {
-    return await this.getNicknameList(
-      await this.postLikeRepository.findPostLikeEntityList(postId),
-    );
+  async getPostLikeMapByPostIds(
+    postIds: number[],
+  ): Promise<Map<number, string[]>> {
+    const postLikeEntities =
+      await this.postLikeRepository.findPostLikeEntitiesByPostIds(postIds);
+
+    const postLikeMap = new Map<number, string[]>();
+
+    // 초기화: 모든 postId에 대해 빈 배열 설정
+    postIds.forEach((postId) => postLikeMap.set(postId, []));
+
+    // postId별로 그룹화
+    const groupedByPostId = new Map<number, PostLikeEntity[]>();
+    postLikeEntities.forEach((entity) => {
+      if (!groupedByPostId.has(entity.postId)) {
+        groupedByPostId.set(entity.postId, []);
+      }
+      groupedByPostId.get(entity.postId).push(entity);
+    });
+
+    // 각 그룹에 대해 닉네임 목록 조회
+    for (const [postId, entities] of groupedByPostId) {
+      const nicknames = await this.getNicknameList(entities);
+      postLikeMap.set(postId, nicknames);
+    }
+
+    return postLikeMap;
   }
 
   async addPostLikeUser(postLikeDto: PostLikeDto): Promise<void> {
@@ -41,7 +64,7 @@ export class PostLikeService {
 
   async removePostLikeUser(postLikeDto: PostLikeDto): Promise<void> {
     const postLikeEntity = this.getPostLikeEntity(postLikeDto);
-    const isExist = this.postLikeRepository.isExist(postLikeEntity);
+    const isExist = await this.postLikeRepository.isExist(postLikeEntity);
     if (!isExist) {
       throw new ConflictException('PostId does not exist!');
     }
