@@ -73,8 +73,10 @@ export class PostService {
       ),
     );
     const postDao = PostDao.from({ ...postEntity });
-    postDao.setPostLikeNicknameList =
-      await this.postLikeService.getPostLikeNicknameList(postDao.getPostId);
+    const postLikeMap = await this.postLikeService.getPostLikeMapByPostIds([
+      postDao.getPostId,
+    ]);
+    postDao.setPostLikeNicknameList = postLikeMap.get(postDao.getPostId) || [];
 
     return postDao.toPostDto(this.config.pkSecretKey);
   }
@@ -109,9 +111,14 @@ export class PostService {
       PostDao.from({ ...postEntity }),
     );
 
+    // N+1 쿼리 최적화: 모든 postId의 좋아요 목록을 한 번에 조회
+    const postIds = postDaoList.map((postDao) => postDao.getPostId);
+    const postLikeMap =
+      await this.postLikeService.getPostLikeMapByPostIds(postIds);
+
     for (const postDao of postDaoList) {
       postDao.setPostLikeNicknameList =
-        await this.postLikeService.getPostLikeNicknameList(postDao.getPostId);
+        postLikeMap.get(postDao.getPostId) || [];
     }
 
     return postDaoList;
