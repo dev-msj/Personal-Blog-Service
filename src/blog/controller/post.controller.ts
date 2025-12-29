@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -29,6 +28,7 @@ import { CreatePostDto } from '../dto/create-post.dto';
 import { PatchPostDto } from '../dto/patch-post.dto';
 import { PostDto } from '../dto/post.dto';
 import { PaginationDto } from '../dto/pagination.dto';
+import { PageQueryDto } from '../dto/page-query.dto';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
 
 @Roles(UserRole.USER)
@@ -49,9 +49,9 @@ export class PostController {
     description: 'User does not exist! - [uid]',
   })
   async getAllPosts(
-    @Query('page', new ParseIntPipe()) page: number,
+    @Query() query: PageQueryDto,
   ): Promise<PaginationDto<PostDto>> {
-    return await this.postService.getPostPageListByPage(page);
+    return await this.postService.getPostPageListByPage(query.page);
   }
 
   @Get('users/:encryptedPostUid')
@@ -66,11 +66,11 @@ export class PostController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async getUserPosts(
     @Param('encryptedPostUid') encryptedPostUid: string,
-    @Query('page', new ParseIntPipe()) page: number,
+    @Query() query: PageQueryDto,
   ): Promise<PaginationDto<PostDto>> {
     return await this.postService.getPostPageListByPostPageRequestDto(
       encryptedPostUid,
-      page,
+      query.page,
     );
   }
 

@@ -31,7 +31,7 @@ export class PostRepository {
   ): Promise<[PostEntity[], number]> {
     const [postEntityList, count] = await this.postRepository.findAndCount({
       take: PaginationUtils.TAKE,
-      skip: (page - 1) * PaginationUtils.TAKE,
+      skip: PaginationUtils.getSkip(page),
       order: { postId: 'DESC' },
       cache: {
         id: CacheIdUtils.getPostEntityListByPageCacheId(page),
@@ -48,7 +48,7 @@ export class PostRepository {
     const [postEntityList, count] = await this.postRepository.findAndCount({
       where: { postUid: postPageDto.postUid },
       take: PaginationUtils.TAKE,
-      skip: (postPageDto.page - 1) * PaginationUtils.TAKE,
+      skip: PaginationUtils.getSkip(postPageDto.page),
       order: { postId: 'DESC' },
       cache: {
         id: CacheIdUtils.getPostEntityListByPostPageDtoCacheId(postPageDto),
