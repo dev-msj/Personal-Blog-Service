@@ -4,13 +4,14 @@ import authConfig from '../../config/authConfig';
 import { PostLikeService } from './post-like.service';
 import { PostRepository } from '../repository/post.repository';
 import { PostDto } from '../dto/post.dto';
-import { PostPageRequestDto } from '../dto/post-page-request.dto';
 import { PostPageDto } from '../dto/post-page.dto';
 import { PaginationDto } from '../dto/pagination.dto';
 import { PostDao } from '../dao/post.dao';
 import { PostEntity } from '../entities/post.entity';
 import { PaginationUtils } from '../../utils/pagination.utils';
 import { CryptoUtils } from '../../utils/crypto.utils';
+import { CreatePostDto } from '../dto/create-post.dto';
+import { PatchPostDto } from '../dto/patch-post.dto';
 
 @Injectable()
 export class PostService {
@@ -21,7 +22,14 @@ export class PostService {
     private readonly postLikeService: PostLikeService,
   ) {}
 
-  async getPostPageListByPage(page: number = 1) {
+  async createPost(
+    authUid: string,
+    createPostDto: CreatePostDto,
+  ): Promise<void> {
+    await this.postRepository.createPost(authUid, createPostDto);
+  }
+
+  async getPostPageListByPage(page: number): Promise<PaginationDto<PostDto>> {
     const [postEntityList, total] =
       await this.postRepository.findPostEntityListAndCountByPage(page);
 
@@ -35,16 +43,17 @@ export class PostService {
   }
 
   async getPostPageListByPostPageRequestDto(
-    postPageRequestDto: PostPageRequestDto,
+    encryptedPostUid: string,
+    page: number,
   ): Promise<PaginationDto<PostDto>> {
     const [postEntityList, total] =
       await this.postRepository.findPostEntityListAndCountByPostPageDto(
         new PostPageDto(
           CryptoUtils.decryptPrimaryKey(
-            postPageRequestDto.encryptedPostUid,
+            encryptedPostUid,
             this.config.pkSecretKey,
           ),
-          postPageRequestDto.page,
+          page,
         ),
       );
 
@@ -53,7 +62,45 @@ export class PostService {
     return PaginationUtils.toPaginationDto<PostDto>(
       postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
       total,
-      postPageRequestDto.page,
+      page,
+    );
+  }
+
+  async getPostByEncryptedPostId(encryptedPostId: string): Promise<PostDto> {
+    const postEntity = await this.postRepository.findPostEntityByPostId(
+      Number(
+        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
+      ),
+    );
+    const postDao = PostDao.from({ ...postEntity });
+    const postLikeMap = await this.postLikeService.getPostLikeMapByPostIds([
+      postDao.getPostId,
+    ]);
+    postDao.setPostLikeNicknameList = postLikeMap.get(postDao.getPostId) || [];
+
+    return postDao.toPostDto(this.config.pkSecretKey);
+  }
+
+  async updatePost(
+    authUid: string,
+    encryptedPostId: string,
+    patchPostDto: PatchPostDto,
+  ): Promise<void> {
+    await this.postRepository.updatePost(
+      authUid,
+      Number(
+        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
+      ),
+      patchPostDto,
+    );
+  }
+
+  async deletePost(authUid: string, encryptedPostId: string): Promise<void> {
+    await this.postRepository.deletePost(
+      authUid,
+      Number(
+        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
+      ),
     );
   }
 
@@ -64,9 +111,14 @@ export class PostService {
       PostDao.from({ ...postEntity }),
     );
 
+    // N+1 쿼리 최적화: 모든 postId의 좋아요 목록을 한 번에 조회
+    const postIds = postDaoList.map((postDao) => postDao.getPostId);
+    const postLikeMap =
+      await this.postLikeService.getPostLikeMapByPostIds(postIds);
+
     for (const postDao of postDaoList) {
       postDao.setPostLikeNicknameList =
-        await this.postLikeService.getPostLikeNicknameList(postDao.getPostId);
+        postLikeMap.get(postDao.getPostId) || [];
     }
 
     return postDaoList;

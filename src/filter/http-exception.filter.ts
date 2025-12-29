@@ -29,7 +29,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // reissue된 토큰을 보내준다.
     if (exception instanceof TokenReissuedException) {
-      res.status(HttpStatus.OK).json(exception);
+      res.status(HttpStatus.CREATED).json(exception);
+      return;
     }
 
     /**
