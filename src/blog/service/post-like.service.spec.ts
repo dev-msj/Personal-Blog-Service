@@ -10,6 +10,7 @@ import { PostLikeDto } from '../dto/post-like.dto';
 describe('PostLikeService', () => {
   let postLikeService: PostLikeService;
   let postLikeRepository: PostLikeRepository;
+  let userInfoService: UserInfoService;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
@@ -31,6 +32,7 @@ describe('PostLikeService', () => {
           provide: PostLikeRepository,
           useValue: {
             findPostLikeEntityList: jest.fn(),
+            findPostLikeEntitiesByPostIds: jest.fn(),
             isExist: jest.fn(),
             savePostLikeEntity: jest.fn(),
             removePostLikeDto: jest.fn(),
@@ -47,6 +49,53 @@ describe('PostLikeService', () => {
 
     postLikeService = module.get(PostLikeService);
     postLikeRepository = module.get(PostLikeRepository);
+    userInfoService = module.get(UserInfoService);
+  });
+
+  describe('getPostLikeMapByPostIds', () => {
+    it('postId의 좋아요 닉네임 목록을 Map으로 반환', async () => {
+      // Given
+      const postIds = [1];
+      postLikeRepository.findPostLikeEntitiesByPostIds = jest
+        .fn()
+        .mockResolvedValue([{ postId: 1, uid: 'user1' }]);
+      userInfoService.getUserInfoByUid = jest
+        .fn()
+        .mockResolvedValue({ nickname: 'nick_user1' });
+
+      // When
+      const result = await postLikeService.getPostLikeMapByPostIds(postIds);
+
+      // Then
+      expect(result.get(1)).toEqual(['nick_user1']);
+    });
+
+    it('좋아요가 없는 postId는 빈 배열 반환', async () => {
+      // Given
+      const postIds = [1];
+      postLikeRepository.findPostLikeEntitiesByPostIds = jest
+        .fn()
+        .mockResolvedValue([]);
+
+      // When
+      const result = await postLikeService.getPostLikeMapByPostIds(postIds);
+
+      // Then
+      expect(result.get(1)).toEqual([]);
+    });
+
+    it('빈 postIds 배열 전달 시 빈 Map 반환', async () => {
+      // Given
+      postLikeRepository.findPostLikeEntitiesByPostIds = jest
+        .fn()
+        .mockResolvedValue([]);
+
+      // When
+      const result = await postLikeService.getPostLikeMapByPostIds([]);
+
+      // Then
+      expect(result.size).toBe(0);
+    });
   });
 
   describe('addPostLikeUser', () => {
