@@ -15,49 +15,49 @@ import { PostEntity } from '../../blog/entities/post.entity';
 @Entity('USER_AUTH')
 export class UserAuthEntity {
   @PrimaryColumn({ name: 'UID', length: 100 })
-  readonly uid: string;
+  uid: string;
 
   @Column({ name: 'PASSWORD', length: 1000 })
-  readonly password: string;
+  password: string;
 
   @Column({ name: 'SALT', length: 50 })
-  readonly salt: string;
+  salt: string;
 
   @Column({ name: 'SOCIAL_YN', type: 'char', length: 1 })
-  readonly socialYN: string;
+  socialYN: string;
 
   @Column({ name: 'REFRESH_TOKEN', length: 500 })
-  readonly refreshToken: string;
+  refreshToken: string;
 
   @Column({ name: 'USER_ROLE', type: 'enum', enum: UserRole })
-  readonly userRole: UserRole;
+  userRole: UserRole;
 
   @CreateDateColumn({
     name: 'CREATE_DATETIME',
     type: 'datetime',
   })
-  readonly createDatetime: Date;
+  createDatetime: Date;
 
   @UpdateDateColumn({
     name: 'MODIFY_DATETIME',
     type: 'datetime',
   })
-  readonly modifyDatetime: Date;
+  modifyDatetime: Date;
 
   @OneToOne(() => UserInfoEntity, (userInfoEntity) => userInfoEntity.uid, {
     onDelete: 'CASCADE',
   })
-  readonly userInfo: UserInfoEntity;
+  userInfo: UserInfoEntity;
 
   @OneToMany(() => PostEntity, (postEntity) => postEntity.postUid, {
     onDelete: 'CASCADE',
   })
-  readonly postEntitys: PostEntity[];
+  postEntitys: PostEntity[];
 
   @OneToMany(() => PostLikeEntity, (postLikeEntity) => postLikeEntity.uid, {
     onDelete: 'CASCADE',
   })
-  readonly postLikeEntitys: PostLikeEntity[];
+  postLikeEntitys: PostLikeEntity[];
 
   constructor(
     uid: string,
