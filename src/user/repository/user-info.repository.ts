@@ -18,24 +18,23 @@ export class UserInfoRepository {
   }
 
   async saveUserInfoEntity(userInfoEntity: UserInfoEntity): Promise<void> {
-    await this.userInfoRepository.save(userInfoEntity);
+    await this.userInfoRepository.insert(userInfoEntity);
   }
 
   async findUserInfoEntity(uid: string): Promise<UserInfoEntity> {
-    return (
-      (await this.userInfoRepository.findOne({
-        where: { uid: uid },
+    try {
+      return await this.userInfoRepository.findOneOrFail({
+        where: { uid },
         cache: {
           id: CacheIdUtils.getUserInfoEntityCacheId(uid),
           milliseconds: TimeUtils.getTicTimeHMS(24),
         },
-      })) ||
-      (() => {
-        this.removeUserInfoCache(uid);
+      });
+    } catch {
+      this.removeUserInfoCache(uid);
 
-        throw new NotFoundException(`User does not exist! - [${uid}]`);
-      })()
-    );
+      throw new NotFoundException(`User does not exist! - [${uid}]`);
+    }
   }
 
   async updateUserInfoEntity(userInfoEntity: UserInfoEntity): Promise<void> {
@@ -54,7 +53,7 @@ export class UserInfoRepository {
   }
 
   private removeUserInfoCache(uid: string): void {
-    this.dataSource.queryResultCache.remove([
+    this.dataSource.queryResultCache?.remove([
       CacheIdUtils.getUserInfoEntityCacheId(uid),
     ]);
   }

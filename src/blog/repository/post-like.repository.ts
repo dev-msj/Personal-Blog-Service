@@ -46,7 +46,7 @@ export class PostLikeRepository {
   async savePostLikeEntity(postLikeEntity: PostLikeEntity): Promise<void> {
     await this.removePostLikeEntityListCache(postLikeEntity.postId);
 
-    await this.postLikeRepository.save(
+    await this.postLikeRepository.insert(
       PostLikeDao.from({ ...postLikeEntity }).toPostLikeEntity(),
     );
   }
@@ -60,7 +60,7 @@ export class PostLikeRepository {
   }
 
   private async removePostLikeEntityListCache(postId: number) {
-    await this.dataSource.queryResultCache.remove([
+    await this.dataSource.queryResultCache?.remove([
       CacheIdUtils.getPostLikeEntityListCacheId(postId),
     ]);
   }

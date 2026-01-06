@@ -19,22 +19,19 @@ export class UserAuthRepository {
   ) {}
 
   async saveUserAuthEntity(userAuthEntity: UserAuthEntity) {
-    await this.userAuthRepository.save(userAuthEntity);
+    await this.userAuthRepository.insert(userAuthEntity);
   }
 
   async getUserAuthEntity(uid: string): Promise<UserAuthEntity> {
-    return (
-      (await this.userAuthRepository.findOne({
-        where: { uid: uid },
-      })) ||
-      (() => {
-        this.dataSource.queryResultCache.remove([
-          CacheIdUtils.getUserAuthEntityCacheId(uid),
-        ]);
+    try {
+      return await this.userAuthRepository.findOneByOrFail({ uid });
+    } catch {
+      this.dataSource.queryResultCache?.remove([
+        CacheIdUtils.getUserAuthEntityCacheId(uid),
+      ]);
 
-        throw new NotFoundException(`User does not exist! - [${uid}]`);
-      })()
-    );
+      throw new NotFoundException(`User does not exist! - [${uid}]`);
+    }
   }
 
   async isExist(uid: string): Promise<boolean> {
@@ -55,7 +52,7 @@ export class UserAuthRepository {
         )
         .getRawOne<UserSessionEntity>()) ||
       (() => {
-        this.dataSource.queryResultCache.remove([
+        this.dataSource.queryResultCache?.remove([
           CacheIdUtils.getUserSessionEntityCacheId(uid),
         ]);
 
@@ -67,7 +64,7 @@ export class UserAuthRepository {
   async updateUserAuthByUserSessionEntity(
     userSessionEntity: UserSessionEntity,
   ): Promise<void> {
-    this.dataSource.queryResultCache.remove([
+    this.dataSource.queryResultCache?.remove([
       CacheIdUtils.getUserSessionEntityCacheId(userSessionEntity.uid),
     ]);
 
