@@ -34,7 +34,12 @@ describe('User Auth API (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await dbCleaner.cleanTables([Tables.USER_INFO, Tables.USER_AUTH]);
+    await dbCleaner.cleanTables([
+      Tables.POST_LIKE,
+      Tables.POST,
+      Tables.USER_INFO,
+      Tables.USER_AUTH,
+    ]);
     await dbCleaner.cleanCache();
   });
 
