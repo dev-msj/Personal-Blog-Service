@@ -35,7 +35,7 @@ describe('PostLikeService', () => {
             findPostLikeEntitiesByPostIds: jest.fn(),
             isExist: jest.fn(),
             savePostLikeEntity: jest.fn(),
-            removePostLikeDto: jest.fn(),
+            removePostLikeEntity: jest.fn(),
           },
         },
         {
@@ -131,13 +131,13 @@ describe('PostLikeService', () => {
       postLikeRepository.isExist = jest
         .fn()
         .mockReturnValue(Promise.resolve(true));
-      postLikeRepository.removePostLikeDto = jest.fn().mockResolvedValue(null);
+      postLikeRepository.removePostLikeEntity = jest.fn().mockResolvedValue(null);
 
       // When
       await postLikeService.removePostLikeUser(postLikeDto);
 
       // Then
-      expect(postLikeRepository.removePostLikeDto).toHaveBeenCalled();
+      expect(postLikeRepository.removePostLikeEntity).toHaveBeenCalled();
     });
 
     it('좋아요하지 않은 게시글 삭제 시 ConflictException 발생', async () => {

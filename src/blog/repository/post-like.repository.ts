@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PostLikeEntity } from '../entities/post-like.entity';
-import { PostLikeDao } from '../dao/post-like.dao';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utils';
 
@@ -46,17 +45,16 @@ export class PostLikeRepository {
   async savePostLikeEntity(postLikeEntity: PostLikeEntity): Promise<void> {
     await this.removePostLikeEntityListCache(postLikeEntity.postId);
 
-    await this.postLikeRepository.insert(
-      PostLikeDao.from({ ...postLikeEntity }).toPostLikeEntity(),
-    );
+    await this.postLikeRepository.insert(postLikeEntity);
   }
 
-  async removePostLikeDto(postLikeEntity: PostLikeEntity): Promise<void> {
+  async removePostLikeEntity(postLikeEntity: PostLikeEntity): Promise<void> {
     await this.removePostLikeEntityListCache(postLikeEntity.postId);
 
-    await this.postLikeRepository.remove(
-      PostLikeDao.from({ ...postLikeEntity }).toPostLikeEntity(),
-    );
+    await this.postLikeRepository.delete({
+      postId: postLikeEntity.postId,
+      uid: postLikeEntity.uid,
+    });
   }
 
   private async removePostLikeEntityListCache(postId: number) {
