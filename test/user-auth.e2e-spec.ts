@@ -5,7 +5,7 @@ import * as request from 'supertest';
 import * as jwt from 'jsonwebtoken';
 import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
-import { DbCleaner } from './utils/db-cleaner';
+import { DbCleaner, Tables } from './utils/db-cleaner';
 import { setupApp } from '../src/config/app-setup';
 
 describe('User Auth API (e2e)', () => {
@@ -34,7 +34,7 @@ describe('User Auth API (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await dbCleaner.cleanAll();
+    await dbCleaner.cleanTables([Tables.USER_INFO, Tables.USER_AUTH]);
     await dbCleaner.cleanCache();
   });
 

@@ -1,6 +1,16 @@
 import { DataSource } from 'typeorm';
 
 /**
+ * 테이블명 상수
+ */
+export const Tables = {
+  USER_AUTH: 'USER_AUTH',
+  USER_INFO: 'USER_INFO',
+  POST: 'POST',
+  POST_LIKE: 'POST_LIKE',
+} as const;
+
+/**
  * 테스트 후 DB 데이터를 정리하는 유틸리티
  */
 export class DbCleaner {

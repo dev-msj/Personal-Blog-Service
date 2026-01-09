@@ -4,7 +4,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
-import { DbCleaner } from './utils/db-cleaner';
+import { DbCleaner, Tables } from './utils/db-cleaner';
 import { AuthHelper } from './utils/auth-helper';
 import { setupApp } from '../src/config/app-setup';
 
@@ -36,7 +36,12 @@ describe('Post API (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await dbCleaner.cleanAll();
+    await dbCleaner.cleanTables([
+      Tables.POST_LIKE,
+      Tables.POST,
+      Tables.USER_INFO,
+      Tables.USER_AUTH,
+    ]);
     await dbCleaner.cleanCache();
   });
 
