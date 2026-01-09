@@ -9,6 +9,8 @@ export const redisConfig: CacheModuleAsyncOptions = {
     isGlobal: true,
     store: redisStore,
     host: configService.get('REDIS_HOST'),
-    port: configService.get('REDIS_PORT'),
+    port: Number(configService.get('REDIS_PORT')),
+    password: configService.get('REDIS_PASSWORD'),
+    no_ready_check: true,
   }),
 };

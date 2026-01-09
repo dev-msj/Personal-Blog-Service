@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfoEntity } from '../entities/user-info.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityNotFoundError, Repository } from 'typeorm';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utils';
 
@@ -18,28 +18,31 @@ export class UserInfoRepository {
   }
 
   async saveUserInfoEntity(userInfoEntity: UserInfoEntity): Promise<void> {
-    await this.userInfoRepository.save(userInfoEntity);
+    await this.userInfoRepository.insert(userInfoEntity);
   }
 
   async findUserInfoEntity(uid: string): Promise<UserInfoEntity> {
-    return (
-      (await this.userInfoRepository.findOne({
-        where: { uid: uid },
+    try {
+      return await this.userInfoRepository.findOneOrFail({
+        where: { uid },
         cache: {
           id: CacheIdUtils.getUserInfoEntityCacheId(uid),
           milliseconds: TimeUtils.getTicTimeHMS(24),
         },
-      })) ||
-      (() => {
-        this.removeUserInfoCache(uid);
+      });
+    } catch (error) {
+      await this.removeUserInfoCache(uid);
 
+      if (error instanceof EntityNotFoundError) {
         throw new NotFoundException(`User does not exist! - [${uid}]`);
-      })()
-    );
+      }
+
+      throw error;
+    }
   }
 
   async updateUserInfoEntity(userInfoEntity: UserInfoEntity): Promise<void> {
-    this.removeUserInfoCache(userInfoEntity.uid);
+    await this.removeUserInfoCache(userInfoEntity.uid);
 
     await this.userInfoRepository.update(
       { uid: userInfoEntity.uid },
@@ -48,13 +51,13 @@ export class UserInfoRepository {
   }
 
   async deleteUserInfoByUid(uid: string): Promise<void> {
-    this.removeUserInfoCache(uid);
+    await this.removeUserInfoCache(uid);
 
     await this.userInfoRepository.delete({ uid: uid });
   }
 
-  private removeUserInfoCache(uid: string): void {
-    this.dataSource.queryResultCache.remove([
+  private async removeUserInfoCache(uid: string): Promise<void> {
+    await this.dataSource.queryResultCache?.remove([
       CacheIdUtils.getUserInfoEntityCacheId(uid),
     ]);
   }

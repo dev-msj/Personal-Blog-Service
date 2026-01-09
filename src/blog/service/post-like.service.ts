@@ -69,7 +69,7 @@ export class PostLikeService {
       throw new ConflictException('PostId does not exist!');
     }
 
-    await this.postLikeRepository.removePostLikeDto(postLikeEntity);
+    await this.postLikeRepository.removePostLikeEntity(postLikeEntity);
 
     this.logger.info(`removePostLikeUser - [${JSON.stringify(postLikeDto)}]`);
   }

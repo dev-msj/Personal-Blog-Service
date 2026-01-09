@@ -4,6 +4,7 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -28,7 +29,7 @@ export class PostLikeController {
   @ApiOperation({
     description: '특정 유저의 블로그에 좋아요를 누른 유저를 추가한다.',
   })
-  @ApiOkResponse(successResponseOptions)
+  @ApiCreatedResponse(successResponseOptions)
   @ApiConflictResponse({
     description: 'PostId is already exist!',
   })

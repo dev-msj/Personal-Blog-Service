@@ -12,6 +12,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCookieAuth,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -91,7 +92,7 @@ export class PostController {
 
   @Post()
   @ApiOperation({ description: '새로운 글을 생성한다.' })
-  @ApiOkResponse(successResponseOptions)
+  @ApiCreatedResponse(successResponseOptions)
   @ApiBadRequestResponse({ description: 'Request body error' })
   async createPost(
     @AuthenticatedUserValidation() authUid: string,

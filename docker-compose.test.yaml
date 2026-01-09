@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  mysql:
+  mysql-test:
     image: mysql:8.0
-    container_name: personal-blog-mysql
+    container_name: personal-blog-mysql-test
     restart: always
     env_file:
-      - ./env/.development.env
+      - ./env/.test.env
     environment:
       TZ: Asia/Seoul
       LANG: C.UTF-8
@@ -14,18 +14,22 @@ services:
       MYSQL_COLLATION: utf8mb4_unicode_ci
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --authentication_policy=mysql_native_password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
-      - ./data/mysql:/var/lib/mysql
+      - ./data/mysql-test:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
-  redis:
+  redis-test:
     image: redis:7-alpine
-    container_name: personal-blog-redis
+    container_name: personal-blog-redis-test
     restart: always
     env_file:
-      - ./env/.development.env
+      - ./env/.test.env
     ports:
-      - "6379:6379"
+      - "6380:6379"
     command: sh -c "redis-server --appendonly yes --requirepass $$REDIS_PASSWORD"
     volumes:
-      - ./data/redis:/data
+      - ./data/redis-test:/data

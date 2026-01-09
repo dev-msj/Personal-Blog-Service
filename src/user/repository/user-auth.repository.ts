@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserAuthEntity } from '../entities/user-auth.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityNotFoundError, Repository } from 'typeorm';
 import { UserSessionEntity } from '../entities/user-session.entity';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -19,22 +19,23 @@ export class UserAuthRepository {
   ) {}
 
   async saveUserAuthEntity(userAuthEntity: UserAuthEntity) {
-    await this.userAuthRepository.save(userAuthEntity);
+    await this.userAuthRepository.insert(userAuthEntity);
   }
 
   async getUserAuthEntity(uid: string): Promise<UserAuthEntity> {
-    return (
-      (await this.userAuthRepository.findOne({
-        where: { uid: uid },
-      })) ||
-      (() => {
-        this.dataSource.queryResultCache.remove([
-          CacheIdUtils.getUserAuthEntityCacheId(uid),
-        ]);
+    try {
+      return await this.userAuthRepository.findOneByOrFail({ uid });
+    } catch (error) {
+      await this.dataSource.queryResultCache?.remove([
+        CacheIdUtils.getUserAuthEntityCacheId(uid),
+      ]);
 
+      if (error instanceof EntityNotFoundError) {
         throw new NotFoundException(`User does not exist! - [${uid}]`);
-      })()
-    );
+      }
+
+      throw error;
+    }
   }
 
   async isExist(uid: string): Promise<boolean> {
@@ -42,36 +43,42 @@ export class UserAuthRepository {
   }
 
   async getUserSessionEntityByUid(uid: string): Promise<UserSessionEntity> {
-    return (
-      (await this.userAuthRepository
-        .createQueryBuilder('userAuthEntity')
-        .select('userAuthEntity.uid', 'uid')
-        .addSelect('userAuthEntity.refreshToken', 'refreshToken')
-        .addSelect('userAuthEntity.userRole', 'userRole')
-        .where({ uid: uid })
-        .cache(
-          CacheIdUtils.getUserSessionEntityCacheId(uid),
-          TimeUtils.getTicTimeHMS(6),
-        )
-        .getRawOne<UserSessionEntity>()) ||
-      (() => {
-        this.dataSource.queryResultCache.remove([
-          CacheIdUtils.getUserSessionEntityCacheId(uid),
-        ]);
+    try {
+      const userAuthEntity = await this.userAuthRepository.findOneOrFail({
+        where: { uid },
+        select: ['uid', 'refreshToken', 'userRole'],
+        cache: {
+          id: CacheIdUtils.getUserSessionEntityCacheId(uid),
+          milliseconds: TimeUtils.getTicTimeHMS(6),
+        },
+      });
 
+      return new UserSessionEntity(
+        userAuthEntity.uid,
+        userAuthEntity.refreshToken,
+        userAuthEntity.userRole,
+      );
+    } catch (error) {
+      this.dataSource.queryResultCache?.remove([
+        CacheIdUtils.getUserSessionEntityCacheId(uid),
+      ]);
+
+      if (error instanceof EntityNotFoundError) {
         throw new NotFoundException(`User does not exist! - [${uid}]`);
-      })()
-    );
+      }
+
+      throw error;
+    }
   }
 
   async updateUserAuthByUserSessionEntity(
     userSessionEntity: UserSessionEntity,
   ): Promise<void> {
-    this.dataSource.queryResultCache.remove([
+    await this.dataSource.queryResultCache?.remove([
       CacheIdUtils.getUserSessionEntityCacheId(userSessionEntity.uid),
     ]);
 
-    this.userAuthRepository.update(
+    await this.userAuthRepository.update(
       {
         uid: userSessionEntity.uid,
       },
