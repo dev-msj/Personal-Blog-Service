@@ -25,12 +25,16 @@ export class UserAuthRepository {
   async getUserAuthEntity(uid: string): Promise<UserAuthEntity> {
     try {
       return await this.userAuthRepository.findOneByOrFail({ uid });
-    } catch {
-      this.dataSource.queryResultCache?.remove([
+    } catch (error) {
+      await this.dataSource.queryResultCache?.remove([
         CacheIdUtils.getUserAuthEntityCacheId(uid),
       ]);
 
-      throw new NotFoundException(`User does not exist! - [${uid}]`);
+      if (error instanceof EntityNotFoundError) {
+        throw new NotFoundException(`User does not exist! - [${uid}]`);
+      }
+
+      throw error;
     }
   }
 
@@ -70,7 +74,7 @@ export class UserAuthRepository {
   async updateUserAuthByUserSessionEntity(
     userSessionEntity: UserSessionEntity,
   ): Promise<void> {
-    this.dataSource.queryResultCache?.remove([
+    await this.dataSource.queryResultCache?.remove([
       CacheIdUtils.getUserSessionEntityCacheId(userSessionEntity.uid),
     ]);
 
