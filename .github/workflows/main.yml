@@ -1,0 +1,118 @@
+# .github/workflows/project-automation.yml
+name: Project Automation
+
+on:
+  create:
+
+jobs:
+  move-to-in-progress:
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move issue to In Progress
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            const match = branch.match(/(\d+)/);
+            if (!match) {
+              console.log('No issue number found in branch name');
+              return;
+            }
+            
+            const issueNumber = parseInt(match[1]);
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // 이슈 확인
+            try {
+              await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber
+              });
+            } catch (e) {
+              console.log(`Issue #${issueNumber} not found`);
+              return;
+            }
+            
+            console.log(`Found issue #${issueNumber}, moving to In Progress`);
+            
+            // GraphQL로 Projects V2 상태 변경
+            const projectNumber = 1; // 본인 프로젝트 번호로 변경
+            
+            const query = `
+              query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $issueNumber) {
+                    id
+                    projectItems(first: 10) {
+                      nodes {
+                        id
+                        project {
+                          id
+                          number
+                          field(name: "Status") {
+                            ... on ProjectV2SingleSelectField {
+                              id
+                              options {
+                                id
+                                name
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+            
+            const result = await github.graphql(query, {
+              owner,
+              repo,
+              issueNumber
+            });
+            
+            const projectItem = result.repository.issue.projectItems.nodes
+              .find(item => item.project.number === projectNumber);
+            
+            if (!projectItem) {
+              console.log('Issue not in target project');
+              return;
+            }
+            
+            const statusField = projectItem.project.field;
+            const inProgressOption = statusField.options
+              .find(opt => opt.name === 'In Progress');
+            
+            if (!inProgressOption) {
+              console.log('In Progress status not found');
+              return;
+            }
+            
+            const mutation = `
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { singleSelectOptionId: $optionId }
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+            
+            await github.graphql(mutation, {
+              projectId: projectItem.project.id,
+              itemId: projectItem.id,
+              fieldId: statusField.id,
+              optionId: inProgressOption.id
+            });
+            
+            console.log(`Moved issue #${issueNumber} to In Progress`);
