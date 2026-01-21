@@ -1,4 +1,3 @@
-# .github/workflows/project-automation.yml
 name: Project Automation
 
 on:
@@ -12,7 +11,7 @@ jobs:
       - name: Move issue to In Progress
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
             const branch = context.ref.replace('refs/heads/', '');
             const match = branch.match(/(\d+)/);
@@ -25,7 +24,6 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             
-            // 이슈 확인
             try {
               await github.rest.issues.get({
                 owner,
@@ -39,27 +37,31 @@ jobs:
             
             console.log(`Found issue #${issueNumber}, moving to In Progress`);
             
-            // GraphQL로 Projects V2 상태 변경
-            const projectNumber = 1; // 본인 프로젝트 번호로 변경
+            const projectNumber = 1;
+            const username = owner;
             
             const query = `
-              query($owner: String!, $repo: String!, $issueNumber: Int!) {
-                repository(owner: $owner, name: $repo) {
-                  issue(number: $issueNumber) {
+              query($username: String!, $projectNumber: Int!) {
+                user(login: $username) {
+                  projectV2(number: $projectNumber) {
                     id
-                    projectItems(first: 10) {
+                    field(name: "Status") {
+                      ... on ProjectV2SingleSelectField {
+                        id
+                        options {
+                          id
+                          name
+                        }
+                      }
+                    }
+                    items(first: 100) {
                       nodes {
                         id
-                        project {
-                          id
-                          number
-                          field(name: "Status") {
-                            ... on ProjectV2SingleSelectField {
-                              id
-                              options {
-                                id
-                                name
-                              }
+                        content {
+                          ... on Issue {
+                            number
+                            repository {
+                              name
                             }
                           }
                         }
@@ -71,22 +73,30 @@ jobs:
             `;
             
             const result = await github.graphql(query, {
-              owner,
-              repo,
-              issueNumber
+              username,
+              projectNumber
             });
             
-            const projectItem = result.repository.issue.projectItems.nodes
-              .find(item => item.project.number === projectNumber);
+            const project = result.user.projectV2;
+            if (!project) {
+              console.log('Project not found');
+              return;
+            }
+            
+            const projectItem = project.items.nodes.find(item => 
+              item.content?.number === issueNumber && 
+              item.content?.repository?.name === repo
+            );
             
             if (!projectItem) {
               console.log('Issue not in target project');
               return;
             }
             
-            const statusField = projectItem.project.field;
-            const inProgressOption = statusField.options
-              .find(opt => opt.name === 'In Progress');
+            const statusField = project.field;
+            const inProgressOption = statusField.options.find(
+              opt => opt.name.toLowerCase().replace(/\s/g, '') === 'inprogress'
+            );
             
             if (!inProgressOption) {
               console.log('In Progress status not found');
@@ -109,7 +119,7 @@ jobs:
             `;
             
             await github.graphql(mutation, {
-              projectId: projectItem.project.id,
+              projectId: project.id,
               itemId: projectItem.id,
               fieldId: statusField.id,
               optionId: inProgressOption.id
