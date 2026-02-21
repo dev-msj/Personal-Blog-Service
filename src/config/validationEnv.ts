@@ -18,12 +18,6 @@ export const validationEnv = Joi.object({
       Joi.number().integer().positive(),
     )
     .required(),
-  JWT_REFRESHTOKEN_REISSUE_TIME: Joi.alternatives()
-    .try(
-      Joi.string().pattern(/^\d+[smhd]$|^\d+$/),
-      Joi.number().integer().positive(),
-    )
-    .required(),
   COOKIE_MAX_AGE: Joi.alternatives()
     .try(
       Joi.string().pattern(/^\d+[smhdwy]$|^\d+$/), // s, m(분), h, d, w, y
