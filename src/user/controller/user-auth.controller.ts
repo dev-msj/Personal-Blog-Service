@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -8,6 +8,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
 import { UserAuthService } from './../service/user-auth.service';
 import { JwtDto } from '../dto/jwt.dto';
@@ -47,6 +48,18 @@ export class UserAuthController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async login(@Body() userAuthRequestDto: UserAuthRequestDto): Promise<JwtDto> {
     return await this.userAuthService.login(userAuthRequestDto);
+  }
+
+  @Post('refresh')
+  @ApiOperation({ description: 'Refresh Token으로 토큰 갱신 요청 API' })
+  @ApiCreatedResponse({
+    description: 'Response JWT(Access Token & Refresh Token)',
+    type: JwtDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid refresh token.' })
+  async refresh(@Req() req: Request): Promise<JwtDto> {
+    const refreshToken = req.cookies.refreshToken;
+    return await this.userAuthService.refresh(refreshToken);
   }
 
   @Post('oauth')
