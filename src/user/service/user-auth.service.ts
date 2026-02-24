@@ -112,6 +112,10 @@ export class UserAuthService {
   }
 
   async refresh(refreshToken: string): Promise<JwtDto> {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token is required.');
+    }
+
     const userSessionEntity =
       await this.jwtService.verifyRefreshToken(refreshToken);
 
