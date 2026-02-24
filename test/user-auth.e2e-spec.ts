@@ -170,6 +170,17 @@ describe('User Auth API (e2e)', () => {
       expect(refreshResponse.headers['set-cookie']).toBeDefined();
     });
 
+    it('refreshToken 쿠키 없이 갱신 시 401 응답', async () => {
+      // When: 쿠키 없이 refresh 요청
+      const response = await request(app.getHttpServer()).post(
+        '/users/auth/refresh',
+      );
+
+      // Then: 401 응답
+      expect(response.status).toBe(200);
+      expect(response.body.code).toBe(401);
+    });
+
     it('유효하지 않은 refreshToken으로 갱신 시 401 응답', async () => {
       // When: 유효하지 않은 refreshToken으로 refresh 요청
       const response = await request(app.getHttpServer())
