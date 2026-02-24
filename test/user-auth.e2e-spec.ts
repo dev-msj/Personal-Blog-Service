@@ -178,7 +178,7 @@ describe('User Auth API (e2e)', () => {
 
       // Then: 401 응답
       expect(response.status).toBe(200);
-      expect(response.body.statusCode).toBe(401);
+      expect(response.body.code).toBe(401);
     });
   });
 });
