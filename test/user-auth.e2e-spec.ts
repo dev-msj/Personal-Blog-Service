@@ -139,8 +139,9 @@ describe('User Auth API (e2e)', () => {
         .set('Authorization', `Bearer ${expiredAccessToken}`)
         .set('Cookie', refreshToken);
 
-      // Then: 403 응답 (인증 실패)
-      expect(response.status).toBe(403);
+      // Then: 401 응답 (인증 실패 — HttpExceptionFilter가 HTTP 200으로 감싸고 body.code에 실제 상태 코드)
+      expect(response.status).toBe(200);
+      expect(response.body.code).toBe(401);
     });
 
     it('POST /users/auth/refresh로 토큰을 갱신할 수 있다', async () => {
