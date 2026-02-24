@@ -90,26 +90,9 @@ export class JwtService {
   async reissueJwtByUserSessionEntity(
     userSessionEntity: UserSessionEntity,
   ): Promise<JwtDto> {
-    const decodedJwt = this.decodeToken(userSessionEntity.refreshToken);
-    const expiresAt = decodedJwt.exp * 1000;
+    this.logger.info(`JWT has been reissued. - [${userSessionEntity.uid}]`);
 
-    if (this.willExpire(expiresAt)) {
-      this.logger.info(`JWT has been reissued. - [${userSessionEntity.uid}]`);
-
-      return await this.create(
-        userSessionEntity.uid,
-        userSessionEntity.userRole,
-      );
-    }
-
-    this.logger.info(
-      `Access Token has been reissued. - [${userSessionEntity.uid}]`,
-    );
-
-    return new JwtDto(
-      this.generateToken(userSessionEntity.uid, JwtService.ACCESS_TOKEN),
-      userSessionEntity.refreshToken,
-    );
+    return await this.create(userSessionEntity.uid, userSessionEntity.userRole);
   }
 
   private generateToken(uid: string, tokenType: string): string {
@@ -135,12 +118,5 @@ export class JwtService {
 
   private decodeToken(token: string): jwt.JwtPayload {
     return jwt.verify(token, this.config.jwtSecretKey) as jwt.JwtPayload;
-  }
-
-  private willExpire(expiresAt: number): boolean {
-    return (
-      expiresAt - new Date().getTime() <
-      Number(this.config.refreshTokenReissueTime)
-    );
   }
 }

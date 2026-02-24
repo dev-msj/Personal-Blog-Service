@@ -75,7 +75,7 @@ describe('Post API (e2e)', () => {
 
       // Then: 인증 실패 (HttpExceptionFilter가 HTTP 200으로 반환하고 body.code에 실제 상태 코드 포함)
       expect(response.status).toBe(200);
-      expect(response.body.code).toBe(403);
+      expect(response.body.code).toBe(401);
     });
   });
 

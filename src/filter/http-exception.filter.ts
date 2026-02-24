@@ -11,7 +11,6 @@ import { Request, Response } from 'express';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { FailureResponse } from '../response/failure-response.dto';
-import { TokenReissuedException } from '../exception/token-reissued.exception';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -26,12 +25,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const res = ctx.getResponse<Response>();
 
     let response: string | object;
-
-    // reissue된 토큰을 보내준다.
-    if (exception instanceof TokenReissuedException) {
-      res.status(HttpStatus.CREATED).json(exception);
-      return;
-    }
 
     /**
      * exception이 HttpException이 아닐 경우에는

@@ -10,8 +10,6 @@ export default registerAs('config', () => ({
     (process.env.JWT_ACCESSTOKEN_EXPIRE_TIME as StringValue | number) || '1h',
   refreshTokenExpireTime:
     (process.env.JWT_REFRESHTOKEN_EXPIRE_TIME as StringValue | number) || '30d',
-  refreshTokenReissueTime:
-    (process.env.JWT_REFRESHTOKEN_REISSUE_TIME as StringValue | number) || '3d',
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   // Cookie settings
   cookieMaxAge: process.env.COOKIE_MAX_AGE

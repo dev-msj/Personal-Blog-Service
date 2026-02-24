@@ -132,6 +132,20 @@ describe('UserAuthService', () => {
     });
   });
 
+  describe('refresh', () => {
+    it('refreshToken이 없으면 UnauthorizedException을 던진다', async () => {
+      await expect(userAuthService.refresh(undefined)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('refreshToken이 빈 문자열이면 UnauthorizedException을 던진다', async () => {
+      await expect(userAuthService.refresh('')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
+
   describe('googleOauthLogin', () => {
     it('Test google oauth login success when user exist.', async () => {
       // Given

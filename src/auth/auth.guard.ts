@@ -3,11 +3,9 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { TokenExpiredError } from 'jsonwebtoken';
-import { TokenReissuedException } from '../exception/token-reissued.exception';
-import { ErrorCode } from '../constant/error-code.enum';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { Reflector } from '@nestjs/core';
@@ -38,36 +36,22 @@ export class AuthGuard implements CanActivate {
         )}]`,
       );
 
-      return false;
+      throw new UnauthorizedException();
     }
 
     const accessToken = request.headers.authorization.split('Bearer ')[1];
     const refreshToken = request.cookies.refreshToken;
     const verifyResult = await this.jwtService.verifyAccessToken(accessToken);
 
-    // access token이 expired 상태여도 refresh token으로 reissue 할 수 있도록 pass 시킨다.
-    if (
-      verifyResult instanceof Error &&
-      !(verifyResult instanceof TokenExpiredError)
-    ) {
-      return false;
+    if (verifyResult instanceof Error) {
+      throw new UnauthorizedException();
     }
 
     const userSessionEntity =
       await this.jwtService.verifyRefreshToken(refreshToken);
 
     if (userSessionEntity instanceof Error) {
-      return false;
-    }
-
-    if (verifyResult instanceof TokenExpiredError) {
-      const jwtDto =
-        await this.jwtService.reissueJwtByUserSessionEntity(userSessionEntity);
-      throw new TokenReissuedException(
-        ErrorCode.NOT_ACCEPTABLE,
-        'Token is reissued!',
-        jwtDto,
-      );
+      throw new UnauthorizedException();
     }
 
     const roles = this.reflector.getAllAndMerge<string[]>('roles', [

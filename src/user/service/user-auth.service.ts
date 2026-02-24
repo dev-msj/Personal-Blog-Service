@@ -111,6 +111,21 @@ export class UserAuthService {
     return this.jwtService.create(userAuthEntity.uid, userAuthEntity.userRole);
   }
 
+  async refresh(refreshToken: string): Promise<JwtDto> {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token is required.');
+    }
+
+    const userSessionEntity =
+      await this.jwtService.verifyRefreshToken(refreshToken);
+
+    if (userSessionEntity instanceof Error) {
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
+
+    return this.jwtService.reissueJwtByUserSessionEntity(userSessionEntity);
+  }
+
   private hashingPassword(password: string, salt: string): string {
     for (let i = 0; i < 3; i++) {
       const strectchedPassword = `${password}${salt}`;

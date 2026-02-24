@@ -72,29 +72,36 @@ describe('JwtService', () => {
   });
 
   describe('Reissue Token', () => {
-    it('Test reissue access token', async () => {
+    it('갱신 시 access token과 refresh token 모두 새로 발급된다', async () => {
       // Given
       const expectUid = 'uid@test.com';
       const userRole = UserRole.USER;
-      const refreshToken = (await jwtService.create(expectUid, userRole))
-        .refreshToken;
+      const originalJwt = await jwtService.create(expectUid, userRole);
       const userSessionEntity = new UserSessionEntity(
         expectUid,
-        refreshToken,
+        originalJwt.refreshToken,
         userRole,
       );
 
       // When
-      const accessToken = (
-        await jwtService.reissueJwtByUserSessionEntity(userSessionEntity)
-      ).accessToken;
+      const reissuedJwt =
+        await jwtService.reissueJwtByUserSessionEntity(userSessionEntity);
+
+      // Then: 새 access token이 유효한 uid를 포함한다
       const actualUid = CryptoUtils.decryptPrimaryKey(
-        (jwt.verify(accessToken, config.jwtSecretKey) as jwt.JwtPayload)['uid'],
+        (
+          jwt.verify(
+            reissuedJwt.accessToken,
+            config.jwtSecretKey,
+          ) as jwt.JwtPayload
+        )['uid'],
         config.pkSecretKey,
       );
-
-      // Then
       expect(actualUid).toEqual(expectUid);
+
+      // Then: refresh token도 새로 발급되어 기존과 다르다
+      expect(reissuedJwt.refreshToken).toBeDefined();
+      expect(reissuedJwt.refreshToken).not.toEqual(originalJwt.refreshToken);
     });
 
     it('Test verify refresh token throw error', async () => {

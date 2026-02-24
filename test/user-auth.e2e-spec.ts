@@ -108,8 +108,8 @@ describe('User Auth API (e2e)', () => {
     });
   });
 
-  describe('Token Reissue', () => {
-    it('accessToken 만료 시 refreshToken으로 토큰이 갱신된다', async () => {
+  describe('Token Refresh', () => {
+    it('accessToken 만료 시 API 호출이 거부된다', async () => {
       // Given: 사용자 생성 및 로그인
       const uid = 'testuser@example.com';
       const password = 'Password123!';
@@ -133,15 +133,63 @@ describe('User Auth API (e2e)', () => {
         { algorithm: 'HS256', issuer: 'personal_blog_test', expiresIn: '-1s' },
       );
 
-      // When: 만료된 accessToken + 유효한 refreshToken으로 API 호출
+      // When: 만료된 accessToken으로 API 호출
       const response = await request(app.getHttpServer())
         .get('/posts?page=1')
         .set('Authorization', `Bearer ${expiredAccessToken}`)
         .set('Cookie', refreshToken);
 
-      // Then: 토큰 갱신 후 201 응답 (TokenReissuedException)
-      expect(response.status).toBe(201);
-      expect(response.body.jwtDto.accessToken).toBeDefined();
+      // Then: 401 응답 (인증 실패 — HttpExceptionFilter가 HTTP 200으로 감싸고 body.code에 실제 상태 코드)
+      expect(response.status).toBe(200);
+      expect(response.body.code).toBe(401);
+    });
+
+    it('POST /users/auth/refresh로 토큰을 갱신할 수 있다', async () => {
+      // Given: 사용자 생성 및 로그인
+      const uid = 'testuser@example.com';
+      const password = 'Password123!';
+
+      await request(app.getHttpServer())
+        .post('/users/auth/join')
+        .send({ uid, password });
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/users/auth/login')
+        .send({ uid, password });
+
+      const refreshToken = loginResponse.headers['set-cookie']?.[0] || '';
+
+      // When: refresh 엔드포인트 호출
+      const refreshResponse = await request(app.getHttpServer())
+        .post('/users/auth/refresh')
+        .set('Cookie', refreshToken);
+
+      // Then: 새 토큰 발급
+      expect(refreshResponse.status).toBe(201);
+      expect(refreshResponse.body.accessToken).toBeDefined();
+      expect(refreshResponse.headers['set-cookie']).toBeDefined();
+    });
+
+    it('refreshToken 쿠키 없이 갱신 시 401 응답', async () => {
+      // When: 쿠키 없이 refresh 요청
+      const response = await request(app.getHttpServer()).post(
+        '/users/auth/refresh',
+      );
+
+      // Then: 401 응답
+      expect(response.status).toBe(200);
+      expect(response.body.code).toBe(401);
+    });
+
+    it('유효하지 않은 refreshToken으로 갱신 시 401 응답', async () => {
+      // When: 유효하지 않은 refreshToken으로 refresh 요청
+      const response = await request(app.getHttpServer())
+        .post('/users/auth/refresh')
+        .set('Cookie', 'refreshToken=invalid-token');
+
+      // Then: 401 응답
+      expect(response.status).toBe(200);
+      expect(response.body.code).toBe(401);
     });
   });
 });
