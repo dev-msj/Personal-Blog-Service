@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -35,7 +36,7 @@ export class AuthGuard implements CanActivate {
         )}]`,
       );
 
-      return false;
+      throw new UnauthorizedException();
     }
 
     const accessToken = request.headers.authorization.split('Bearer ')[1];
@@ -43,14 +44,14 @@ export class AuthGuard implements CanActivate {
     const verifyResult = await this.jwtService.verifyAccessToken(accessToken);
 
     if (verifyResult instanceof Error) {
-      return false;
+      throw new UnauthorizedException();
     }
 
     const userSessionEntity =
       await this.jwtService.verifyRefreshToken(refreshToken);
 
     if (userSessionEntity instanceof Error) {
-      return false;
+      throw new UnauthorizedException();
     }
 
     const roles = this.reflector.getAllAndMerge<string[]>('roles', [
