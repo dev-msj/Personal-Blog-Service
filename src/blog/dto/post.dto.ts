@@ -1,17 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { EncryptField } from '../../decorator/encrypt-field.decorator';
 
 export class PostDto {
+  @EncryptField()
   @ApiProperty({
-    description: 'Server에서 암호화하여 보내준 postId 값',
+    description: '암호화된 postId 값',
     example: 'U2FsdGVkX1%2BZUpmujgDXgSs%2BPqpQUdWxjlgu%2FESLUlQ%3D',
   })
-  readonly postId: string;
+  postId: number;
 
+  @EncryptField()
   @ApiProperty({
-    description: 'Server에서 암호화하여 보내준 postUid 값',
+    description: '암호화된 postUid 값',
     example: 'U2FsdGVkX18LAR9DqL2ix0kCNjn9zvceXoSyrKHkl4QRf8hgyRIWObotjECRakTV',
   })
-  readonly postUid: string;
+  postUid: string;
 
   @ApiProperty({
     description: '글 제목',
@@ -44,7 +47,7 @@ export class PostDto {
   readonly postLikeNicknameList: string[];
 
   constructor(
-    postId: string,
+    postId: number,
     postUid: string,
     title: string,
     writeDateTime: Date,

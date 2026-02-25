@@ -1,6 +1,5 @@
 import { PostDto } from '../dto/post.dto';
 import { PostInterface } from '../dto/interface/post.inteface';
-import { CryptoUtils } from '../../utils/crypto.utils';
 
 export class PostDao {
   private postId: number;
@@ -35,10 +34,10 @@ export class PostDao {
     this.postLikeNicknameList = postLikeNicknameList;
   }
 
-  toPostDto(pkSecretKey: string): PostDto {
+  toPostDto(): PostDto {
     return new PostDto(
-      CryptoUtils.encryptPrimaryKey(this.postId.toString(), pkSecretKey),
-      CryptoUtils.encryptPrimaryKey(this.postUid, pkSecretKey),
+      this.postId,
+      this.postUid,
       this.title,
       this.writeDatetime,
       this.contents,

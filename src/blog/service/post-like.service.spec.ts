@@ -3,7 +3,6 @@ import { Test } from '@nestjs/testing';
 import { PostLikeRepository } from '../repository/post-like.repository';
 import { UserInfoService } from '../../user/service/user-info.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import authConfig from '../../config/authConfig';
 import { ConflictException } from '@nestjs/common';
 import { PostLikeDto } from '../dto/post-like.dto';
 
@@ -20,12 +19,6 @@ describe('PostLikeService', () => {
           provide: WINSTON_MODULE_PROVIDER,
           useValue: {
             info: jest.fn(),
-          },
-        },
-        {
-          provide: authConfig.KEY,
-          useValue: {
-            pkSecretKey: 'test-key',
           },
         },
         {
@@ -101,7 +94,7 @@ describe('PostLikeService', () => {
   describe('addPostLikeUser', () => {
     it('좋아요 추가 성공', async () => {
       // Given
-      const postLikeDto = new PostLikeDto('encryptedPostId', 'uid');
+      const postLikeDto = new PostLikeDto(1, 'uid');
       postLikeRepository.isExist = jest.fn().mockResolvedValue(false);
       postLikeRepository.savePostLikeEntity = jest.fn().mockResolvedValue(null);
 
@@ -114,7 +107,7 @@ describe('PostLikeService', () => {
 
     it('이미 좋아요한 게시글에 중복 좋아요 시 ConflictException 발생', async () => {
       // Given
-      const postLikeDto = new PostLikeDto('encryptedPostId', 'uid');
+      const postLikeDto = new PostLikeDto(1, 'uid');
       postLikeRepository.isExist = jest.fn().mockResolvedValue(true);
 
       // When & Then
@@ -127,11 +120,13 @@ describe('PostLikeService', () => {
   describe('removePostLikeUser', () => {
     it('좋아요 삭제 성공', async () => {
       // Given
-      const postLikeDto = new PostLikeDto('encryptedPostId', 'uid');
+      const postLikeDto = new PostLikeDto(1, 'uid');
       postLikeRepository.isExist = jest
         .fn()
         .mockReturnValue(Promise.resolve(true));
-      postLikeRepository.removePostLikeEntity = jest.fn().mockResolvedValue(null);
+      postLikeRepository.removePostLikeEntity = jest
+        .fn()
+        .mockResolvedValue(null);
 
       // When
       await postLikeService.removePostLikeUser(postLikeDto);
@@ -142,7 +137,7 @@ describe('PostLikeService', () => {
 
     it('좋아요하지 않은 게시글 삭제 시 ConflictException 발생', async () => {
       // Given
-      const postLikeDto = new PostLikeDto('encryptedPostId', 'uid');
+      const postLikeDto = new PostLikeDto(1, 'uid');
       postLikeRepository.isExist = jest.fn().mockResolvedValue(false);
 
       // When & Then
