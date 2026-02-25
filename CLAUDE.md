@@ -49,8 +49,10 @@ src/
 ├── user/           # User feature module (auth, profile, OAuth)
 ├── config/         # TypeORM, Redis, Winston, JWT, env validation (Joi)
 ├── constant/       # ErrorCode enum, UserRole enum
-├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation()
+├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField()
 ├── filter/         # Global HttpExceptionFilter
+├── interceptor/    # EncryptPrimaryKeyInterceptor (응답 PK 암호화)
+├── pipe/           # DecryptPrimaryKeyPipe (요청 PK 복호화)
 ├── exception/      # Custom exceptions (BaseException, InvalidPageException, UnexpectedCodeException)
 ├── response/       # BaseResponseDto, SuccessResponse, FailureResponse, Swagger options
 └── utils/          # Crypto, pagination (TAKE=20 고정), cache key, time utilities
@@ -65,7 +67,8 @@ Each feature module follows: `Controller → Service → Repository → Entity`
 - Repositories: TypeORM queries
 - DAOs: Entity → DTO transformation
 - DTOs: Request/response validation with class-validator
-- Interceptors: `SetRefreshTokenCookieInterceptor` (user 모듈, refreshToken 쿠키 자동 설정)
+- Pipes: `DecryptPrimaryKeyPipe` (암호화된 path param → 복호화, 유효하지 않은 값은 BadRequestException)
+- Interceptors: `EncryptPrimaryKeyInterceptor` (응답 DTO의 `@EncryptField()` 필드 자동 암호화), `SetRefreshTokenCookieInterceptor` (user 모듈, refreshToken 쿠키 자동 설정)
 
 Feature module 내부 구조:
 ```text
@@ -121,6 +124,9 @@ PostEntity (POST): postId, postUid, title, contents, hits, timestamps
 PostLikeEntity (POST_LIKE): composite key (postId + uid)
 
 Primary keys are AES-encrypted in API responses using `PK_SECRET_KEY`.
+- 요청: `DecryptPrimaryKeyPipe`가 암호화된 path param을 복호화 (Controller 진입 전)
+- 응답: `EncryptPrimaryKeyInterceptor`가 `@EncryptField()` DTO 필드를 암호화 (Controller 반환 후)
+- Service/DAO 레이어는 암복호화에 관여하지 않음 (평문 number/string 사용)
 
 UserSessionEntity: TypeORM 엔티티가 아닌 인메모리 값 객체 — RefreshToken 검증 결과를 담는 DTO.
 
