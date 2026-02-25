@@ -11,6 +11,8 @@ import { PostRepository } from './repository/post.repository';
 import { PostLikeRepository } from './repository/post-like.repository';
 import { UserInfoRepository } from '../user/repository/user-info.repository';
 import { UserInfoService } from '../user/service/user-info.service';
+import { DecryptPrimaryKeyPipe } from '../pipe/decrypt-primary-key.pipe';
+import { EncryptPrimaryKeyInterceptor } from '../interceptor/encrypt-primary-key.interceptor';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { UserInfoService } from '../user/service/user-info.service';
     PostLikeRepository,
     UserInfoService,
     UserInfoRepository,
+    DecryptPrimaryKeyPipe,
+    EncryptPrimaryKeyInterceptor,
   ],
 })
 export class BlogModule {}
