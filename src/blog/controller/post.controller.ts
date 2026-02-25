@@ -30,6 +30,7 @@ import { successResponseOptions } from '../../response/swagger/success-response-
 import { CreatePostDto } from '../dto/create-post.dto';
 import { PatchPostDto } from '../dto/patch-post.dto';
 import { PostDto } from '../dto/post.dto';
+import { PostResponseDto } from '../dto/post-response.dto';
 import { PaginationDto } from '../dto/pagination.dto';
 import { PageQueryDto } from '../dto/page-query.dto';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
@@ -50,7 +51,7 @@ export class PostController {
     description:
       '모든 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
   })
-  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostDto)
+  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostResponseDto)
   @ApiNotFoundResponse({
     description: 'User does not exist! - [uid]',
   })
@@ -65,7 +66,7 @@ export class PostController {
     description:
       '특정 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
   })
-  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostDto)
+  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostResponseDto)
   @ApiNotFoundResponse({
     description: 'User does not exist! - [uid]',
   })
@@ -82,7 +83,7 @@ export class PostController {
   @ApiResponse({
     status: 200,
     description: '블로그 글 하나를 담은 응답',
-    type: PostDto,
+    type: PostResponseDto,
   })
   @ApiNotFoundResponse({ description: 'User does not exist! - [uid]' })
   @ApiBadRequestResponse({ description: 'Request body error' })
