@@ -1,4 +1,11 @@
-import { Controller, Delete, Param, ParseIntPipe, Post } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Param,
+  ParseIntPipe,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -17,12 +24,14 @@ import { UserRole } from '../../constant/user-role.enum';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 import { successResponseOptions } from '../../response/swagger/success-response-options';
 import { DecryptPrimaryKeyPipe } from '../../pipe/decrypt-primary-key.pipe';
+import { EncryptPrimaryKeyInterceptor } from '../../interceptor/encrypt-primary-key.interceptor';
 
 @Roles(UserRole.USER)
 @Controller('posts/:postId/likes')
 @ApiTags('posts/likes')
 @ApiBearerAuth('accessToken')
 @ApiCookieAuth('refreshToken')
+@UseInterceptors(EncryptPrimaryKeyInterceptor)
 export class PostLikeController {
   constructor(private readonly postLikeService: PostLikeService) {}
 

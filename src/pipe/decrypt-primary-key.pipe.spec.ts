@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { DecryptPrimaryKeyPipe } from './decrypt-primary-key.pipe';
 import { CryptoUtils } from '../utils/crypto.utils';
 
@@ -31,5 +32,21 @@ describe('DecryptPrimaryKeyPipe', () => {
 
     // Then
     expect(result).toBe(uuid);
+  });
+
+  it('유효하지 않은 암호문이 입력되면 BadRequestException을 던진다', () => {
+    // Given
+    const invalidValue = 'not-a-valid-encrypted-value';
+
+    // When & Then
+    expect(() => pipe.transform(invalidValue)).toThrow(BadRequestException);
+  });
+
+  it('빈 문자열이 입력되면 BadRequestException을 던진다', () => {
+    // Given
+    const emptyValue = '';
+
+    // When & Then
+    expect(() => pipe.transform(emptyValue)).toThrow(BadRequestException);
   });
 });

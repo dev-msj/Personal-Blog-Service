@@ -1,4 +1,9 @@
-import { Inject, Injectable, PipeTransform } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  PipeTransform,
+} from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import authConfig from '../config/authConfig';
 import { CryptoUtils } from '../utils/crypto.utils';
@@ -11,6 +16,17 @@ export class DecryptPrimaryKeyPipe implements PipeTransform<string, string> {
   ) {}
 
   transform(value: string): string {
-    return CryptoUtils.decryptPrimaryKey(value, this.config.pkSecretKey);
+    try {
+      const decrypted = CryptoUtils.decryptPrimaryKey(
+        value,
+        this.config.pkSecretKey,
+      );
+      if (!decrypted) {
+        throw new Error('Decryption produced empty result');
+      }
+      return decrypted;
+    } catch {
+      throw new BadRequestException('Invalid encrypted parameter');
+    }
   }
 }
