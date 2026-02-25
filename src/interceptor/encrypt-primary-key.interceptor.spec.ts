@@ -111,4 +111,38 @@ describe('EncryptPrimaryKeyInterceptor', () => {
       done();
     });
   });
+
+  it('원본 객체를 변이시키지 않고 복사본을 반환한다', (done) => {
+    // Given
+    const dto = new TestDto(123, 'test-uid', 'name');
+    const next: CallHandler = { handle: () => of(dto) };
+
+    // When
+    interceptor.intercept(mockContext, next).subscribe((result) => {
+      // Then: 원본 유지
+      expect(dto.id).toBe(123);
+      expect(dto.uid).toBe('test-uid');
+      // 반환값은 암호화된 복사본
+      expect(result).not.toBe(dto);
+      expect(result.id).not.toBe(123);
+      done();
+    });
+  });
+
+  it('PaginationDto 원본 배열을 변이시키지 않는다', (done) => {
+    // Given
+    const items = [new TestDto(1, 'uid-1', 'name1')];
+    const pagination = new TestPaginationDto(items, 1);
+    const next: CallHandler = { handle: () => of(pagination) };
+
+    // When
+    interceptor.intercept(mockContext, next).subscribe((result) => {
+      // Then: 원본 유지
+      expect(items[0].id).toBe(1);
+      expect(items[0].uid).toBe('uid-1');
+      // 반환값의 data는 새 배열
+      expect(result.data).not.toBe(items);
+      done();
+    });
+  });
 });

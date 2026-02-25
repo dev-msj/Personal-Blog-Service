@@ -7,14 +7,14 @@ export class PostDto {
     description: '암호화된 postId 값',
     example: 'U2FsdGVkX1%2BZUpmujgDXgSs%2BPqpQUdWxjlgu%2FESLUlQ%3D',
   })
-  postId: number;
+  readonly postId: number;
 
   @EncryptField()
   @ApiProperty({
     description: '암호화된 postUid 값',
     example: 'U2FsdGVkX18LAR9DqL2ix0kCNjn9zvceXoSyrKHkl4QRf8hgyRIWObotjECRakTV',
   })
-  postUid: string;
+  readonly postUid: string;
 
   @ApiProperty({
     description: '글 제목',

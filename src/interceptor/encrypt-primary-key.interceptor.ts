@@ -26,9 +26,12 @@ export class EncryptPrimaryKeyInterceptor implements NestInterceptor {
   private encryptResponse(data: any): any {
     if (!data) return data;
 
+    // data 배열을 가진 래퍼(PaginationDto 등)는 배열 내 항목을 암호화
     if (data.data && Array.isArray(data.data)) {
-      data.data = data.data.map((item) => this.encryptObject(item));
-      return data;
+      return {
+        ...data,
+        data: data.data.map((item) => this.encryptObject(item)),
+      };
     }
 
     return this.encryptObject(data);
@@ -41,15 +44,16 @@ export class EncryptPrimaryKeyInterceptor implements NestInterceptor {
       Reflect.getMetadata(ENCRYPT_FIELD_KEY, obj.constructor) || [];
     if (fields.length === 0) return obj;
 
+    const result = { ...obj };
     for (const field of fields) {
-      if (obj[field] !== undefined && obj[field] !== null) {
-        obj[field] = CryptoUtils.encryptPrimaryKey(
-          String(obj[field]),
+      if (result[field] !== undefined && result[field] !== null) {
+        result[field] = CryptoUtils.encryptPrimaryKey(
+          String(result[field]),
           this.config.pkSecretKey,
         );
       }
     }
 
-    return obj;
+    return result;
   }
 }
