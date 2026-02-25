@@ -44,3 +44,7 @@ env/
 .vscode/
 key/
 data/
+
+# AI tools
+.claude/
+.serena/
