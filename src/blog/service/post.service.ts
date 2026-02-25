@@ -1,6 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { ConfigType } from '@nestjs/config';
-import authConfig from '../../config/authConfig';
+import { Injectable } from '@nestjs/common';
 import { PostLikeService } from './post-like.service';
 import { PostRepository } from '../repository/post.repository';
 import { PostDto } from '../dto/post.dto';
@@ -9,15 +7,12 @@ import { PaginationDto } from '../dto/pagination.dto';
 import { PostDao } from '../dao/post.dao';
 import { PostEntity } from '../entities/post.entity';
 import { PaginationUtils } from '../../utils/pagination.utils';
-import { CryptoUtils } from '../../utils/crypto.utils';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { PatchPostDto } from '../dto/patch-post.dto';
 
 @Injectable()
 export class PostService {
   constructor(
-    @Inject(authConfig.KEY)
-    private config: ConfigType<typeof authConfig>,
     private readonly postRepository: PostRepository,
     private readonly postLikeService: PostLikeService,
   ) {}
@@ -36,72 +31,51 @@ export class PostService {
     const postDaoList = await this.toPostDaoList(postEntityList);
 
     return PaginationUtils.toPaginationDto<PostDto>(
-      postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
+      postDaoList.map((postDao) => postDao.toPostDto()),
       total,
       page,
     );
   }
 
-  async getPostPageListByPostPageRequestDto(
-    encryptedPostUid: string,
+  async getPostPageListByPostUid(
+    postUid: string,
     page: number,
   ): Promise<PaginationDto<PostDto>> {
     const [postEntityList, total] =
       await this.postRepository.findPostEntityListAndCountByPostPageDto(
-        new PostPageDto(
-          CryptoUtils.decryptPrimaryKey(
-            encryptedPostUid,
-            this.config.pkSecretKey,
-          ),
-          page,
-        ),
+        new PostPageDto(postUid, page),
       );
 
     const postDaoList = await this.toPostDaoList(postEntityList);
 
     return PaginationUtils.toPaginationDto<PostDto>(
-      postDaoList.map((postDao) => postDao.toPostDto(this.config.pkSecretKey)),
+      postDaoList.map((postDao) => postDao.toPostDto()),
       total,
       page,
     );
   }
 
-  async getPostByEncryptedPostId(encryptedPostId: string): Promise<PostDto> {
-    const postEntity = await this.postRepository.findPostEntityByPostId(
-      Number(
-        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
-      ),
-    );
+  async getPostByPostId(postId: number): Promise<PostDto> {
+    const postEntity = await this.postRepository.findPostEntityByPostId(postId);
     const postDao = PostDao.from({ ...postEntity });
     const postLikeMap = await this.postLikeService.getPostLikeMapByPostIds([
       postDao.getPostId,
     ]);
     postDao.setPostLikeNicknameList = postLikeMap.get(postDao.getPostId) || [];
 
-    return postDao.toPostDto(this.config.pkSecretKey);
+    return postDao.toPostDto();
   }
 
   async updatePost(
     authUid: string,
-    encryptedPostId: string,
+    postId: number,
     patchPostDto: PatchPostDto,
   ): Promise<void> {
-    await this.postRepository.updatePost(
-      authUid,
-      Number(
-        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
-      ),
-      patchPostDto,
-    );
+    await this.postRepository.updatePost(authUid, postId, patchPostDto);
   }
 
-  async deletePost(authUid: string, encryptedPostId: string): Promise<void> {
-    await this.postRepository.deletePost(
-      authUid,
-      Number(
-        CryptoUtils.decryptPrimaryKey(encryptedPostId, this.config.pkSecretKey),
-      ),
-    );
+  async deletePost(authUid: string, postId: number): Promise<void> {
+    await this.postRepository.deletePost(authUid, postId);
   }
 
   private async toPostDaoList(

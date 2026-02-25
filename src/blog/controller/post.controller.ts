@@ -4,9 +4,11 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -28,15 +30,19 @@ import { successResponseOptions } from '../../response/swagger/success-response-
 import { CreatePostDto } from '../dto/create-post.dto';
 import { PatchPostDto } from '../dto/patch-post.dto';
 import { PostDto } from '../dto/post.dto';
+import { PostResponseDto } from '../dto/post-response.dto';
 import { PaginationDto } from '../dto/pagination.dto';
 import { PageQueryDto } from '../dto/page-query.dto';
 import { ApiOkResponsePaginationDto } from '../../decorator/api-ok-response-pagination-dto.decorator';
+import { DecryptPrimaryKeyPipe } from '../../pipe/decrypt-primary-key.pipe';
+import { EncryptPrimaryKeyInterceptor } from '../../interceptor/encrypt-primary-key.interceptor';
 
 @Roles(UserRole.USER)
 @Controller('posts')
 @ApiTags('posts')
 @ApiBearerAuth('accessToken')
 @ApiCookieAuth('refreshToken')
+@UseInterceptors(EncryptPrimaryKeyInterceptor)
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
@@ -45,7 +51,7 @@ export class PostController {
     description:
       '모든 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
   })
-  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostDto)
+  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostResponseDto)
   @ApiNotFoundResponse({
     description: 'User does not exist! - [uid]',
   })
@@ -55,39 +61,36 @@ export class PostController {
     return await this.postService.getPostPageListByPage(query.page);
   }
 
-  @Get('users/:encryptedPostUid')
+  @Get('users/:postUid')
   @ApiOperation({
     description:
       '특정 유저의 블로그에서 최신 글 20개를 가져온다. page 쿼리로 페이지 지정 가능.',
   })
-  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostDto)
+  @ApiOkResponsePaginationDto('블로그 리스트를 담은 페이지', PostResponseDto)
   @ApiNotFoundResponse({
     description: 'User does not exist! - [uid]',
   })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async getUserPosts(
-    @Param('encryptedPostUid') encryptedPostUid: string,
+    @Param('postUid', DecryptPrimaryKeyPipe) postUid: string,
     @Query() query: PageQueryDto,
   ): Promise<PaginationDto<PostDto>> {
-    return await this.postService.getPostPageListByPostPageRequestDto(
-      encryptedPostUid,
-      query.page,
-    );
+    return await this.postService.getPostPageListByPostUid(postUid, query.page);
   }
 
-  @Get(':encryptedPostId')
+  @Get(':postId')
   @ApiOperation({ description: '블로그 글 하나를 가져온다.' })
   @ApiResponse({
     status: 200,
     description: '블로그 글 하나를 담은 응답',
-    type: PostDto,
+    type: PostResponseDto,
   })
   @ApiNotFoundResponse({ description: 'User does not exist! - [uid]' })
   @ApiBadRequestResponse({ description: 'Request body error' })
   async getPost(
-    @Param('encryptedPostId') encryptedPostId: string,
+    @Param('postId', DecryptPrimaryKeyPipe, ParseIntPipe) postId: number,
   ): Promise<PostDto> {
-    return await this.postService.getPostByEncryptedPostId(encryptedPostId);
+    return await this.postService.getPostByPostId(postId);
   }
 
   @Post()
@@ -103,7 +106,7 @@ export class PostController {
     return new SuccessResponse();
   }
 
-  @Patch(':encryptedPostId')
+  @Patch(':postId')
   @ApiOperation({ description: '블로그 글을 수정한다.' })
   @ApiOkResponse(successResponseOptions)
   @ApiNotFoundResponse({
@@ -112,15 +115,15 @@ export class PostController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async patchPost(
     @AuthenticatedUserValidation() authUid: string,
-    @Param('encryptedPostId') encryptedPostId: string,
+    @Param('postId', DecryptPrimaryKeyPipe, ParseIntPipe) postId: number,
     @Body() patchPostDto: PatchPostDto,
   ): Promise<SuccessResponse> {
-    await this.postService.updatePost(authUid, encryptedPostId, patchPostDto);
+    await this.postService.updatePost(authUid, postId, patchPostDto);
 
     return new SuccessResponse();
   }
 
-  @Delete(':encryptedPostId')
+  @Delete(':postId')
   @ApiOperation({ description: '블로그 글을 삭제한다.' })
   @ApiOkResponse(successResponseOptions)
   @ApiNotFoundResponse({
@@ -129,9 +132,9 @@ export class PostController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async deletePost(
     @AuthenticatedUserValidation() authUid: string,
-    @Param('encryptedPostId') encryptedPostId: string,
+    @Param('postId', DecryptPrimaryKeyPipe, ParseIntPipe) postId: number,
   ): Promise<SuccessResponse> {
-    await this.postService.deletePost(authUid, encryptedPostId);
+    await this.postService.deletePost(authUid, postId);
 
     return new SuccessResponse();
   }

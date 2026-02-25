@@ -1,15 +1,11 @@
 import { PostRepository } from '../repository/post.repository';
 import { PostLikeService } from './post-like.service';
 import { PostService } from './post.service';
-import authConfig from '../../config/authConfig';
 import { Test } from '@nestjs/testing';
-import { ConfigType } from '@nestjs/config';
-import { CryptoUtils } from '../../utils/crypto.utils';
 import { PostEntity } from '../entities/post.entity';
 
 describe('PostService', () => {
   let postService: PostService;
-  let config: ConfigType<typeof authConfig>;
   let postRepository: PostRepository;
   let postLikeService: PostLikeService;
 
@@ -17,12 +13,6 @@ describe('PostService', () => {
     const module = await Test.createTestingModule({
       providers: [
         PostService,
-        {
-          provide: authConfig.KEY,
-          useValue: {
-            pkSecretKey: 'key',
-          },
-        },
         {
           provide: PostRepository,
           useValue: {
@@ -42,7 +32,6 @@ describe('PostService', () => {
     }).compile();
 
     postService = module.get(PostService);
-    config = module.get(authConfig.KEY);
     postRepository = module.get(PostRepository);
     postLikeService = module.get(PostLikeService);
   });
@@ -74,13 +63,7 @@ describe('PostService', () => {
       const result = await postService.getPostPageListByPage(1);
 
       // Then
-      const decryptedPostId = Number(
-        CryptoUtils.decryptPrimaryKey(
-          result.data[0].postId,
-          config.pkSecretKey,
-        ),
-      );
-      expect(decryptedPostId).toBe(expectedPostId);
+      expect(result.data[0].postId).toBe(expectedPostId);
     });
 
     it('게시글이 없을 때 빈 배열 반환', async () => {
@@ -168,15 +151,11 @@ describe('PostService', () => {
     });
   });
 
-  describe('getPostPageListByPostPageRequestDto', () => {
+  describe('getPostPageListByPostUid', () => {
     it('특정 유저의 게시글 목록 조회 성공', async () => {
       // Given
       const expectedPostId = 1;
       const testUid = 'testUid';
-      const encryptedUid = CryptoUtils.encryptPrimaryKey(
-        testUid,
-        config.pkSecretKey,
-      );
 
       postRepository.findPostEntityListAndCountByPostPageDto = jest
         .fn()
@@ -198,19 +177,10 @@ describe('PostService', () => {
         .mockResolvedValue(new Map([[expectedPostId, []]]));
 
       // When
-      const result = await postService.getPostPageListByPostPageRequestDto(
-        encryptedUid,
-        1,
-      );
+      const result = await postService.getPostPageListByPostUid(testUid, 1);
 
       // Then
-      const decryptedPostId = Number(
-        CryptoUtils.decryptPrimaryKey(
-          result.data[0].postId,
-          config.pkSecretKey,
-        ),
-      );
-      expect(decryptedPostId).toBe(expectedPostId);
+      expect(result.data[0].postId).toBe(expectedPostId);
       expect(
         postRepository.findPostEntityListAndCountByPostPageDto,
       ).toHaveBeenCalledWith(
@@ -224,10 +194,6 @@ describe('PostService', () => {
     it('해당 유저의 게시글이 없을 때 빈 배열 반환', async () => {
       // Given
       const testUid = 'testUid';
-      const encryptedUid = CryptoUtils.encryptPrimaryKey(
-        testUid,
-        config.pkSecretKey,
-      );
 
       postRepository.findPostEntityListAndCountByPostPageDto = jest
         .fn()
@@ -237,10 +203,7 @@ describe('PostService', () => {
         .mockResolvedValue(new Map());
 
       // When
-      const result = await postService.getPostPageListByPostPageRequestDto(
-        encryptedUid,
-        1,
-      );
+      const result = await postService.getPostPageListByPostUid(testUid, 1);
 
       // Then
       expect(result.data).toEqual([]);
@@ -250,10 +213,6 @@ describe('PostService', () => {
     it('페이지네이션 메타데이터가 정확히 계산됨', async () => {
       // Given
       const userUid = 'prolificUser';
-      const encryptedUserUid = CryptoUtils.encryptPrimaryKey(
-        userUid,
-        config.pkSecretKey,
-      );
       const totalPosts = 50;
 
       postRepository.findPostEntityListAndCountByPostPageDto = jest
@@ -267,10 +226,7 @@ describe('PostService', () => {
         .mockResolvedValue(new Map([[1, []]]));
 
       // When
-      const result = await postService.getPostPageListByPostPageRequestDto(
-        encryptedUserUid,
-        1,
-      );
+      const result = await postService.getPostPageListByPostUid(userUid, 1);
 
       // Then
       expect(result.paginationMeta.total).toBe(50);
@@ -278,14 +234,10 @@ describe('PostService', () => {
     });
   });
 
-  describe('getPostByEncryptedPostId', () => {
+  describe('getPostByPostId', () => {
     it('게시글 단건 조회 성공', async () => {
       // Given
       const postId = 123;
-      const encryptedPostId = CryptoUtils.encryptPrimaryKey(
-        postId.toString(),
-        config.pkSecretKey,
-      );
 
       postRepository.findPostEntityByPostId = jest
         .fn()
@@ -297,23 +249,15 @@ describe('PostService', () => {
         .mockResolvedValue(new Map([[postId, []]]));
 
       // When
-      const result =
-        await postService.getPostByEncryptedPostId(encryptedPostId);
+      const result = await postService.getPostByPostId(postId);
 
       // Then
-      const decryptedPostId = Number(
-        CryptoUtils.decryptPrimaryKey(result.postId, config.pkSecretKey),
-      );
-      expect(decryptedPostId).toBe(postId);
+      expect(result.postId).toBe(postId);
     });
 
     it('좋아요 목록이 포함되어 조회됨', async () => {
       // Given
       const postId = 123;
-      const encryptedPostId = CryptoUtils.encryptPrimaryKey(
-        postId.toString(),
-        config.pkSecretKey,
-      );
       const expectedLikes = ['user1'];
 
       postRepository.findPostEntityByPostId = jest
@@ -326,8 +270,7 @@ describe('PostService', () => {
         .mockResolvedValue(new Map([[postId, expectedLikes]]));
 
       // When
-      const result =
-        await postService.getPostByEncryptedPostId(encryptedPostId);
+      const result = await postService.getPostByPostId(postId);
 
       // Then
       expect(result.postLikeNicknameList).toEqual(expectedLikes);
@@ -335,18 +278,15 @@ describe('PostService', () => {
 
     it('존재하지 않는 게시글 조회 시 에러 발생', async () => {
       // Given
-      const encryptedPostId = CryptoUtils.encryptPrimaryKey(
-        '999',
-        config.pkSecretKey,
-      );
+      const postId = 999;
       postRepository.findPostEntityByPostId = jest
         .fn()
         .mockRejectedValue(new Error('Entity not found'));
 
       // When & Then
-      await expect(
-        postService.getPostByEncryptedPostId(encryptedPostId),
-      ).rejects.toThrow('Entity not found');
+      await expect(postService.getPostByPostId(postId)).rejects.toThrow(
+        'Entity not found',
+      );
     });
   });
 });

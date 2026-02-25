@@ -1,4 +1,11 @@
-import { Controller, Delete, Param, Post } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Param,
+  ParseIntPipe,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -16,12 +23,15 @@ import { Roles } from '../../decorator/roles.decorator';
 import { UserRole } from '../../constant/user-role.enum';
 import { AuthenticatedUserValidation } from '../../decorator/authenticated-user-validation.decorator';
 import { successResponseOptions } from '../../response/swagger/success-response-options';
+import { DecryptPrimaryKeyPipe } from '../../pipe/decrypt-primary-key.pipe';
+import { EncryptPrimaryKeyInterceptor } from '../../interceptor/encrypt-primary-key.interceptor';
 
 @Roles(UserRole.USER)
-@Controller('posts/:encryptedPostId/likes')
+@Controller('posts/:postId/likes')
 @ApiTags('posts/likes')
 @ApiBearerAuth('accessToken')
 @ApiCookieAuth('refreshToken')
+@UseInterceptors(EncryptPrimaryKeyInterceptor)
 export class PostLikeController {
   constructor(private readonly postLikeService: PostLikeService) {}
 
@@ -36,10 +46,10 @@ export class PostLikeController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async addPostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
-    @Param('encryptedPostId') encryptedPostId: string,
+    @Param('postId', DecryptPrimaryKeyPipe, ParseIntPipe) postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.addPostLikeUser(
-      new PostLikeDto(encryptedPostId, authUid),
+      new PostLikeDto(postId, authUid),
     );
 
     return new SuccessResponse();
@@ -56,10 +66,10 @@ export class PostLikeController {
   @ApiBadRequestResponse({ description: 'Request body error' })
   async deletePostLikeUser(
     @AuthenticatedUserValidation() authUid: string,
-    @Param('encryptedPostId') encryptedPostId: string,
+    @Param('postId', DecryptPrimaryKeyPipe, ParseIntPipe) postId: number,
   ): Promise<SuccessResponse> {
     await this.postLikeService.removePostLikeUser(
-      new PostLikeDto(encryptedPostId, authUid),
+      new PostLikeDto(postId, authUid),
     );
 
     return new SuccessResponse();

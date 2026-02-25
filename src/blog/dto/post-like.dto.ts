@@ -1,9 +1,9 @@
 export class PostLikeDto {
-  readonly encryptedPostId: string;
+  readonly postId: number;
   readonly uid: string;
 
-  constructor(encryptedPostId: string, uid: string) {
-    this.encryptedPostId = encryptedPostId;
+  constructor(postId: number, uid: string) {
+    this.postId = postId;
     this.uid = uid;
   }
 }
