@@ -15,6 +15,7 @@ import { validationEnv } from './config/validationEnv';
 import { HttpExceptionFilter } from './filter/http-exception.filter';
 import { winstonConfig } from './config/winstonConfig';
 import { UserModule } from './user/user.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { UserModule } from './user/user.module';
     CacheModule.registerAsync(redisConfig),
     BlogModule,
     UserModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
