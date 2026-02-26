@@ -12,7 +12,9 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
 import authConfig from './config/authConfig';
 import { validationEnv } from './config/validationEnv';
+import { UnhandledExceptionFilter } from './filter/unhandled-exception.filter';
 import { HttpExceptionFilter } from './filter/http-exception.filter';
+import { BaseExceptionFilter } from './filter/base-exception.filter';
 import { winstonConfig } from './config/winstonConfig';
 import { UserModule } from './user/user.module';
 import { HealthModule } from './health/health.module';
@@ -39,9 +41,18 @@ import { HealthModule } from './health/health.module';
       provide: APP_GUARD,
       useClass: AuthGuard,
     },
+    // 필터 실행 순서: BaseException → HttpException → Unhandled (NestJS는 등록 역순으로 실행)
+    {
+      provide: APP_FILTER,
+      useClass: UnhandledExceptionFilter,
+    },
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: BaseExceptionFilter,
     },
   ],
 })
