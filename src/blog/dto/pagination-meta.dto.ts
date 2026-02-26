@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class PaginationMetaDto {
   @ApiProperty({
-    description: '총 페이지 수',
-    example: 3,
+    description: '총 아이템 수',
+    example: 45,
   })
   readonly total: number;
 
