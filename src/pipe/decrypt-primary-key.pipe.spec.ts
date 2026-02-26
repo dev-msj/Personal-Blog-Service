@@ -5,9 +5,15 @@ import { CryptoUtils } from '../utils/crypto.utils';
 describe('DecryptPrimaryKeyPipe', () => {
   const pkSecretKey = 'test-secret-key!';
   let pipe: DecryptPrimaryKeyPipe;
+  let mockLogger: { warn: jest.Mock };
 
   beforeAll(() => {
-    pipe = new DecryptPrimaryKeyPipe({ pkSecretKey } as any);
+    mockLogger = { warn: jest.fn() };
+    pipe = new DecryptPrimaryKeyPipe(mockLogger as any, { pkSecretKey } as any);
+  });
+
+  beforeEach(() => {
+    mockLogger.warn.mockClear();
   });
 
   it('암호화된 값을 복호화하여 반환한다', () => {
@@ -48,5 +54,19 @@ describe('DecryptPrimaryKeyPipe', () => {
 
     // When & Then
     expect(() => pipe.transform(emptyValue)).toThrow(BadRequestException);
+  });
+
+  it('복호화 실패 시 서버 로그에 경고를 기록한다', () => {
+    // Given
+    const invalidValue = 'not-a-valid-encrypted-value';
+
+    // When
+    expect(() => pipe.transform(invalidValue)).toThrow(BadRequestException);
+
+    // Then
+    expect(mockLogger.warn).toHaveBeenCalledTimes(1);
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to decrypt primary key parameter.'),
+    );
   });
 });
