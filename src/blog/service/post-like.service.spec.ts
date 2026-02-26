@@ -4,7 +4,7 @@ import { PostLikeRepository } from '../repository/post-like.repository';
 import { UserInfoService } from '../../user/service/user-info.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PostLikeDto } from '../dto/post-like.dto';
-import { BaseException } from '../../exception/base.exception';
+import { ErrorCode } from '../../constant/error-code.enum';
 
 describe('PostLikeService', () => {
   let postLikeService: PostLikeService;
@@ -113,7 +113,11 @@ describe('PostLikeService', () => {
       // When & Then
       await expect(
         postLikeService.addPostLikeUser(postLikeDto),
-      ).rejects.toThrow(BaseException);
+      ).rejects.toThrow(
+        expect.objectContaining({
+          errorCode: ErrorCode.POST_LIKE_ALREADY_EXISTS,
+        }),
+      );
     });
   });
 
@@ -143,7 +147,11 @@ describe('PostLikeService', () => {
       // When & Then
       await expect(
         postLikeService.removePostLikeUser(postLikeDto),
-      ).rejects.toThrow(BaseException);
+      ).rejects.toThrow(
+        expect.objectContaining({
+          errorCode: ErrorCode.POST_LIKE_NOT_FOUND,
+        }),
+      );
     });
   });
 });
