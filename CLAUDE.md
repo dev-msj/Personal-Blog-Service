@@ -50,7 +50,7 @@ src/
 ├── config/         # TypeORM, Redis, Winston, JWT, env validation (Joi)
 ├── constant/       # ErrorCode enum, UserRole enum
 ├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField()
-├── filter/         # Global HttpExceptionFilter
+├── filter/         # 타입별 Exception Filters (BaseException, HttpException, Unhandled)
 ├── interceptor/    # EncryptPrimaryKeyInterceptor (응답 PK 암호화)
 ├── pipe/           # DecryptPrimaryKeyPipe (요청 PK 복호화)
 ├── exception/      # Custom exceptions (BaseException, InvalidPageException, UnexpectedCodeException)
@@ -82,14 +82,14 @@ user/: controller/ dao/ dto/ dto/interface/ entities/ interceptor/ repository/ s
 - ValidationPipe (전역): `whitelist: true, transform: true, enableImplicitConversion: true`
 - cookieParser 미들웨어 등록
 - 전역 Guard: `APP_GUARD` → `AuthGuard` (app.module.ts)
-- 전역 Filter: `APP_FILTER` → `HttpExceptionFilter` (app.module.ts)
+- 전역 Filter: `APP_FILTER` → `BaseExceptionFilter`, `HttpExceptionFilter`, `UnhandledExceptionFilter` (app.module.ts)
 
 ## HTTP Response Convention
 
 **항상 HTTP 200 반환** — REST 표준이 아닌 커스텀 방식:
 - 성공: `SuccessResponse { code, message, data }`
 - 실패: `FailureResponse { code, message }` (HTTP 200 + body 내 에러 코드)
-- `HttpExceptionFilter`가 모든 예외를 잡아 HTTP 200 + `FailureResponse`로 변환
+- 타입별 Exception Filter가 모든 예외를 잡아 HTTP 200 + `FailureResponse`로 변환
 
 ErrorCode enum: `UNAUTHORIZED(401)`, `NOT_FOUND(404)`, `NOT_ACCEPTABLE(406)`, `INTERNAL_SERVER_ERROR(500)`, `SERVICE_UNAVAILABLE(503)`
 
@@ -142,7 +142,15 @@ Standard pagination via `PaginationDto` with page/limit params. 페이지당 고
 
 ### Error Handling
 
-Global `HttpExceptionFilter` catches all errors and returns consistent `FailureResponse` format. Logs full stack traces for non-HTTP exceptions. `BaseException` 계층: `BaseException` → `InvalidPageException`, `UnexpectedCodeException`.
+타입별 Exception Filter 계층 (`AbstractExceptionFilter` 공통 상속):
+
+| Filter | `@Catch` 대상 | 역할 |
+|--------|--------------|------|
+| `BaseExceptionFilter` | `BaseException` | `errorCode` 응답 반영 |
+| `HttpExceptionFilter` | `HttpException` | NestJS 표준 HTTP 예외 처리 |
+| `UnhandledExceptionFilter` | `()` catch-all | 500 변환, 원본 에러 로깅 |
+
+`BaseException` 계층: `BaseException` → `InvalidPageException`, `UnexpectedCodeException`.
 
 ### Logging
 
