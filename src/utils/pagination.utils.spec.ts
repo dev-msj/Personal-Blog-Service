@@ -48,5 +48,31 @@ describe('PaginationUtils', () => {
         InvalidPageException,
       );
     });
+
+    it('currentPage가 lastPage를 초과할 때 currentPage를 lastPage로 보정', () => {
+      // Given: total 45, TAKE 20 → lastPage 3
+      const data = ['item1', 'item2'];
+
+      // When: page 999 요청
+      const result = PaginationUtils.toPaginationDto(data, 45, 999);
+
+      // Then: currentPage가 lastPage(3)로 보정
+      expect(result.paginationMeta.currentPage).toBe(3);
+      expect(result.paginationMeta.lastPage).toBe(3);
+      expect(result.paginationMeta.hasPreviousPage).toBe(true);
+      expect(result.paginationMeta.hasNextPage).toBe(false);
+    });
+
+    it('currentPage가 lastPage와 같을 때 보정하지 않음', () => {
+      // Given: total 45, TAKE 20 → lastPage 3
+      const data = ['item1'];
+
+      // When: 정확히 lastPage 요청
+      const result = PaginationUtils.toPaginationDto(data, 45, 3);
+
+      // Then: currentPage 그대로 유지
+      expect(result.paginationMeta.currentPage).toBe(3);
+      expect(result.paginationMeta.lastPage).toBe(3);
+    });
   });
 });

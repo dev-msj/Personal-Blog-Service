@@ -17,10 +17,11 @@ export class PaginationUtils {
       throw new InvalidPageException(currentPage);
     }
     const lastPage = this.getLastPage(total);
+    const adjustedPage = Math.min(currentPage, lastPage);
 
     const paginationMetaDto = new PaginationMetaDto(
       total,
-      currentPage,
+      adjustedPage,
       lastPage,
     );
 
