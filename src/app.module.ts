@@ -41,6 +41,7 @@ import { HealthModule } from './health/health.module';
       provide: APP_GUARD,
       useClass: AuthGuard,
     },
+    // 필터 실행 순서: BaseException → HttpException → Unhandled (NestJS는 등록 역순으로 실행)
     {
       provide: APP_FILTER,
       useClass: UnhandledExceptionFilter,
