@@ -63,6 +63,19 @@ describe('PaginationUtils', () => {
       expect(result.paginationMeta.hasNextPage).toBe(false);
     });
 
+    it('total 0이고 currentPage가 1보다 클 때 currentPage를 1로 보정', () => {
+      // Given: total 0 → lastPage 1
+
+      // When: page 5 요청
+      const result = PaginationUtils.toPaginationDto([], 0, 5);
+
+      // Then: currentPage가 1로 보정
+      expect(result.paginationMeta.currentPage).toBe(1);
+      expect(result.paginationMeta.lastPage).toBe(1);
+      expect(result.paginationMeta.hasPreviousPage).toBe(false);
+      expect(result.paginationMeta.hasNextPage).toBe(false);
+    });
+
     it('currentPage가 lastPage와 같을 때 보정하지 않음', () => {
       // Given: total 45, TAKE 20 → lastPage 3
       const data = ['item1'];
