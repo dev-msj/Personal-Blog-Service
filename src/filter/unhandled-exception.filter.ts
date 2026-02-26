@@ -1,10 +1,6 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ErrorCode } from '../constant/error-code.enum';
 import { AbstractExceptionFilter } from './abstract-exception.filter';
 
 @Catch()
@@ -29,7 +25,7 @@ export class UnhandledExceptionFilter
 
     this.sendFailureResponse(
       res,
-      HttpStatus.INTERNAL_SERVER_ERROR,
+      ErrorCode.COMMON_INTERNAL_ERROR,
       'Internal Server Error!',
     );
   }

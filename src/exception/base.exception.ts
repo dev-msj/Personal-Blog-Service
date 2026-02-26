@@ -1,6 +1,6 @@
 import { ErrorCode } from '../constant/error-code.enum';
 
-export abstract class BaseException extends Error {
+export class BaseException extends Error {
   readonly errorCode: ErrorCode;
   readonly message: string;
   readonly value?: string;

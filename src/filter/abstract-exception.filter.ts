@@ -27,7 +27,7 @@ export abstract class AbstractExceptionFilter {
 
   protected sendFailureResponse(
     res: Response,
-    code: HttpStatus | ErrorCode,
+    code: ErrorCode,
     message: string,
   ): void {
     res.status(HttpStatus.OK).json(new FailureResponse(code, message));
