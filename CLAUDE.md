@@ -196,10 +196,10 @@ TypeORM 특이사항: 테스트 환경에서는 Redis 캐시 비활성화 (`isTe
 ## TypeScript Configuration
 
 주목할 설정:
-- `strictNullChecks: false` — null 체크 비활성화
-- `noImplicitAny: false` — any 타입 허용
+- `strictNullChecks: true` — null/undefined 타입 체크 활성화
+- `noImplicitAny: true` — 암시적 any 금지
 - `target: ES2021`
-- ESLint: `@typescript-eslint/no-explicit-any: off`, `explicit-function-return-type: off`
+- ESLint: `@typescript-eslint/no-explicit-any: warn` (점진적 제거), `explicit-function-return-type: off`
 - Prettier: `endOfLine: auto` (CRLF/LF 혼용 허용, Windows 환경)
 
 ## Testing Patterns

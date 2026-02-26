@@ -61,13 +61,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
       );
   }
 
-  private writeLog(url: string, data: string | object, stack: string) {
+  private writeLog(url: string, data: string | object, stack?: string) {
     this.logger.error(
       JSON.stringify(
         {
           url: url,
           response: data,
-          stack: stack.split('\n'),
+          stack: stack?.split('\n'),
         },
         null,
         2,
@@ -85,6 +85,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
   }
 
   private getMessage(response: string | object): string {
-    return typeof response === 'string' ? response : response['message'];
+    return typeof response === 'string'
+      ? response
+      : (response as Record<string, string>).message;
   }
 }
