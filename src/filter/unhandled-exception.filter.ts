@@ -1,4 +1,9 @@
-import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpStatus,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AbstractExceptionFilter } from './abstract-exception.filter';
 
@@ -22,6 +27,10 @@ export class UnhandledExceptionFilter
       exception.stack,
     );
 
-    this.sendFailureResponse(res, 500, 'Internal Server Error!');
+    this.sendFailureResponse(
+      res,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      'Internal Server Error!',
+    );
   }
 }
