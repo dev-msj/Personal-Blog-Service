@@ -87,7 +87,11 @@ export class UserAuthService {
     const ticket = await this.decodeCredentialToken(
       oauthRequestDto.credentialToken,
     );
-    const uid = ticket.getPayload().email;
+    const payload = ticket.getPayload();
+    if (!payload?.email) {
+      throw new UnauthorizedException('Invalid Google token payload.');
+    }
+    const uid = payload.email;
     const isExist = await this.userAuthRepository.isExist(uid);
 
     // 인증된 토큰이나 UserAuth가 존재하지 않으면 생성시킨다.
@@ -111,7 +115,7 @@ export class UserAuthService {
     return this.jwtService.create(userAuthEntity.uid, userAuthEntity.userRole);
   }
 
-  async refresh(refreshToken: string): Promise<JwtDto> {
+  async refresh(refreshToken: string | undefined): Promise<JwtDto> {
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token is required.');
     }

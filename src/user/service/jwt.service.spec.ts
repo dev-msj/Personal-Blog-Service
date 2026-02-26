@@ -110,11 +110,7 @@ describe('JwtService', () => {
       const userRole = UserRole.USER;
       const refreshToken = (await jwtService.create(expectUid, userRole))
         .refreshToken;
-      const userSessionEntity = new UserSessionEntity(
-        expectUid,
-        null,
-        userRole,
-      );
+      const userSessionEntity = new UserSessionEntity(expectUid, '', userRole);
 
       userAuthRepository.getUserSessionEntityByUid = jest
         .fn()

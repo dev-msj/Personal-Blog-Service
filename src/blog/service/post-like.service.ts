@@ -33,7 +33,7 @@ export class PostLikeService {
       if (!groupedByPostId.has(entity.postId)) {
         groupedByPostId.set(entity.postId, []);
       }
-      groupedByPostId.get(entity.postId).push(entity);
+      groupedByPostId.get(entity.postId)!.push(entity);
     });
 
     // 각 그룹에 대해 닉네임 목록 조회
