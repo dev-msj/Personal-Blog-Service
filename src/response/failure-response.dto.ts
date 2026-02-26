@@ -4,13 +4,13 @@ import { UnexpectedCodeException } from '../exception/unexpected-code.exception'
 import { ErrorCode } from '../constant/error-code.enum';
 
 export class FailureResponse extends BaseResponse {
-  constructor(code: HttpStatus, message: string) {
+  constructor(code: HttpStatus | ErrorCode, message: string) {
     super(code, message);
 
     this.checkCodeOk(this.code);
   }
 
-  private checkCodeOk(code: HttpStatus) {
+  private checkCodeOk(code: HttpStatus | ErrorCode) {
     if (code === HttpStatus.OK) {
       throw new UnexpectedCodeException(
         ErrorCode.NOT_ACCEPTABLE,

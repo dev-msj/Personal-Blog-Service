@@ -2,6 +2,7 @@ import { HttpStatus, Inject } from '@nestjs/common';
 import { Response } from 'express';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { ErrorCode } from '../constant/error-code.enum';
 import { FailureResponse } from '../response/failure-response.dto';
 
 export abstract class AbstractExceptionFilter {
@@ -26,7 +27,7 @@ export abstract class AbstractExceptionFilter {
 
   protected sendFailureResponse(
     res: Response,
-    code: number,
+    code: HttpStatus | ErrorCode,
     message: string,
   ): void {
     res.status(HttpStatus.OK).json(new FailureResponse(code, message));
