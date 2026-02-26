@@ -62,6 +62,27 @@ describe('HttpExceptionFilter', () => {
     );
   });
 
+  it('ValidationPipe의 배열 메시지를 결합하여 응답한다', () => {
+    // Given
+    const exception = new BadRequestException({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message: ['field must be a string', 'field must not be empty'],
+      error: 'Bad Request',
+    });
+
+    // When
+    filter.catch(exception, mockArgumentsHost);
+
+    // Then
+    expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
+    expect(mockJson).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: HttpStatus.BAD_REQUEST,
+        message: 'field must be a string, field must not be empty',
+      }),
+    );
+  });
+
   it('예외 정보를 로그에 기록한다', () => {
     // Given
     const exception = new BadRequestException('Bad request');

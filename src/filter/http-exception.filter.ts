@@ -29,8 +29,12 @@ export class HttpExceptionFilter
   }
 
   private getMessage(response: string | object): string {
-    return typeof response === 'string'
-      ? response
-      : (response as Record<string, string>).message;
+    if (typeof response === 'string') {
+      return response;
+    }
+
+    const message = (response as Record<string, unknown>).message;
+
+    return Array.isArray(message) ? message.join(', ') : (message as string);
   }
 }
