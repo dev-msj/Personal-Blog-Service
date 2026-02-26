@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { DbCleaner, Tables } from './utils/db-cleaner';
 import { AuthHelper } from './utils/auth-helper';
 import { setupApp } from '../src/config/app-setup';
+import { ErrorCode } from '../src/constant/error-code.enum';
 
 describe('Post API (e2e)', () => {
   let app: INestApplication;
@@ -73,9 +74,9 @@ describe('Post API (e2e)', () => {
         contents: '테스트 글 내용입니다.',
       });
 
-      // Then: 인증 실패 (HttpExceptionFilter가 HTTP 200으로 반환하고 body.code에 실제 상태 코드 포함)
+      // Then: 인증 실패 (BaseExceptionFilter가 HTTP 200으로 반환하고 body.code에 ErrorCode 포함)
       expect(response.status).toBe(200);
-      expect(response.body.code).toBe(401);
+      expect(response.body.code).toBe(ErrorCode.AUTH_UNAUTHORIZED);
     });
   });
 

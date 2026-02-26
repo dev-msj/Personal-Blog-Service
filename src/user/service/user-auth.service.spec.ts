@@ -1,4 +1,3 @@
-import { UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import authConfig from '../../config/authConfig';
@@ -10,6 +9,7 @@ import { JwtDto } from '../dto/jwt.dto';
 import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
 import { UserAuthEntity } from '../entities/user-auth.entity';
 import { OauthRequestDto } from '../dto/oauth-request.dto';
+import { BaseException } from '../../exception/base.exception';
 
 describe('UserAuthService', () => {
   let userAuthService: UserAuthService;
@@ -128,21 +128,19 @@ describe('UserAuthService', () => {
       // Then
       await expect(
         userAuthService.login(new UserAuthRequestDto(uid, password)),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(BaseException);
     });
   });
 
   describe('refresh', () => {
-    it('refreshToken이 없으면 UnauthorizedException을 던진다', async () => {
+    it('refreshToken이 없으면 BaseException을 던진다', async () => {
       await expect(userAuthService.refresh(undefined)).rejects.toThrow(
-        UnauthorizedException,
+        BaseException,
       );
     });
 
-    it('refreshToken이 빈 문자열이면 UnauthorizedException을 던진다', async () => {
-      await expect(userAuthService.refresh('')).rejects.toThrow(
-        UnauthorizedException,
-      );
+    it('refreshToken이 빈 문자열이면 BaseException을 던진다', async () => {
+      await expect(userAuthService.refresh('')).rejects.toThrow(BaseException);
     });
   });
 
