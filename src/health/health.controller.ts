@@ -1,4 +1,4 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Res } from '@nestjs/common';
 import { Response } from 'express';
 import {
   HealthCheck,
@@ -12,6 +12,8 @@ import { RedisHealthIndicator } from './indicator/redis.health-indicator';
 @Public()
 @Controller('health')
 export class HealthController {
+  private readonly logger = new Logger(HealthController.name);
+
   constructor(
     private readonly health: HealthCheckService,
     private readonly db: TypeOrmHealthIndicator,
@@ -29,11 +31,15 @@ export class HealthController {
       res.status(200).json(result);
     } catch (error) {
       if (error instanceof HealthCheckError) {
+        this.logger.warn(`Health check failed: ${error.message}`, error.causes);
         res.status(503).json(error.causes);
       } else {
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(`Unexpected health check error: ${message}`, error);
         res.status(503).json({
           status: 'error',
-          error: { message: (error as Error).message },
+          error: { message },
         });
       }
     }

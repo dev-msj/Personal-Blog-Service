@@ -48,6 +48,8 @@ describe('RedisHealthIndicator', () => {
     await expect(indicator.isHealthy('redis')).rejects.toThrow(
       HealthCheckError,
     );
-    expect(mockPing).toHaveBeenCalledTimes(1);
+    await expect(indicator.isHealthy('redis')).rejects.toThrow(
+      'Redis health check failed: Connection refused',
+    );
   });
 });

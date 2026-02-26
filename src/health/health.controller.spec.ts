@@ -117,4 +117,16 @@ describe('HealthController', () => {
       error: { message: 'Unexpected error' },
     });
   });
+
+  it('Error 인스턴스가 아닌 예외 시 Unknown error 메시지를 반환한다', async () => {
+    (healthCheckService.check as jest.Mock).mockRejectedValue('string error');
+
+    await controller.check(mockRes as any);
+
+    expect(mockRes.status).toHaveBeenCalledWith(503);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      status: 'error',
+      error: { message: 'Unknown error' },
+    });
+  });
 });
