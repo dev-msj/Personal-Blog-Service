@@ -28,7 +28,7 @@ export class PaginationUtils {
     return new PaginationDto(data, paginationMetaDto);
   }
 
-  private static getLastPage(total: number): number {
+  static getLastPage(total: number): number {
     return Math.max(1, Math.ceil(total / this.TAKE));
   }
 }

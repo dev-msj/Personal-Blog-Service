@@ -25,15 +25,25 @@ export class PostService {
   }
 
   async getPostPageListByPage(page: number): Promise<PaginationDto<PostDto>> {
-    const [postEntityList, total] =
+    const [initialPostEntityList, total] =
       await this.postRepository.findPostEntityListAndCountByPage(page);
+
+    const lastPage = PaginationUtils.getLastPage(total);
+    let postEntityList = initialPostEntityList;
+    let currentPage = page;
+
+    if (page > lastPage) {
+      [postEntityList] =
+        await this.postRepository.findPostEntityListAndCountByPage(lastPage);
+      currentPage = lastPage;
+    }
 
     const postDaoList = await this.toPostDaoList(postEntityList);
 
     return PaginationUtils.toPaginationDto<PostDto>(
       postDaoList.map((postDao) => postDao.toPostDto()),
       total,
-      page,
+      currentPage,
     );
   }
 
@@ -41,17 +51,29 @@ export class PostService {
     postUid: string,
     page: number,
   ): Promise<PaginationDto<PostDto>> {
-    const [postEntityList, total] =
+    const [initialPostEntityList, total] =
       await this.postRepository.findPostEntityListAndCountByPostPageDto(
         new PostPageDto(postUid, page),
       );
+
+    const lastPage = PaginationUtils.getLastPage(total);
+    let postEntityList = initialPostEntityList;
+    let currentPage = page;
+
+    if (page > lastPage) {
+      [postEntityList] =
+        await this.postRepository.findPostEntityListAndCountByPostPageDto(
+          new PostPageDto(postUid, lastPage),
+        );
+      currentPage = lastPage;
+    }
 
     const postDaoList = await this.toPostDaoList(postEntityList);
 
     return PaginationUtils.toPaginationDto<PostDto>(
       postDaoList.map((postDao) => postDao.toPostDto()),
       total,
-      page,
+      currentPage,
     );
   }
 

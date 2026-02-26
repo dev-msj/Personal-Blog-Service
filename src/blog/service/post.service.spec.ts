@@ -107,21 +107,42 @@ describe('PostService', () => {
       expect(result.paginationMeta.lastPage).toBe(3);
     });
 
-    it('범위를 벗어난 페이지 조회 시 빈 배열 반환', async () => {
-      // Given
-      const invalidPage = 999;
+    it('범위를 벗어난 페이지 조회 시 lastPage로 재조회', async () => {
+      // Given: page 999 요청, total 45 → lastPage 3
+      const lastPagePost = new PostEntity(
+        1,
+        'uid',
+        'title',
+        new Date(),
+        'contents',
+        0,
+      );
+
       postRepository.findPostEntityListAndCountByPage = jest
         .fn()
-        .mockResolvedValue([[], 45]);
+        .mockImplementation((page: number) => {
+          if (page === 999) return Promise.resolve([[], 45]);
+          if (page === 3) return Promise.resolve([[lastPagePost], 45]);
+          return Promise.resolve([[], 0]);
+        });
       postLikeService.getPostLikeMapByPostIds = jest
         .fn()
-        .mockResolvedValue(new Map());
+        .mockResolvedValue(new Map([[1, []]]));
 
       // When
-      const result = await postService.getPostPageListByPage(invalidPage);
+      const result = await postService.getPostPageListByPage(999);
 
-      // Then
-      expect(result.data).toEqual([]);
+      // Then: lastPage(3)의 데이터가 반환되어야 함
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].postId).toBe(1);
+      expect(result.paginationMeta.currentPage).toBe(3);
+      expect(result.paginationMeta.lastPage).toBe(3);
+      expect(
+        postRepository.findPostEntityListAndCountByPage,
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        postRepository.findPostEntityListAndCountByPage,
+      ).toHaveBeenCalledWith(3);
     });
 
     it('여러 게시글의 좋아요 목록이 조회됨', async () => {
@@ -208,6 +229,47 @@ describe('PostService', () => {
       // Then
       expect(result.data).toEqual([]);
       expect(result.paginationMeta.total).toBe(0);
+    });
+
+    it('범위를 벗어난 페이지 조회 시 lastPage로 재조회', async () => {
+      // Given: page 999 요청, total 50 → lastPage 3
+      const testUid = 'testUid';
+      const lastPagePost = new PostEntity(
+        1,
+        testUid,
+        'title',
+        new Date(),
+        'contents',
+        0,
+      );
+
+      postRepository.findPostEntityListAndCountByPostPageDto = jest
+        .fn()
+        .mockImplementation((dto: { postUid: string; page: number }) => {
+          if (dto.page === 999) return Promise.resolve([[], 50]);
+          if (dto.page === 3) return Promise.resolve([[lastPagePost], 50]);
+          return Promise.resolve([[], 0]);
+        });
+      postLikeService.getPostLikeMapByPostIds = jest
+        .fn()
+        .mockResolvedValue(new Map([[1, []]]));
+
+      // When
+      const result = await postService.getPostPageListByPostUid(testUid, 999);
+
+      // Then: lastPage(3)의 데이터가 반환되어야 함
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].postId).toBe(1);
+      expect(result.paginationMeta.currentPage).toBe(3);
+      expect(result.paginationMeta.lastPage).toBe(3);
+      expect(
+        postRepository.findPostEntityListAndCountByPostPageDto,
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        postRepository.findPostEntityListAndCountByPostPageDto,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ postUid: testUid, page: 3 }),
+      );
     });
 
     it('페이지네이션 메타데이터가 정확히 계산됨', async () => {
