@@ -40,7 +40,15 @@ export class HttpExceptionFilter
       [HttpStatus.INTERNAL_SERVER_ERROR]: ErrorCode.COMMON_INTERNAL_ERROR,
       [HttpStatus.SERVICE_UNAVAILABLE]: ErrorCode.COMMON_SERVICE_UNAVAILABLE,
     };
-    return mapping[status] ?? ErrorCode.COMMON_INTERNAL_ERROR;
+
+    const errorCode = mapping[status];
+    if (!errorCode) {
+      this.logger.warn(
+        `Unmapped HttpStatus: ${status}, falling back to COMMON_INTERNAL_ERROR`,
+      );
+      return ErrorCode.COMMON_INTERNAL_ERROR;
+    }
+    return errorCode;
   }
 
   private getMessage(response: string | object): string {
