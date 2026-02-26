@@ -17,6 +17,8 @@ export class PaginationUtils {
       throw new InvalidPageException(currentPage);
     }
     const lastPage = this.getLastPage(total);
+    // 방어 코드: 서비스 레이어에서 이미 lastPage로 재조회하지만,
+    // toPaginationDto가 직접 호출될 경우를 대비한 안전망
     const adjustedPage = Math.min(currentPage, lastPage);
 
     const paginationMetaDto = new PaginationMetaDto(
