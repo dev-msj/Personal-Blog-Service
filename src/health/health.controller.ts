@@ -1,20 +1,27 @@
-import { Controller, Get, Logger, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  Res,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Response } from 'express';
 import {
   HealthCheck,
-  HealthCheckError,
   HealthCheckService,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 import { Public } from '../decorator/public.decorator';
 import { RedisHealthIndicator } from './indicator/redis.health-indicator';
 
 @Public()
 @Controller('health')
 export class HealthController {
-  private readonly logger = new Logger(HealthController.name);
-
   constructor(
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
     private readonly health: HealthCheckService,
     private readonly db: TypeOrmHealthIndicator,
     private readonly redis: RedisHealthIndicator,
@@ -30,13 +37,16 @@ export class HealthController {
       ]);
       res.status(200).json(result);
     } catch (error) {
-      if (error instanceof HealthCheckError) {
-        this.logger.warn(`Health check failed: ${error.message}`, error.causes);
-        res.status(503).json(error.causes);
+      if (error instanceof ServiceUnavailableException) {
+        const result = error.getResponse();
+        this.logger.warn(`Health check failed`, { result });
+        res.status(503).json(result);
       } else {
         const message =
           error instanceof Error ? error.message : 'Unknown error';
-        this.logger.error(`Unexpected health check error: ${message}`, error);
+        this.logger.error(`Unexpected health check error: ${message}`, {
+          error,
+        });
         res.status(503).json({
           status: 'error',
           error: { message },

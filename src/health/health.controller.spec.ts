@@ -1,10 +1,8 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { HealthController } from './health.controller';
-import {
-  HealthCheckError,
-  HealthCheckService,
-  TypeOrmHealthIndicator,
-} from '@nestjs/terminus';
 import { RedisHealthIndicator } from './indicator/redis.health-indicator';
 
 describe('HealthController', () => {
@@ -16,6 +14,10 @@ describe('HealthController', () => {
     const module = await Test.createTestingModule({
       controllers: [HealthController],
       providers: [
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: { warn: jest.fn(), error: jest.fn() },
+        },
         {
           provide: HealthCheckService,
           useValue: { check: jest.fn() },
@@ -64,7 +66,7 @@ describe('HealthController', () => {
     expect(mockRes.json).toHaveBeenCalledWith(healthResult);
   });
 
-  it('DB 헬스체크 실패 시 HTTP 503을 반환한다', async () => {
+  it('DB 헬스체크 실패 시 HTTP 503과 상세 결과를 반환한다', async () => {
     const errorResponse = {
       status: 'error',
       info: { redis: { status: 'up' } },
@@ -75,7 +77,7 @@ describe('HealthController', () => {
       },
     };
     (healthCheckService.check as jest.Mock).mockRejectedValue(
-      new HealthCheckError('Health check failed', errorResponse),
+      new ServiceUnavailableException(errorResponse),
     );
 
     await controller.check(mockRes as any);
@@ -84,7 +86,7 @@ describe('HealthController', () => {
     expect(mockRes.json).toHaveBeenCalledWith(errorResponse);
   });
 
-  it('Redis 헬스체크 실패 시 HTTP 503을 반환한다', async () => {
+  it('Redis 헬스체크 실패 시 HTTP 503과 상세 결과를 반환한다', async () => {
     const errorResponse = {
       status: 'error',
       info: { database: { status: 'up' } },
@@ -95,7 +97,7 @@ describe('HealthController', () => {
       },
     };
     (healthCheckService.check as jest.Mock).mockRejectedValue(
-      new HealthCheckError('Health check failed', errorResponse),
+      new ServiceUnavailableException(errorResponse),
     );
 
     await controller.check(mockRes as any);
