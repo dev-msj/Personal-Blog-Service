@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from '../entities/post.entity';
-import { Repository } from 'typeorm';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { PaginationUtils } from '../../utils/pagination.utils';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utils';
@@ -60,7 +60,15 @@ export class PostRepository {
   }
 
   async findPostEntityByPostId(postId: number): Promise<PostEntity> {
-    return await this.postRepository.findOneByOrFail({ postId });
+    try {
+      return await this.postRepository.findOneByOrFail({ postId });
+    } catch (error) {
+      if (error instanceof EntityNotFoundError) {
+        throw new NotFoundException(`Post does not exist! - [${postId}]`);
+      }
+
+      throw error;
+    }
   }
 
   async updatePost(
