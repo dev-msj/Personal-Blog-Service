@@ -297,7 +297,6 @@ E2E test files located in `test/`: `*.e2e-spec.ts`
 
 프로젝트 특화 규칙:
 
-- 브랜치 생성 후 원격에 push: `git checkout -b <branch> && git push -u origin <branch>`
 - 머지 전략: Squash Merge
 - 머지 후: 브랜치 삭제 (원격/로컬)
 
