@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserInfoEntity } from '../entities/user-info.entity';
 import { DataSource, EntityNotFoundError, Repository } from 'typeorm';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utils';
+import { ErrorCode } from '../../constant/error-code.enum';
+import { BaseException } from '../../exception/base.exception';
 
 @Injectable()
 export class UserInfoRepository {
@@ -34,7 +36,10 @@ export class UserInfoRepository {
       await this.removeUserInfoCache(uid);
 
       if (error instanceof EntityNotFoundError) {
-        throw new NotFoundException(`User does not exist! - [${uid}]`);
+        throw new BaseException(
+          ErrorCode.USER_INFO_NOT_FOUND,
+          `User does not exist! - [${uid}]`,
+        );
       }
 
       throw error;

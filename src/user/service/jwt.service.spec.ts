@@ -3,8 +3,8 @@ import { JwtService } from './jwt.service';
 import * as jwt from 'jsonwebtoken';
 import { ConfigType } from '@nestjs/config';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { UnauthorizedException } from '@nestjs/common';
 import authConfig from '../../config/authConfig';
+import { BaseException } from '../../exception/base.exception';
 import { UserRole } from '../../constant/user-role.enum';
 import { CryptoUtils } from '../../utils/crypto.utils';
 import { UserSessionEntity } from '../entities/user-session.entity';
@@ -120,7 +120,7 @@ describe('JwtService', () => {
       const actualException = await jwtService.verifyRefreshToken(refreshToken);
 
       // Then
-      expect(actualException).toBeInstanceOf(UnauthorizedException);
+      expect(actualException).toBeInstanceOf(BaseException);
     });
   });
 });

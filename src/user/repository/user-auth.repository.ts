@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserAuthEntity } from '../entities/user-auth.entity';
 import { DataSource, EntityNotFoundError, Repository } from 'typeorm';
@@ -7,6 +7,8 @@ import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { TimeUtils } from '../../utils/time.utils';
+import { ErrorCode } from '../../constant/error-code.enum';
+import { BaseException } from '../../exception/base.exception';
 
 @Injectable()
 export class UserAuthRepository {
@@ -31,7 +33,10 @@ export class UserAuthRepository {
       ]);
 
       if (error instanceof EntityNotFoundError) {
-        throw new NotFoundException(`User does not exist! - [${uid}]`);
+        throw new BaseException(
+          ErrorCode.USER_NOT_FOUND,
+          `User does not exist! - [${uid}]`,
+        );
       }
 
       throw error;
@@ -64,7 +69,10 @@ export class UserAuthRepository {
       ]);
 
       if (error instanceof EntityNotFoundError) {
-        throw new NotFoundException(`User does not exist! - [${uid}]`);
+        throw new BaseException(
+          ErrorCode.USER_NOT_FOUND,
+          `User does not exist! - [${uid}]`,
+        );
       }
 
       throw error;
