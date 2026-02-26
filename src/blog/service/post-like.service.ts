@@ -53,7 +53,7 @@ export class PostLikeService {
     if (isExist) {
       throw new BaseException(
         ErrorCode.POST_LIKE_ALREADY_EXISTS,
-        'PostId is already exist!',
+        'Post like already exists!',
       );
     }
 
@@ -68,7 +68,7 @@ export class PostLikeService {
     if (!isExist) {
       throw new BaseException(
         ErrorCode.POST_LIKE_NOT_FOUND,
-        'PostId does not exist!',
+        'Post like not found!',
       );
     }
 
