@@ -67,7 +67,7 @@ Each feature module follows: `Controller → Service → Repository → Entity`
 - Repositories: TypeORM queries
 - DAOs: Entity → DTO transformation
 - DTOs: Request/response validation with class-validator
-- Pipes: `DecryptPrimaryKeyPipe` (암호화된 path param → 복호화, 유효하지 않은 값은 BadRequestException)
+- Pipes: `DecryptPrimaryKeyPipe` (암호화된 path param → 복호화, 유효하지 않은 값은 BaseException(INVALID_ENCRYPTED_PARAMETER))
 - Interceptors: `EncryptPrimaryKeyInterceptor` (응답 DTO의 `@EncryptField()` 필드 자동 암호화), `SetRefreshTokenCookieInterceptor` (user 모듈, refreshToken 쿠키 자동 설정)
 
 Feature module 내부 구조:
@@ -91,7 +91,13 @@ user/: controller/ dao/ dto/ dto/interface/ entities/ interceptor/ repository/ s
 - 실패: `FailureResponse { code, message }` (HTTP 200 + body 내 에러 코드)
 - 타입별 Exception Filter가 모든 예외를 잡아 HTTP 200 + `FailureResponse`로 변환
 
-ErrorCode enum: `UNAUTHORIZED(401)`, `NOT_FOUND(404)`, `NOT_ACCEPTABLE(406)`, `INTERNAL_SERVER_ERROR(500)`, `SERVICE_UNAVAILABLE(503)`
+ErrorCode enum — 5자리 도메인별 코드 체계:
+- Auth (10xxx): `AUTH_UNAUTHORIZED`, `AUTH_INVALID_PASSWORD`, `AUTH_INVALID_OAUTH_TOKEN`, `AUTH_REFRESH_TOKEN_REQUIRED`, `AUTH_INVALID_REFRESH_TOKEN`
+- User (20xxx): `USER_NOT_FOUND`, `USER_ALREADY_EXISTS`, `USER_INFO_NOT_FOUND`, `USER_INFO_ALREADY_EXISTS`
+- Post (30xxx): `POST_NOT_FOUND`
+- PostLike (31xxx): `POST_LIKE_ALREADY_EXISTS`, `POST_LIKE_NOT_FOUND`
+- Common (90xxx): `COMMON_BAD_REQUEST`, `COMMON_UNAUTHORIZED`, `COMMON_NOT_FOUND`, `COMMON_NOT_ACCEPTABLE`, `COMMON_CONFLICT`, `COMMON_INTERNAL_ERROR`, `COMMON_SERVICE_UNAVAILABLE`
+- Validation (91xxx): `INVALID_ENCRYPTED_PARAMETER`, `INVALID_PAGE`
 
 ## Authentication Flow
 
@@ -150,7 +156,7 @@ Standard pagination via `PaginationDto` with page/limit params. 페이지당 고
 | `HttpExceptionFilter` | `HttpException` | NestJS 표준 HTTP 예외 처리 |
 | `UnhandledExceptionFilter` | `()` catch-all | 500 변환, 원본 에러 로깅 |
 
-`BaseException` 계층: `BaseException` → `InvalidPageException`, `UnexpectedCodeException`.
+`BaseException` 계층: `BaseException`(concrete, 직접 인스턴스화 가능) → 서브클래스: `InvalidPageException`, `UnexpectedCodeException`. 대부분의 도메인 예외는 `new BaseException(ErrorCode.XXX, message)`로 직접 생성.
 
 ### Logging
 
