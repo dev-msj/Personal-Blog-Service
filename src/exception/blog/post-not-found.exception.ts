@@ -3,6 +3,6 @@ import { BaseException } from '../base.exception';
 
 export class PostNotFoundException extends BaseException {
   constructor(postId: number) {
-    super(ErrorCode.POST_NOT_FOUND, `Post does not exist. - [${postId}]`);
+    super(ErrorCode.POST_NOT_FOUND, `Post does not exist! - [${postId}]`);
   }
 }
