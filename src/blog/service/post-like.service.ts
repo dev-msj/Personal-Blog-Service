@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { UserInfoService } from '../../user/service/user-info.service';
@@ -6,6 +6,8 @@ import { PostLikeRepository } from '../repository/post-like.repository';
 import { PostLikeEntity } from '../entities/post-like.entity';
 import { PostLikeDao } from '../dao/post-like.dao';
 import { PostLikeDto } from '../dto/post-like.dto';
+import { ErrorCode } from '../../constant/error-code.enum';
+import { BaseException } from '../../exception/base.exception';
 
 @Injectable()
 export class PostLikeService {
@@ -49,7 +51,10 @@ export class PostLikeService {
     const postLikeEntity = this.toPostLikeEntity(postLikeDto);
     const isExist = await this.postLikeRepository.isExist(postLikeEntity);
     if (isExist) {
-      throw new ConflictException('PostId is already exist!');
+      throw new BaseException(
+        ErrorCode.POST_LIKE_ALREADY_EXISTS,
+        'Post like already exists!',
+      );
     }
 
     await this.postLikeRepository.savePostLikeEntity(postLikeEntity);
@@ -61,7 +66,10 @@ export class PostLikeService {
     const postLikeEntity = this.toPostLikeEntity(postLikeDto);
     const isExist = await this.postLikeRepository.isExist(postLikeEntity);
     if (!isExist) {
-      throw new ConflictException('PostId does not exist!');
+      throw new BaseException(
+        ErrorCode.POST_LIKE_NOT_FOUND,
+        'Post like not found!',
+      );
     }
 
     await this.postLikeRepository.removePostLikeEntity(postLikeEntity);

@@ -1,9 +1,7 @@
-import {
-  createParamDecorator,
-  ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
+import { ErrorCode } from '../constant/error-code.enum';
+import { BaseException } from '../exception/base.exception';
 
 export const AuthenticatedUserValidation = createParamDecorator(
   (data: string, ctx: ExecutionContext) => {
@@ -11,7 +9,10 @@ export const AuthenticatedUserValidation = createParamDecorator(
     const authenticatedUser = request.headers.authenticatedUser;
 
     if (!authenticatedUser) {
-      throw new UnauthorizedException('AuthenticatedUid does not exists.');
+      throw new BaseException(
+        ErrorCode.AUTH_UNAUTHORIZED,
+        'AuthenticatedUid does not exists.',
+      );
     }
 
     return authenticatedUser;

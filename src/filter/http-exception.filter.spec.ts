@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { HttpExceptionFilter } from './http-exception.filter';
+import { ErrorCode } from '../constant/error-code.enum';
 
 describe('HttpExceptionFilter', () => {
   let filter: HttpExceptionFilter;
@@ -28,7 +29,7 @@ describe('HttpExceptionFilter', () => {
     filter = new HttpExceptionFilter(mockLogger as any);
   });
 
-  it('BadRequestException을 처리하여 400 코드를 응답한다', () => {
+  it('BadRequestException을 처리하여 COMMON_BAD_REQUEST(90001) 코드를 응답한다', () => {
     // Given
     const exception = new BadRequestException('Invalid input');
 
@@ -39,13 +40,13 @@ describe('HttpExceptionFilter', () => {
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: HttpStatus.BAD_REQUEST,
+        code: ErrorCode.COMMON_BAD_REQUEST,
         message: 'Invalid input',
       }),
     );
   });
 
-  it('NotFoundException을 처리하여 404 코드를 응답한다', () => {
+  it('NotFoundException을 처리하여 COMMON_NOT_FOUND(90003) 코드를 응답한다', () => {
     // Given
     const exception = new NotFoundException('Resource not found');
 
@@ -56,7 +57,7 @@ describe('HttpExceptionFilter', () => {
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: HttpStatus.NOT_FOUND,
+        code: ErrorCode.COMMON_NOT_FOUND,
         message: 'Resource not found',
       }),
     );
@@ -77,7 +78,7 @@ describe('HttpExceptionFilter', () => {
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: HttpStatus.BAD_REQUEST,
+        code: ErrorCode.COMMON_BAD_REQUEST,
         message: 'field must be a string, field must not be empty',
       }),
     );

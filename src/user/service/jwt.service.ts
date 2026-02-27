@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { ConfigType } from '@nestjs/config';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -9,6 +9,8 @@ import { CryptoUtils } from '../../utils/crypto.utils';
 import { JwtDto } from '../dto/jwt.dto';
 import { UserSessionEntity } from '../entities/user-session.entity';
 import { UserAuthRepository } from '../repository/user-auth.repository';
+import { ErrorCode } from '../../constant/error-code.enum';
+import { BaseException } from '../../exception/base.exception';
 
 @Injectable()
 export class JwtService {
@@ -72,7 +74,10 @@ export class JwtService {
       if (refreshToken !== userSessionEntity.refreshToken) {
         this.logger.error(`Refresh Token does not match! - [${refreshToken}]`);
 
-        return new UnauthorizedException('Refresh Token does not match!');
+        return new BaseException(
+          ErrorCode.AUTH_INVALID_REFRESH_TOKEN,
+          'Refresh Token does not match!',
+        );
       }
 
       return userSessionEntity;

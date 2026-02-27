@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from '../entities/post.entity';
 import { EntityNotFoundError, Repository } from 'typeorm';
@@ -9,6 +9,8 @@ import { PostPageDto } from '../dto/post-page.dto';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { PatchPostDto } from '../dto/patch-post.dto';
+import { ErrorCode } from '../../constant/error-code.enum';
+import { BaseException } from '../../exception/base.exception';
 
 @Injectable()
 export class PostRepository {
@@ -64,7 +66,10 @@ export class PostRepository {
       return await this.postRepository.findOneByOrFail({ postId });
     } catch (error) {
       if (error instanceof EntityNotFoundError) {
-        throw new NotFoundException(`Post does not exist! - [${postId}]`);
+        throw new BaseException(
+          ErrorCode.POST_NOT_FOUND,
+          `Post does not exist! - [${postId}]`,
+        );
       }
 
       throw error;

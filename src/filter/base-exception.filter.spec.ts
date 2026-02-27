@@ -26,7 +26,7 @@ describe('BaseExceptionFilter', () => {
     filter = new BaseExceptionFilter(mockLogger as any);
   });
 
-  it('InvalidPageException의 errorCode(500)가 응답에 반영된다', () => {
+  it('InvalidPageException의 errorCode(91002)가 응답에 반영된다', () => {
     // Given
     const exception = new InvalidPageException(-1);
 
@@ -37,16 +37,16 @@ describe('BaseExceptionFilter', () => {
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: ErrorCode.INTERNAL_SERVER_ERROR,
+        code: ErrorCode.INVALID_PAGE,
         message: exception.message,
       }),
     );
   });
 
-  it('UnexpectedCodeException의 errorCode(406)가 응답에 반영된다', () => {
+  it('UnexpectedCodeException의 errorCode(90004)가 응답에 반영된다', () => {
     // Given
     const exception = new UnexpectedCodeException(
-      ErrorCode.NOT_ACCEPTABLE,
+      ErrorCode.COMMON_NOT_ACCEPTABLE,
       'Unexpected code',
       '200',
     );
@@ -58,7 +58,7 @@ describe('BaseExceptionFilter', () => {
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: ErrorCode.NOT_ACCEPTABLE,
+        code: ErrorCode.COMMON_NOT_ACCEPTABLE,
         message: 'Unexpected code',
       }),
     );
@@ -75,7 +75,7 @@ describe('BaseExceptionFilter', () => {
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
     const loggedData = JSON.parse(mockLogger.error.mock.calls[0][0]);
     expect(loggedData.url).toBe('/test');
-    expect(loggedData.response.errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR);
+    expect(loggedData.response.errorCode).toBe(ErrorCode.INVALID_PAGE);
     expect(loggedData.response.message).toBe(exception.message);
     expect(loggedData.response.value).toBe('0');
   });

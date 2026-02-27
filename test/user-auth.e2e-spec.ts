@@ -7,6 +7,7 @@ import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
 import { DbCleaner, Tables } from './utils/db-cleaner';
 import { setupApp } from '../src/config/app-setup';
+import { ErrorCode } from '../src/constant/error-code.enum';
 
 describe('User Auth API (e2e)', () => {
   let app: INestApplication;
@@ -139,9 +140,9 @@ describe('User Auth API (e2e)', () => {
         .set('Authorization', `Bearer ${expiredAccessToken}`)
         .set('Cookie', refreshToken);
 
-      // Then: 401 응답 (인증 실패 — HttpExceptionFilter가 HTTP 200으로 감싸고 body.code에 실제 상태 코드)
+      // Then: 인증 실패 (BaseExceptionFilter가 HTTP 200으로 감싸고 body.code에 ErrorCode)
       expect(response.status).toBe(200);
-      expect(response.body.code).toBe(401);
+      expect(response.body.code).toBe(ErrorCode.AUTH_UNAUTHORIZED);
     });
 
     it('POST /users/auth/refresh로 토큰을 갱신할 수 있다', async () => {
@@ -170,26 +171,26 @@ describe('User Auth API (e2e)', () => {
       expect(refreshResponse.headers['set-cookie']).toBeDefined();
     });
 
-    it('refreshToken 쿠키 없이 갱신 시 401 응답', async () => {
+    it('refreshToken 쿠키 없이 갱신 시 AUTH_REFRESH_TOKEN_REQUIRED 응답', async () => {
       // When: 쿠키 없이 refresh 요청
       const response = await request(app.getHttpServer()).post(
         '/users/auth/refresh',
       );
 
-      // Then: 401 응답
+      // Then: AUTH_REFRESH_TOKEN_REQUIRED 응답
       expect(response.status).toBe(200);
-      expect(response.body.code).toBe(401);
+      expect(response.body.code).toBe(ErrorCode.AUTH_REFRESH_TOKEN_REQUIRED);
     });
 
-    it('유효하지 않은 refreshToken으로 갱신 시 401 응답', async () => {
+    it('유효하지 않은 refreshToken으로 갱신 시 AUTH_INVALID_REFRESH_TOKEN 응답', async () => {
       // When: 유효하지 않은 refreshToken으로 refresh 요청
       const response = await request(app.getHttpServer())
         .post('/users/auth/refresh')
         .set('Cookie', 'refreshToken=invalid-token');
 
-      // Then: 401 응답
+      // Then: AUTH_INVALID_REFRESH_TOKEN 응답
       expect(response.status).toBe(200);
-      expect(response.body.code).toBe(401);
+      expect(response.body.code).toBe(ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
     });
   });
 });

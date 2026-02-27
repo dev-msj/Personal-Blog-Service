@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
@@ -18,6 +13,8 @@ import { UserAuthDao } from './../dao/user-auth.dao';
 import { JwtService } from './jwt.service';
 import authConfig from '../../config/authConfig';
 import { OauthRequestDto } from '../dto/oauth-request.dto';
+import { ErrorCode } from '../../constant/error-code.enum';
+import { BaseException } from '../../exception/base.exception';
 
 @Injectable()
 export class UserAuthService {
@@ -35,7 +32,8 @@ export class UserAuthService {
       userAuthRequestDto.uid,
     );
     if (isExist) {
-      throw new ConflictException(
+      throw new BaseException(
+        ErrorCode.USER_ALREADY_EXISTS,
         `User already exists. - [${userAuthRequestDto.uid}]`,
       );
     }
@@ -77,7 +75,10 @@ export class UserAuthService {
     );
 
     if (hashedPassword !== userAuthEntity.password) {
-      throw new UnauthorizedException('Password does not match.');
+      throw new BaseException(
+        ErrorCode.AUTH_INVALID_PASSWORD,
+        'Password does not match.',
+      );
     }
 
     return this.jwtService.create(userAuthEntity.uid, userAuthEntity.userRole);
@@ -89,7 +90,10 @@ export class UserAuthService {
     );
     const payload = ticket.getPayload();
     if (!payload?.email) {
-      throw new UnauthorizedException('Invalid Google token payload.');
+      throw new BaseException(
+        ErrorCode.AUTH_INVALID_OAUTH_TOKEN,
+        'Invalid Google token payload.',
+      );
     }
     const uid = payload.email;
     const isExist = await this.userAuthRepository.isExist(uid);
@@ -117,14 +121,20 @@ export class UserAuthService {
 
   async refresh(refreshToken: string | undefined): Promise<JwtDto> {
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is required.');
+      throw new BaseException(
+        ErrorCode.AUTH_REFRESH_TOKEN_REQUIRED,
+        'Refresh token is required.',
+      );
     }
 
     const userSessionEntity =
       await this.jwtService.verifyRefreshToken(refreshToken);
 
     if (userSessionEntity instanceof Error) {
-      throw new UnauthorizedException('Invalid refresh token.');
+      throw new BaseException(
+        ErrorCode.AUTH_INVALID_REFRESH_TOKEN,
+        'Invalid refresh token.',
+      );
     }
 
     return this.jwtService.reissueJwtByUserSessionEntity(userSessionEntity);
@@ -154,7 +164,10 @@ export class UserAuthService {
         `CredentialToken is not allowed. - [${credentialToken}]`,
       );
 
-      throw new UnauthorizedException('This token is not allowed.');
+      throw new BaseException(
+        ErrorCode.AUTH_INVALID_OAUTH_TOKEN,
+        'This token is not allowed.',
+      );
     }
   }
 }

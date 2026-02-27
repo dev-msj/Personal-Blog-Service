@@ -1,5 +1,6 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { UnhandledExceptionFilter } from './unhandled-exception.filter';
+import { ErrorCode } from '../constant/error-code.enum';
 
 describe('UnhandledExceptionFilter', () => {
   let filter: UnhandledExceptionFilter;
@@ -23,7 +24,7 @@ describe('UnhandledExceptionFilter', () => {
     filter = new UnhandledExceptionFilter(mockLogger as any);
   });
 
-  it('일반 Error를 500으로 변환하여 응답한다', () => {
+  it('일반 Error를 COMMON_INTERNAL_ERROR(90006)로 변환하여 응답한다', () => {
     // Given
     const exception = new Error('Something went wrong');
 
@@ -34,13 +35,13 @@ describe('UnhandledExceptionFilter', () => {
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: ErrorCode.COMMON_INTERNAL_ERROR,
         message: 'Internal Server Error!',
       }),
     );
   });
 
-  it('TypeError를 500으로 변환하여 응답한다', () => {
+  it('TypeError를 COMMON_INTERNAL_ERROR(90006)로 변환하여 응답한다', () => {
     // Given
     const exception = new TypeError('Cannot read property of undefined');
 
@@ -51,7 +52,7 @@ describe('UnhandledExceptionFilter', () => {
     expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
     expect(mockJson).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: ErrorCode.COMMON_INTERNAL_ERROR,
         message: 'Internal Server Error!',
       }),
     );
