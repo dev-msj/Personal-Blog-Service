@@ -67,7 +67,7 @@ Each feature module follows: `Controller → Service → Repository → Entity`
 - Repositories: TypeORM queries
 - DAOs: Entity → DTO transformation
 - DTOs: Request/response validation with class-validator
-- Pipes: `DecryptPrimaryKeyPipe` (암호화된 path param → 복호화, 유효하지 않은 값은 BaseException(INVALID_ENCRYPTED_PARAMETER))
+- Pipes: `DecryptPrimaryKeyPipe` (암호화된 path param → 복호화, 유효하지 않은 값은 InvalidEncryptedParameterException)
 - Interceptors: `EncryptPrimaryKeyInterceptor` (응답 DTO의 `@EncryptField()` 필드 자동 암호화), `SetRefreshTokenCookieInterceptor` (user 모듈, refreshToken 쿠키 자동 설정)
 
 Feature module 내부 구조:
