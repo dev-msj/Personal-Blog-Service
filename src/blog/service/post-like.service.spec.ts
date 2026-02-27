@@ -105,7 +105,7 @@ describe('PostLikeService', () => {
       expect(postLikeRepository.savePostLikeEntity).toHaveBeenCalled();
     });
 
-    it('이미 좋아요한 게시글에 중복 좋아요 시 BaseException 발생', async () => {
+    it('이미 좋아요한 게시글에 중복 좋아요 시 POST_LIKE_ALREADY_EXISTS 에러 발생', async () => {
       // Given
       const postLikeDto = new PostLikeDto(1, 'uid');
       postLikeRepository.isExist = jest.fn().mockResolvedValue(true);
@@ -139,7 +139,7 @@ describe('PostLikeService', () => {
       expect(postLikeRepository.removePostLikeEntity).toHaveBeenCalled();
     });
 
-    it('좋아요하지 않은 게시글 삭제 시 BaseException 발생', async () => {
+    it('좋아요하지 않은 게시글 삭제 시 POST_LIKE_NOT_FOUND 에러 발생', async () => {
       // Given
       const postLikeDto = new PostLikeDto(1, 'uid');
       postLikeRepository.isExist = jest.fn().mockResolvedValue(false);
