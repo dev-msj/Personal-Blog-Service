@@ -9,7 +9,10 @@ import { JwtDto } from '../dto/jwt.dto';
 import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
 import { UserAuthEntity } from '../entities/user-auth.entity';
 import { OauthRequestDto } from '../dto/oauth-request.dto';
-import { BaseException } from '../../exception/base.exception';
+import {
+  AuthInvalidPasswordException,
+  AuthRefreshTokenRequiredException,
+} from '../../exception/auth';
 
 describe('UserAuthService', () => {
   let userAuthService: UserAuthService;
@@ -128,19 +131,21 @@ describe('UserAuthService', () => {
       // Then
       await expect(
         userAuthService.login(new UserAuthRequestDto(uid, password)),
-      ).rejects.toThrow(BaseException);
+      ).rejects.toThrow(AuthInvalidPasswordException);
     });
   });
 
   describe('refresh', () => {
-    it('refreshToken이 없으면 BaseException을 던진다', async () => {
+    it('refreshToken이 없으면 AuthRefreshTokenRequiredException을 던진다', async () => {
       await expect(userAuthService.refresh(undefined)).rejects.toThrow(
-        BaseException,
+        AuthRefreshTokenRequiredException,
       );
     });
 
-    it('refreshToken이 빈 문자열이면 BaseException을 던진다', async () => {
-      await expect(userAuthService.refresh('')).rejects.toThrow(BaseException);
+    it('refreshToken이 빈 문자열이면 AuthRefreshTokenRequiredException을 던진다', async () => {
+      await expect(userAuthService.refresh('')).rejects.toThrow(
+        AuthRefreshTokenRequiredException,
+      );
     });
   });
 

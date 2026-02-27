@@ -9,8 +9,7 @@ import { CryptoUtils } from '../../utils/crypto.utils';
 import { JwtDto } from '../dto/jwt.dto';
 import { UserSessionEntity } from '../entities/user-session.entity';
 import { UserAuthRepository } from '../repository/user-auth.repository';
-import { ErrorCode } from '../../constant/error-code.enum';
-import { BaseException } from '../../exception/base.exception';
+import { AuthInvalidRefreshTokenException } from '../../exception/auth';
 
 @Injectable()
 export class JwtService {
@@ -74,8 +73,7 @@ export class JwtService {
       if (refreshToken !== userSessionEntity.refreshToken) {
         this.logger.error(`Refresh Token does not match! - [${refreshToken}]`);
 
-        return new BaseException(
-          ErrorCode.AUTH_INVALID_REFRESH_TOKEN,
+        return new AuthInvalidRefreshTokenException(
           'Refresh Token does not match!',
         );
       }

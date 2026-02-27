@@ -1,11 +1,11 @@
 import { ErrorCode } from '../constant/error-code.enum';
 
-export class BaseException extends Error {
+export abstract class BaseException extends Error {
   readonly errorCode: ErrorCode;
   readonly message: string;
   readonly value?: string;
 
-  constructor(errorCode: ErrorCode, message: string, value?: string) {
+  protected constructor(errorCode: ErrorCode, message: string, value?: string) {
     super();
 
     this.errorCode = errorCode;

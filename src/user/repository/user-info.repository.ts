@@ -4,8 +4,7 @@ import { UserInfoEntity } from '../entities/user-info.entity';
 import { DataSource, EntityNotFoundError, Repository } from 'typeorm';
 import { CacheIdUtils } from '../../utils/cache-id.utils';
 import { TimeUtils } from '../../utils/time.utils';
-import { ErrorCode } from '../../constant/error-code.enum';
-import { BaseException } from '../../exception/base.exception';
+import { UserInfoNotFoundException } from '../../exception/user';
 
 @Injectable()
 export class UserInfoRepository {
@@ -36,10 +35,7 @@ export class UserInfoRepository {
       await this.removeUserInfoCache(uid);
 
       if (error instanceof EntityNotFoundError) {
-        throw new BaseException(
-          ErrorCode.USER_INFO_NOT_FOUND,
-          `User does not exist! - [${uid}]`,
-        );
+        throw new UserInfoNotFoundException(uid);
       }
 
       throw error;

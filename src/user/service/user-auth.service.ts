@@ -13,8 +13,13 @@ import { UserAuthDao } from './../dao/user-auth.dao';
 import { JwtService } from './jwt.service';
 import authConfig from '../../config/authConfig';
 import { OauthRequestDto } from '../dto/oauth-request.dto';
-import { ErrorCode } from '../../constant/error-code.enum';
-import { BaseException } from '../../exception/base.exception';
+import {
+  AuthInvalidOauthTokenException,
+  AuthInvalidPasswordException,
+  AuthInvalidRefreshTokenException,
+  AuthRefreshTokenRequiredException,
+} from '../../exception/auth';
+import { UserAlreadyExistsException } from '../../exception/user';
 
 @Injectable()
 export class UserAuthService {
@@ -32,10 +37,7 @@ export class UserAuthService {
       userAuthRequestDto.uid,
     );
     if (isExist) {
-      throw new BaseException(
-        ErrorCode.USER_ALREADY_EXISTS,
-        `User already exists. - [${userAuthRequestDto.uid}]`,
-      );
+      throw new UserAlreadyExistsException(userAuthRequestDto.uid);
     }
 
     const userRole = UserRole.USER;
@@ -75,10 +77,7 @@ export class UserAuthService {
     );
 
     if (hashedPassword !== userAuthEntity.password) {
-      throw new BaseException(
-        ErrorCode.AUTH_INVALID_PASSWORD,
-        'Password does not match.',
-      );
+      throw new AuthInvalidPasswordException();
     }
 
     return this.jwtService.create(userAuthEntity.uid, userAuthEntity.userRole);
@@ -90,10 +89,7 @@ export class UserAuthService {
     );
     const payload = ticket.getPayload();
     if (!payload?.email) {
-      throw new BaseException(
-        ErrorCode.AUTH_INVALID_OAUTH_TOKEN,
-        'Invalid Google token payload.',
-      );
+      throw new AuthInvalidOauthTokenException('Invalid Google token payload.');
     }
     const uid = payload.email;
     const isExist = await this.userAuthRepository.isExist(uid);
@@ -121,20 +117,14 @@ export class UserAuthService {
 
   async refresh(refreshToken: string | undefined): Promise<JwtDto> {
     if (!refreshToken) {
-      throw new BaseException(
-        ErrorCode.AUTH_REFRESH_TOKEN_REQUIRED,
-        'Refresh token is required.',
-      );
+      throw new AuthRefreshTokenRequiredException();
     }
 
     const userSessionEntity =
       await this.jwtService.verifyRefreshToken(refreshToken);
 
     if (userSessionEntity instanceof Error) {
-      throw new BaseException(
-        ErrorCode.AUTH_INVALID_REFRESH_TOKEN,
-        'Invalid refresh token.',
-      );
+      throw new AuthInvalidRefreshTokenException();
     }
 
     return this.jwtService.reissueJwtByUserSessionEntity(userSessionEntity);
@@ -164,10 +154,7 @@ export class UserAuthService {
         `CredentialToken is not allowed. - [${credentialToken}]`,
       );
 
-      throw new BaseException(
-        ErrorCode.AUTH_INVALID_OAUTH_TOKEN,
-        'This token is not allowed.',
-      );
+      throw new AuthInvalidOauthTokenException('This token is not allowed.');
     }
   }
 }
