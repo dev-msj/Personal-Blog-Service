@@ -53,7 +53,7 @@ src/
 ├── filter/         # 타입별 Exception Filters (BaseException, HttpException, Unhandled)
 ├── interceptor/    # EncryptPrimaryKeyInterceptor (응답 PK 암호화)
 ├── pipe/           # DecryptPrimaryKeyPipe (요청 PK 복호화)
-├── exception/      # Custom exceptions (BaseException, InvalidPageException, UnexpectedCodeException)
+├── exception/      # Custom exceptions (abstract BaseException + 도메인별 하위 디렉토리: auth/, user/, blog/, validation/)
 ├── response/       # BaseResponseDto, SuccessResponse, FailureResponse, Swagger options
 └── utils/          # Crypto, pagination (TAKE=20 고정), cache key, time utilities
 ```
@@ -156,7 +156,14 @@ Standard pagination via `PaginationDto` with page/limit params. 페이지당 고
 | `HttpExceptionFilter` | `HttpException` | NestJS 표준 HTTP 예외 처리 |
 | `UnhandledExceptionFilter` | `()` catch-all | 500 변환, 원본 에러 로깅 |
 
-`BaseException` 계층: `BaseException`(concrete, 직접 인스턴스화 가능) → 서브클래스: `InvalidPageException`, `UnexpectedCodeException`. 대부분의 도메인 예외는 `new BaseException(ErrorCode.XXX, message)`로 직접 생성.
+`BaseException` 계층: `BaseException`(abstract, protected constructor) → 도메인별 구체 예외 클래스:
+- `auth/`: `AuthUnauthorizedException`, `AuthInvalidPasswordException`, `AuthInvalidOauthTokenException`, `AuthRefreshTokenRequiredException`, `AuthInvalidRefreshTokenException`
+- `user/`: `UserNotFoundException`, `UserAlreadyExistsException`, `UserInfoNotFoundException`, `UserInfoAlreadyExistsException`
+- `blog/`: `PostNotFoundException`, `PostLikeAlreadyExistsException`, `PostLikeNotFoundException`
+- `validation/`: `InvalidPageException`, `InvalidEncryptedParameterException`
+- 범용: `UnexpectedCodeException` (어떤 ErrorCode든 받을 수 있는 fallback)
+
+새 예외 추가 시: ErrorCode enum 도메인 그룹과 일치하는 하위 디렉토리에 클래스 생성, barrel index.ts에 export 추가.
 
 ### Logging
 
