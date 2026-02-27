@@ -4,8 +4,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import authConfig from '../config/authConfig';
 import { CryptoUtils } from '../utils/crypto.utils';
-import { ErrorCode } from '../constant/error-code.enum';
-import { BaseException } from '../exception/base.exception';
+import { InvalidEncryptedParameterException } from '../exception/validation';
 
 @Injectable()
 export class DecryptPrimaryKeyPipe implements PipeTransform<string, string> {
@@ -34,10 +33,7 @@ export class DecryptPrimaryKeyPipe implements PipeTransform<string, string> {
         })}]`,
       );
 
-      throw new BaseException(
-        ErrorCode.INVALID_ENCRYPTED_PARAMETER,
-        'Invalid encrypted parameter',
-      );
+      throw new InvalidEncryptedParameterException();
     }
   }
 }

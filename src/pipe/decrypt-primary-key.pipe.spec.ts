@@ -1,6 +1,6 @@
 import { DecryptPrimaryKeyPipe } from './decrypt-primary-key.pipe';
 import { CryptoUtils } from '../utils/crypto.utils';
-import { BaseException } from '../exception/base.exception';
+import { InvalidEncryptedParameterException } from '../exception/validation';
 
 describe('DecryptPrimaryKeyPipe', () => {
   const pkSecretKey = 'test-secret-key!';
@@ -40,20 +40,24 @@ describe('DecryptPrimaryKeyPipe', () => {
     expect(result).toBe(uuid);
   });
 
-  it('유효하지 않은 암호문이 입력되면 BaseException을 던진다', () => {
+  it('유효하지 않은 암호문이 입력되면 InvalidEncryptedParameterException을 던진다', () => {
     // Given
     const invalidValue = 'not-a-valid-encrypted-value';
 
     // When & Then
-    expect(() => pipe.transform(invalidValue)).toThrow(BaseException);
+    expect(() => pipe.transform(invalidValue)).toThrow(
+      InvalidEncryptedParameterException,
+    );
   });
 
-  it('빈 문자열이 입력되면 BaseException을 던진다', () => {
+  it('빈 문자열이 입력되면 InvalidEncryptedParameterException을 던진다', () => {
     // Given
     const emptyValue = '';
 
     // When & Then
-    expect(() => pipe.transform(emptyValue)).toThrow(BaseException);
+    expect(() => pipe.transform(emptyValue)).toThrow(
+      InvalidEncryptedParameterException,
+    );
   });
 
   it('복호화 실패 시 서버 로그에 경고를 기록한다', () => {
@@ -61,7 +65,9 @@ describe('DecryptPrimaryKeyPipe', () => {
     const invalidValue = 'not-a-valid-encrypted-value';
 
     // When
-    expect(() => pipe.transform(invalidValue)).toThrow(BaseException);
+    expect(() => pipe.transform(invalidValue)).toThrow(
+      InvalidEncryptedParameterException,
+    );
 
     // Then
     expect(mockLogger.warn).toHaveBeenCalledTimes(1);

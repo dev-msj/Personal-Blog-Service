@@ -8,8 +8,7 @@ import { Request } from 'express';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { Reflector } from '@nestjs/core';
-import { ErrorCode } from '../constant/error-code.enum';
-import { BaseException } from '../exception/base.exception';
+import { AuthUnauthorizedException } from '../exception/auth';
 import { JwtService } from '../user/service/jwt.service';
 
 @Injectable()
@@ -37,7 +36,7 @@ export class AuthGuard implements CanActivate {
         )}]`,
       );
 
-      throw new BaseException(ErrorCode.AUTH_UNAUTHORIZED, 'Unauthorized');
+      throw new AuthUnauthorizedException();
     }
 
     const accessToken = request.headers.authorization.split('Bearer ')[1];
@@ -45,14 +44,14 @@ export class AuthGuard implements CanActivate {
     const verifyResult = await this.jwtService.verifyAccessToken(accessToken);
 
     if (verifyResult instanceof Error) {
-      throw new BaseException(ErrorCode.AUTH_UNAUTHORIZED, 'Unauthorized');
+      throw new AuthUnauthorizedException();
     }
 
     const userSessionEntity =
       await this.jwtService.verifyRefreshToken(refreshToken);
 
     if (userSessionEntity instanceof Error) {
-      throw new BaseException(ErrorCode.AUTH_UNAUTHORIZED, 'Unauthorized');
+      throw new AuthUnauthorizedException();
     }
 
     const roles = this.reflector.getAllAndMerge<string[]>('roles', [

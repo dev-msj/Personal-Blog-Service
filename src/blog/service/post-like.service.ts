@@ -6,8 +6,10 @@ import { PostLikeRepository } from '../repository/post-like.repository';
 import { PostLikeEntity } from '../entities/post-like.entity';
 import { PostLikeDao } from '../dao/post-like.dao';
 import { PostLikeDto } from '../dto/post-like.dto';
-import { ErrorCode } from '../../constant/error-code.enum';
-import { BaseException } from '../../exception/base.exception';
+import {
+  PostLikeAlreadyExistsException,
+  PostLikeNotFoundException,
+} from '../../exception/blog';
 
 @Injectable()
 export class PostLikeService {
@@ -51,10 +53,7 @@ export class PostLikeService {
     const postLikeEntity = this.toPostLikeEntity(postLikeDto);
     const isExist = await this.postLikeRepository.isExist(postLikeEntity);
     if (isExist) {
-      throw new BaseException(
-        ErrorCode.POST_LIKE_ALREADY_EXISTS,
-        'Post like already exists!',
-      );
+      throw new PostLikeAlreadyExistsException();
     }
 
     await this.postLikeRepository.savePostLikeEntity(postLikeEntity);
@@ -66,10 +65,7 @@ export class PostLikeService {
     const postLikeEntity = this.toPostLikeEntity(postLikeDto);
     const isExist = await this.postLikeRepository.isExist(postLikeEntity);
     if (!isExist) {
-      throw new BaseException(
-        ErrorCode.POST_LIKE_NOT_FOUND,
-        'Post like not found!',
-      );
+      throw new PostLikeNotFoundException();
     }
 
     await this.postLikeRepository.removePostLikeEntity(postLikeEntity);
