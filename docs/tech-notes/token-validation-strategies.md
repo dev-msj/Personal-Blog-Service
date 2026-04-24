@@ -1,5 +1,8 @@
 # 토큰 검증 전략 비교
 
+> Type A (설계 블로그) / Phase 0 (pre-MCPSI baseline) 산출물
+> 관련 결정: PR #44. MCPSI context.md의 인증 아키텍처 baseline 항목에서 참조.
+
 ## 개요
 
 JWT 기반 인증에서 access token만으로는 즉시 세션 무효화가 불가능한 한계가 있다. 이를 보완하기 위해 서버 측 검증을 추가하는 3가지 전략을 비교한다. 이 문서는 PR #44 코드 리뷰에서의 논의를 정리한 것이다.
