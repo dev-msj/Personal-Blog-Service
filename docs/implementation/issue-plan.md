@@ -2,7 +2,7 @@
 
 ## 이슈 목록 (5개)
 
-### #75 [Refactor] Node.js 22.x LTS 버전 일관 선언 (.nvmrc + engines + GitHub Actions)
+### #75 [Refactor] Node.js 22.x LTS 버전 일관 선언 (.nvmrc + engines + GitHub Actions) [closed]
 
 - **변경 파일**: `.nvmrc` (신설), `package.json` (engines 필드 추가), `.github/workflows/main.yml` (setup-node step 추가)
 - **작업 설명**: Node.js 런타임 버전을 세 지점(.nvmrc / package.json engines / GitHub Actions setup-node)에 일관되게 22.x Maintenance LTS로 선언. 개발자 로컬 환경 암묵 의존을 제거하고 재현성/CI 리스크를 해소. Jest 30 등 상위 도구 도입(Phase 5)의 선행 조건도 본 작업으로 충족.
@@ -23,7 +23,7 @@
   - 파일: `.nvmrc`, `package.json` engines 필드
 - **consumes**: 없음
 
-### #76 [Refactor] 미사용 redis 의존성 제거
+### #76 [Refactor] 미사용 redis 의존성 제거 [closed]
 
 - **변경 파일**: `package.json` (dependencies에서 redis 제거), `package-lock.json` (자동 갱신)
 - **작업 설명**: package.json에 선언된 `redis ^5.8.2` 패키지가 src 내 직접 import 0건이며 실제 Redis 통신은 cache-manager-ioredis 어댑터 경유. 미사용 의존성 제거로 빌드/설치 시간 및 보안 surface 축소.
