@@ -246,7 +246,7 @@ TypeORM: 테스트 환경에서 Redis 쿼리 캐시 비활성 (isTestEnv 분기)
 ## Git Hooks (Husky + lint-staged)
 
 - pre-commit: `npx lint-staged` — .ts 파일에 eslint --fix + prettier --write
-- pre-commit: `gitleaks protect --staged --redact` — staged 파일 시크릿 검사 (gitleaks 바이너리 필요: Windows `choco install gitleaks`, Mac `brew install gitleaks`, Linux `apt-get install gitleaks`)
+- pre-commit: `gitleaks git --staged --pre-commit --redact` — staged 파일 시크릿 검사 (gitleaks 바이너리 필요: Windows `choco install gitleaks`, Mac `brew install gitleaks`, Linux `apt-get install gitleaks`)
 - pre-push: `npm run build` — 빌드 검증
 
 ## TypeScript / Lint 설정
