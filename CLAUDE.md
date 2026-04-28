@@ -76,7 +76,7 @@ src/
 ├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField()
 ├── filter/         # BaseException / HttpException / Unhandled ExceptionFilter
 ├── interceptor/    # EncryptPrimaryKeyInterceptor
-├── pipe/           # DecryptPrimaryKeyPipe
+├── pipe/           # DecryptPrimaryKeyPipe, PathParamAwareValidationPipe
 ├── exception/      # 도메인별 Custom Exception (auth/, user/, blog/, validation/)
 ├── response/       # BaseResponseDto, SuccessResponse, FailureResponse
 ├── types/          # 공용 타입 선언
@@ -101,13 +101,13 @@ Controller → Service → Repository → Entity
 - Repositories: TypeORM 쿼리
 - DAOs: Entity → DTO 변환
 - DTOs: class-validator 검증
-- Pipes: DecryptPrimaryKeyPipe (암호화된 path param 복호화, 실패 시 InvalidEncryptedParameterException)
+- Pipes: DecryptPrimaryKeyPipe (암호화된 path param 복호화, 실패 시 InvalidEncryptedParameterException), PathParamAwareValidationPipe (전역 ValidationPipe 서브클래스, path 파라미터 transformPrimitive 우회)
 - Interceptors: EncryptPrimaryKeyInterceptor (@EncryptField() 필드 자동 암호화), SetRefreshTokenCookieInterceptor (user 모듈, JwtDto 응답 시 refreshToken 쿠키 자동 설정)
 
 ### App Configuration (setupApp)
 
 - CORS: `enableCors({ origin: true, credentials: true })` — 학습 환경, 프로덕션 배포 트리거 시 allowlist 전환 예정
-- ValidationPipe 전역: `whitelist: true, transform: true, enableImplicitConversion: true`
+- ValidationPipe 전역: `PathParamAwareValidationPipe` (ValidationPipe 서브클래스, `whitelist: true, transform: true, enableImplicitConversion: true`). path 파라미터(`metadata.type === 'param'`)는 우회하여 사용자 파이프(`DecryptPrimaryKeyPipe`, `ParseIntPipe` 등)가 원문을 받도록 보장. body/query/custom은 super 위임
 - cookieParser 미들웨어
 - 전역 Guard: APP_GUARD → AuthGuard (app.module.ts)
 - 전역 Filter: APP_FILTER → BaseExceptionFilter, HttpExceptionFilter, UnhandledExceptionFilter
@@ -370,6 +370,7 @@ Phase 1에서 신규 엔드포인트/DTO에 현 패턴(`@ApiOperation`, `@ApiPro
 - 쿼리 최적화: find/findOne 호출 시 select로 컬럼 명시, 민감 컬럼(password, salt) 제외
 - 환경변수: `process.env` 직접 접근 금지. `ConfigService` 또는 `@Inject(config.KEY)` 사용
 - Global Module: Phase 2 observability 모듈은 NestJS Global Module로 등록하여 feature 모듈에서 import 없이 inject 가능하게 구성
+- Path 파라미터 변환: 전역 `PathParamAwareValidationPipe`가 path param의 ValidationPipe `transformPrimitive`를 우회하므로, 핸들러가 `: number`/`: boolean` 등 원시 타입을 받으려면 `@Param('name', ParseIntPipe)` 형태로 적합한 `Parse*Pipe` 또는 `DecryptPrimaryKeyPipe`를 명시 부착해야 한다. 시그니처만 `: number`로 두면 string 원문이 흘러 typeof 단언이 깨진다 (정적 분석 미감지)
 
 ## [확정]/[가이드] 구분
 

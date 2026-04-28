@@ -1,5 +1,6 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import { PathParamAwareValidationPipe } from '../pipe/path-param-aware-validation.pipe';
 
 /**
  * NestJS 앱의 공통 설정을 적용
@@ -13,7 +14,7 @@ export function setupApp(app: INestApplication): void {
   });
 
   app.useGlobalPipes(
-    new ValidationPipe({
+    new PathParamAwareValidationPipe({
       whitelist: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
