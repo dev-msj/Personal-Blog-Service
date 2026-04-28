@@ -18,7 +18,7 @@ last-rebalanced-at: 2026-04-28 — 모델 B 포맷 마이그레이션
 - #76 [리팩토링] 미사용 redis 의존성 제거 [closed]
   provides: redis 패키지 제거
   consumes: 없음
-- #78 [기능, 보안] gitleaks pre-commit 훅 추가
+- #78 [기능, 보안] gitleaks pre-commit 훅 추가 [closed]
   provides: 시크릿 노출 방지 훅
   consumes: 없음
 - #77 [버그] E2E HealthModule CACHE_MANAGER 의존성 해결 (#67 흡수)

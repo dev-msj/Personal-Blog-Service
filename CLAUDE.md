@@ -312,7 +312,7 @@ beforeEach(async () => {
 afterAll(async () => { await app.close(); });
 ```
 
-E2E 파일: `test/*.e2e-spec.ts`. 현재 user-auth/post/app 3개. 알려진 이슈: HealthModule이 CacheModule 내장 import 누락으로 E2E 격리 실행 시 실패 (#67 → Phase 0 #77에서 해결).
+E2E 파일: `test/*.e2e-spec.ts`. 현재 user-auth/post/app/health 4개. health.e2e-spec.ts는 HealthModule 자기완결성을 검증하는 격리 부트 (#77 / #67 해결). HealthModule이 `CacheModule.registerAsync(redisConfig)`를 직접 import하여 AppModule 전역 등록에 의존하지 않는다.
 
 Phase 0 #79 완료 후 test/global-setup.ts에서 migration 자동 실행 통합 예정.
 
