@@ -76,7 +76,7 @@ src/
 ├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField()
 ├── filter/         # BaseException / HttpException / Unhandled ExceptionFilter
 ├── interceptor/    # EncryptPrimaryKeyInterceptor
-├── pipe/           # DecryptPrimaryKeyPipe
+├── pipe/           # DecryptPrimaryKeyPipe, PathParamAwareValidationPipe
 ├── exception/      # 도메인별 Custom Exception (auth/, user/, blog/, validation/)
 ├── response/       # BaseResponseDto, SuccessResponse, FailureResponse
 ├── types/          # 공용 타입 선언
@@ -101,13 +101,13 @@ Controller → Service → Repository → Entity
 - Repositories: TypeORM 쿼리
 - DAOs: Entity → DTO 변환
 - DTOs: class-validator 검증
-- Pipes: DecryptPrimaryKeyPipe (암호화된 path param 복호화, 실패 시 InvalidEncryptedParameterException)
+- Pipes: DecryptPrimaryKeyPipe (암호화된 path param 복호화, 실패 시 InvalidEncryptedParameterException), PathParamAwareValidationPipe (전역 ValidationPipe 서브클래스, path 파라미터 transformPrimitive 우회)
 - Interceptors: EncryptPrimaryKeyInterceptor (@EncryptField() 필드 자동 암호화), SetRefreshTokenCookieInterceptor (user 모듈, JwtDto 응답 시 refreshToken 쿠키 자동 설정)
 
 ### App Configuration (setupApp)
 
 - CORS: `enableCors({ origin: true, credentials: true })` — 학습 환경, 프로덕션 배포 트리거 시 allowlist 전환 예정
-- ValidationPipe 전역: `whitelist: true, transform: true, enableImplicitConversion: true`
+- ValidationPipe 전역: `PathParamAwareValidationPipe` (ValidationPipe 서브클래스, `whitelist: true, transform: true, enableImplicitConversion: true`). path 파라미터(`metadata.type === 'param'`)는 우회하여 사용자 파이프(`DecryptPrimaryKeyPipe`, `ParseIntPipe` 등)가 원문을 받도록 보장. body/query/custom은 super 위임
 - cookieParser 미들웨어
 - 전역 Guard: APP_GUARD → AuthGuard (app.module.ts)
 - 전역 Filter: APP_FILTER → BaseExceptionFilter, HttpExceptionFilter, UnhandledExceptionFilter
