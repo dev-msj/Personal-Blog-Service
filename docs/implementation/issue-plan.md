@@ -3,7 +3,7 @@ next-task-policy: small-first
 workers: 1
 assignees: [@dev-msj]
 created-at: 2026-04-25
-last-rebalanced-at: 2026-04-29 — #86 영역 정합 재검사 (Phase 5 deferred → Phase 0 통합)
+last-rebalanced-at: 2026-04-29 — #85 closed + #89 추가 이슈 인덱스 등록 (영역 정합 단일 Phase 미확정 — 사용자 결정 대기)
 ---
 
 # Issue Plan
@@ -24,7 +24,7 @@ last-rebalanced-at: 2026-04-29 — #86 영역 정합 재검사 (Phase 5 deferred
 - #77 [버그] E2E HealthModule CACHE_MANAGER 의존성 해결 (#67 흡수) [closed]
   provides: HealthModule 자기완결성 (CacheModule.registerAsync 내장 import)
   consumes: 없음
-- #85 [리팩토링] redisConfig.ts의 isGlobal 옵션을 CacheModuleAsyncOptions 최상위로 이동
+- #85 [리팩토링] redisConfig.ts의 isGlobal 옵션을 CacheModuleAsyncOptions 최상위로 이동 [closed]
   provides: redisConfig.isGlobal이 CacheModuleAsyncOptions 최상위에서 동작
   consumes: 없음
   coord: #86 — 같은 redisConfig 영역. #86 ioredis Provider 단일화가 #85 의도(글로벌 등록 활성화)를 자연스럽게 흡수할 가능성
@@ -40,10 +40,11 @@ last-rebalanced-at: 2026-04-29 — #86 영역 정합 재검사 (Phase 5 deferred
 ### 추가 이슈 인덱스 (참고)
 - #85 — Phase 0 / 모노 트랙 추가 (#77 PR #83 1차 리뷰에서 생성, contract-impact: additive)
 - #86 — Phase 0 / 모노 트랙 추가 (#77 PR #83 2차 리뷰에서 생성, contract-impact: breaking)
+- #89 — 미통합 / Phase 미정 (#85 PR #87 1차 리뷰에서 생성, contract-impact: none). 영역 정합 검사 결과: Phase 0(TP7 — Node/의존성/migrations) 정합 약함, Phase 1~4 정합 없음, Phase 5(TP8 — NestJS 11 + RFC 9457) 부분 정합. 사용자 결정 대기 — Phase 5 deferred(NestJS 11 업그레이드와 함께 처리) 권고. 마일스톤 미부여.
 
 ### 분류 인덱스 (참고)
 - 기능: #78
-- 버그: #77
+- 버그: #77, #89
 - 리팩토링: #75, #76, #79, #85, #86
 - 인프라: #75, #79
 - 데이터: #79
