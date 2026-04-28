@@ -70,7 +70,8 @@ src/
 ├── auth/           # AuthGuard (전역 인증 가드)
 ├── blog/           # Post, PostLike
 ├── user/           # UserAuth, UserInfo, JWT, OAuth
-├── health/         # Redis health check (@nestjs/terminus)
+├── health/         # @nestjs/terminus 기반 health check (RedisModule을 직접 import하여 REDIS_CLIENT inject)
+├── redis/          # 단일 ioredis 인스턴스 Provider (REDIS_CLIENT 토큰 + OnModuleDestroy로 quit())
 ├── config/         # TypeORM, Redis, Winston, JWT, env validation (Joi)
 ├── constant/       # ErrorCode enum, UserRole enum
 ├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField()
@@ -111,6 +112,7 @@ Controller → Service → Repository → Entity
 - cookieParser 미들웨어
 - 전역 Guard: APP_GUARD → AuthGuard (app.module.ts)
 - 전역 Filter: APP_FILTER → BaseExceptionFilter, HttpExceptionFilter, UnhandledExceptionFilter
+- Shutdown 훅: main.ts에서 `app.enableShutdownHooks()` 호출. SIGTERM/SIGINT 수신 시 RedisModule의 `OnModuleDestroy`(client.quit())가 트리거되어 ioredis 연결을 graceful 종료
 
 ## HTTP Response Convention
 
@@ -314,7 +316,7 @@ beforeEach(async () => {
 afterAll(async () => { await app.close(); });
 ```
 
-E2E 파일: `test/*.e2e-spec.ts`. 현재 user-auth/post/app/health 4개. health.e2e-spec.ts는 HealthModule 자기완결성을 검증하는 격리 부트 (#77 / #67 해결). HealthModule이 `CacheModule.registerAsync(redisConfig)`를 직접 import하여 AppModule 전역 등록에 의존하지 않는다.
+E2E 파일: `test/*.e2e-spec.ts`. 현재 user-auth/post/app/health 4개. health.e2e-spec.ts는 HealthModule 자기완결성을 검증하는 격리 부트 (#77 / #67 / #86 해결). HealthModule이 `RedisModule`을 직접 import하여 `REDIS_CLIENT`를 inject 받으며 AppModule 전역 등록 또는 다른 spec의 `.overrideModule(CacheModule)`에 영향을 받지 않는다. app.e2e-spec.ts는 AppModule 전체 부트 + CacheModule override 환경에서도 `/health`가 동일하게 동작함을 통합 회귀 검증한다.
 
 Phase 0 #79 완료 후 test/global-setup.ts에서 migration 자동 실행 통합 예정.
 
