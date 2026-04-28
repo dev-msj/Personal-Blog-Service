@@ -1,2 +1,6 @@
 npx lint-staged
-gitleaks protect --staged --redact
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-commit] gitleaks 미설치: Windows: choco install gitleaks, Mac: brew install gitleaks, Linux: apt-get install gitleaks"
+  exit 1
+fi
+gitleaks git --staged --pre-commit --redact
