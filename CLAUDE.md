@@ -370,6 +370,7 @@ Phase 1에서 신규 엔드포인트/DTO에 현 패턴(`@ApiOperation`, `@ApiPro
 - 쿼리 최적화: find/findOne 호출 시 select로 컬럼 명시, 민감 컬럼(password, salt) 제외
 - 환경변수: `process.env` 직접 접근 금지. `ConfigService` 또는 `@Inject(config.KEY)` 사용
 - Global Module: Phase 2 observability 모듈은 NestJS Global Module로 등록하여 feature 모듈에서 import 없이 inject 가능하게 구성
+- Path 파라미터 변환: 전역 `PathParamAwareValidationPipe`가 path param의 ValidationPipe `transformPrimitive`를 우회하므로, 핸들러가 `: number`/`: boolean` 등 원시 타입을 받으려면 `@Param('name', ParseIntPipe)` 형태로 적합한 `Parse*Pipe` 또는 `DecryptPrimaryKeyPipe`를 명시 부착해야 한다. 시그니처만 `: number`로 두면 string 원문이 흘러 typeof 단언이 깨진다 (정적 분석 미감지)
 
 ## [확정]/[가이드] 구분
 
