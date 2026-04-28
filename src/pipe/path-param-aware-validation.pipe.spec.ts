@@ -3,12 +3,12 @@ import { IsInt, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PathParamAwareValidationPipe } from './path-param-aware-validation.pipe';
 
-class SampleBodyDto {
+class SampleStringDto {
   @IsString()
   readonly title: string;
 }
 
-class SampleQueryDto {
+class SampleNumericDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -67,20 +67,20 @@ describe('PathParamAwareValidationPipe', () => {
     it('body DTO는 class-validator 검증과 transform이 수행된다', async () => {
       const metadata: ArgumentMetadata = {
         type: 'body',
-        metatype: SampleBodyDto,
+        metatype: SampleStringDto,
         data: '',
       };
 
       const result = await pipe.transform({ title: 'hello' }, metadata);
 
-      expect(result).toBeInstanceOf(SampleBodyDto);
+      expect(result).toBeInstanceOf(SampleStringDto);
       expect(result.title).toBe('hello');
     });
 
     it('body DTO 검증 실패 시 BadRequestException을 던진다', async () => {
       const metadata: ArgumentMetadata = {
         type: 'body',
-        metatype: SampleQueryDto,
+        metatype: SampleNumericDto,
         data: '',
       };
 
@@ -92,13 +92,13 @@ describe('PathParamAwareValidationPipe', () => {
     it('query DTO는 @Type 변환이 적용된다', async () => {
       const metadata: ArgumentMetadata = {
         type: 'query',
-        metatype: SampleQueryDto,
+        metatype: SampleNumericDto,
         data: '',
       };
 
       const result = await pipe.transform({ page: '3' }, metadata);
 
-      expect(result).toBeInstanceOf(SampleQueryDto);
+      expect(result).toBeInstanceOf(SampleNumericDto);
       expect(result.page).toBe(3);
     });
   });
