@@ -101,5 +101,24 @@ describe('PathParamAwareValidationPipe', () => {
       expect(result).toBeInstanceOf(SampleNumericDto);
       expect(result.page).toBe(3);
     });
+
+    it('custom 타입은 super.transform에 위임된다 (validateCustomDecorators 옵션 진화 가드)', async () => {
+      // Given: 'custom'은 ValidationPipe의 validateCustomDecorators 옵션이 동작 분기.
+      // 본 파이프는 'custom'을 우회 대상에 포함하지 않으므로 super 위임이 보장되어야 한다.
+      const superTransformSpy = jest.spyOn(
+        Object.getPrototypeOf(Object.getPrototypeOf(pipe)),
+        'transform',
+      );
+      const metadata: ArgumentMetadata = {
+        type: 'custom',
+        metatype: String,
+        data: 'header',
+      };
+
+      await pipe.transform('value', metadata);
+
+      expect(superTransformSpy).toHaveBeenCalledWith('value', metadata);
+      superTransformSpy.mockRestore();
+    });
   });
 });
