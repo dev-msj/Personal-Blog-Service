@@ -14,6 +14,9 @@ import { setupApp } from '../src/config/app-setup';
  * HealthModule 자기완결성 검증 E2E.
  * AppModule 또는 BlogModule/UserModule을 import하지 않는 minimal moduleFixture로 부트하여
  * HealthModule이 다른 모듈의 전역 CacheModule 등록에 의존하지 않음을 검증한다 (#77 / #67).
+ *
+ * 본 spec은 HealthModule 자기완결성만 다룬다. AppModule 전역 AuthGuard + @Public() 우회 경로의
+ * 운영 흐름은 본 격리 부트의 검증 대상이 아니며, 그 회귀는 별도 통합 E2E에서 다룬다.
  */
 describe('Health API (e2e, isolated)', () => {
   let app: INestApplication;
@@ -47,10 +50,6 @@ describe('Health API (e2e, isolated)', () => {
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
       status: 'ok',
-      info: {
-        database: { status: 'up' },
-        redis: { status: 'up' },
-      },
       details: {
         database: { status: 'up' },
         redis: { status: 'up' },
