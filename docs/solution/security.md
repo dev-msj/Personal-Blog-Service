@@ -168,7 +168,7 @@
 
 **근거**: OWASP A03/A08 + GitHub Secret Scanning 업계 표준 + 학습 프로젝트에서도 커밋 순간 검출이 방어선 효율적
 
-**구현**: `.husky/pre-commit`에 `npx gitleaks protect --staged --redact` 추가. 로그/에러 메시지에서 시크릿 금지는 NestJS Global Exception Filter가 처리 (기존 구조)
+**구현**: `.husky/pre-commit`에 `gitleaks git --staged --pre-commit --redact` 추가 (gitleaks v8.18+에서 `protect` 명령 deprecated 대응 + npm 패키지 미존재로 binary 설치 전제). 미설치 환경에서는 OS별 설치 안내 후 exit 1로 차단. 로그/에러 메시지에서 시크릿 금지는 NestJS Global Exception Filter가 처리 (기존 구조)
 
 **파급 효과**: Core 재동기화 요청 — application-arch.md Phase 0 로드맵 행에 "gitleaks pre-commit 훅 추가" 보강 필요
 
