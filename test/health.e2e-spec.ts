@@ -17,6 +17,9 @@ import { setupApp } from '../src/config/app-setup';
  *
  * 본 spec은 HealthModule 자기완결성만 다룬다. AppModule 전역 AuthGuard + @Public() 우회 경로의
  * 운영 흐름은 본 격리 부트의 검증 대상이 아니며, 그 회귀는 별도 통합 E2E에서 다룬다.
+ * DB 의미론도 isolated이다. BlogModule/UserModule이 없어 entity가 등록되지 않은 DataSource로
+ * TypeORM이 초기화되며, pingCheck("database")는 SELECT 1 통과만 보장한다 — 운영 스키마 존재
+ * 또는 마이그레이션 적용 여부는 본 spec의 검증 범위가 아니다 (#79 globalSetup 도입 시 재확인).
  */
 describe('Health API (e2e, isolated)', () => {
   let app: INestApplication;
