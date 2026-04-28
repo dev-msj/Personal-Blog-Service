@@ -416,6 +416,7 @@ Problem 작성 시점 기준 해당 없음. 현재 도메인 엔티티는 명시
 
 ### Phase 0: 기반 확보
 
+- 의도: 비동기화/관측성 Phase 진입 + Phase 1 대규모 스키마 변경 진입 게이트. PR 사이클에서 발견된 결함(예: #77 E2E HealthModule, #85·#86 redisConfig 영역, #89 production 엔드포인트)을 흡수하는 영역으로 운영. plan-manager 마일스톤 정의 "Phase 1 진입 게이트 + 발견된 결함 정리"가 본 Phase의 운영 정의
 - 해결할 문제: BP5 (비동기화/관측성 선행 기반 부재)
 - 대응 기술 문제: TP7
 - 근거:
@@ -423,10 +424,17 @@ Problem 작성 시점 기준 해당 없음. 현재 도메인 엔티티는 명시
   - 관측성/비동기화 Phase 진입 전에 환경 기준 확보 필요
   - **Phase 1의 대규모 스키마 변경(User Aggregate 재설계)이 synchronize로는 데이터 손실 없이 처리 불가 → migrations 활성화가 Phase 1 선행 조건**
 - 감수하는 제약: bcrypt/AES-GCM/의존성 메이저 업그레이드 등 나머지 품질 항목은 Phase 5로 지연
+- 범위 외 (인접 Phase 위임):
+  - 기능 추가 / 도메인 재설계 (User Aggregate 재설계, 댓글/답글, 커서 페이징) — Phase 1 BP3 / TP3·TP4·TP5 영역
+  - 관측성 인프라 신설 (Correlation ID, 메트릭/트레이싱, 대시보드) — Phase 2 BP4 / TP6 영역
+  - 비동기 처리 도입 (캐시 / 큐 / Kafka / 알림 비동기 / 집계 비동기 전환) — Phase 3 BP1 / TP1 영역
+  - 부하 테스트 측정 환경 / 베이스라인 — Phase 4 BP2 / TP2 영역
+  - 보안 표준 강화 (argon2id, AES-GCM) / 메이저 업그레이드 (NestJS 11, TS 6, Jest 30) / RFC 9457 응답 표준 전환 — Phase 5 BP6 / TP8 영역. Phase 0이 활성화한 migrations 인프라는 Phase 5에서 데이터 마이그레이션 도구로 사용되지만, 마이그레이션 작성 자체는 Phase 5
 - 전제하는 불확실성 해소: 불확실성 7 (프로덕션 마이그레이션 전략) — migrations 활성화로 해소. 실제 마이그레이션 운용 경험은 Phase 1부터 축적
 
 ### Phase 1: 기능 완성 + 도메인 재정비
 
+- 의도: 기능적 구현의 첫 단계. Phase 3 비동기화의 대상이 되는 모든 동기 기능과 도메인 모델을 정비하여, Phase 2 관측 대상 / Phase 3 비동기 전환 대상이 명확히 정의된 상태를 만든다. Phase 1~3은 누적적으로 "기능 완성"을 구성하며, Phase 1은 그 첫 마일스톤(동기 기능 + 도메인 재설계)
 - 해결할 문제: BP3
 - 대응 기술 문제: TP3 (댓글/답글/중복요청방지) + TP4 (커서 페이징) + TP5 (User 식별자 재설계 — 동일인 식별 기반)
 - 근거:
@@ -436,20 +444,34 @@ Problem 작성 시점 기준 해당 없음. 현재 도메인 엔티티는 명시
 - 감수하는 제약:
   - 추가 기능(팔로우, 검색 등)은 이번 프로젝트 Out-of-scope. 본인인증 CI는 차선책으로 대체
   - Swagger 문서 품질 대규모 개선은 Phase 5 (NestJS 11 + @nestjs/swagger 11 업그레이드)에서 수행. 현재 v7 기반 대규모 리팩토링은 v11 전환 시 재작업 가능성으로 비효율. Phase 1에서는 신규 엔드포인트/DTO에 기존 수준의 Swagger 데코레이터만 적용 (`@ApiOperation`, `@ApiProperty` 등 현 패턴 계승). 기존 이슈 #45는 Phase 5 배치
+- 범위 외 (인접 Phase 위임):
+  - 기반 확보 (Node 버전 선언 / 의존성 정리 / migrations 활성화) — Phase 0 BP5 / TP7 영역. Phase 1 진입 게이트로 선행 완료 전제. PR 사이클에서 발견된 기반 결함도 Phase 0에서 흡수
+  - 관측성 인프라 (Correlation ID, 메트릭/트레이싱, 대시보드) — Phase 2 BP4 / TP6 영역
+  - 비동기 처리 도입 (캐시 / 큐 / Kafka / 알림 비동기 / 집계 비동기 전환) — Phase 3 BP1 / TP1 영역. Phase 1은 동기 구현 완료까지
+  - 부하 테스트 측정 — Phase 4 BP2 / TP2 영역
+  - 보안 표준 강화 / 메이저 업그레이드 / RFC 9457 / Swagger 대규모 리팩토링 — Phase 5 BP6 / TP8 영역
 - 전제하는 불확실성 해소: TP5 내부 설계(email 기반 연동 vs 수동 계정 연결 등)는 Solution 단계에서 대안 트레이드오프 분석 후 확정
 
 ### Phase 2: 관측성 가시화
 
+- 의도: 비동기화(Phase 3)와 부하 테스트(Phase 4)의 측정 인프라 선행 확보. 관측 없이 비동기화 도입 시 효과 판정 불가하므로 측정 사이클의 전제 조건. Phase 2는 측정 인프라 구축까지이며, 측정 사이클 자체는 Phase 4
 - 해결할 문제: BP4
 - 대응 기술 문제: TP6
 - 근거:
   - 비동기화(Phase 3)와 부하 테스트(Phase 4)의 측정 인프라 선행 — 관측 없이 비동기화 도입 시 효과 판정 불가
   - 기능 완성(Phase 1)이 선행되어야 관측 대상(엔드포인트/비동기 작업)이 확정됨
 - 감수하는 제약: 비동기 작업 관측 세부는 Phase 3에서 보강 (큐/Kafka consumer lag 등)
+- 범위 외 (인접 Phase 위임):
+  - 기반 확보 — Phase 0 BP5 / TP7 영역
+  - 기능 완성 / 도메인 재설계 — Phase 1 BP3 / TP3·TP4·TP5 영역. Phase 1 종료 후 진입하므로 도메인 변경 없음
+  - 비동기 처리 도입 (캐시 / 큐 / Kafka / 알림 비동기 / 집계 비동기 전환) — Phase 3 BP1 / TP1 영역. Phase 2는 관측 인프라까지, 비동기 패턴 도입은 Phase 3
+  - 부하 테스트 측정 사이클 — Phase 4 BP2 / TP2 영역
+  - 보안 표준 강화 / 메이저 업그레이드 / RFC 9457 — Phase 5 BP6 / TP8 영역
 - 전제하는 불확실성 해소: 없음
 
 ### Phase 3: 비동기화 (캐시/큐/Kafka + 알림 기능 신규)
 
+- 의도: 기능적 구현의 마지막 단계. **Phase 3 종료 시점에서 모든 기능적 구현(동기 기능 + 비동기 패턴 도입 + 알림 기능 + 집계 비동기 전환)이 완료되어, Phase 4가 측정할 시스템 형상이 확정된다.** "Phase 1~3까지의 누적이 곧 기능 완성"이며 Phase 3은 그 마지막 마일스톤. 부하 테스트 직전에 시스템 변동성을 종결하는 기능 마감 단계로서, 이후 Phase 4·5에서는 새 기능 도입을 봉인하고 측정·품질 개선만 수행
 - 해결할 문제: BP1
 - 대응 기술 문제: TP1
 - 근거:
@@ -458,10 +480,17 @@ Problem 작성 시점 기준 해당 없음. 현재 도메인 엔티티는 명시
   - 기능 완성(Phase 1) 후 비동기화 대상 확보 (알림 비동기 구현, 조회수/좋아요 집계 비동기 전환)
   - 이 Phase 내부에서 하위 단계: (i) Redis 캐시 (ii) 작업 큐 (iii) Kafka 이벤트. 각 단계별 Type A + B 블로그 산출
 - 감수하는 제약: 완전한 CQRS나 Event Sourcing은 범위 초과 — 이벤트 기반 처리의 기본 패턴까지
+- 범위 외 (인접 Phase 위임):
+  - 기반 확보 — Phase 0 BP5 / TP7 영역
+  - 기능 추가 / 도메인 재설계 — Phase 1 BP3 / TP3·TP4·TP5 영역. Phase 3은 기능 모델 변경 없이 동기 → 비동기 흐름 전환만 (도메인 모델 변경 시 Phase 1 재진입 신호)
+  - 관측 인프라 신설 — Phase 2 BP4 / TP6 영역. Phase 3은 큐/Kafka 관측 보강만 추가
+  - 부하 테스트 측정 사이클 — Phase 4 BP2 / TP2 영역. Phase 3은 비동기화 구현 완료까지, 측정은 별개 Phase
+  - 보안 표준 강화 / 메이저 업그레이드 / RFC 9457 — Phase 5 BP6 / TP8 영역
 - 전제하는 불확실성 해소: 4 (첫 블로그 Type A/B 목록) — 이 Phase 도입부 /mcpsi-implementation에서 "Phase 산출 문서" 선언으로 확정
 
 ### Phase 4: 부하 테스트 + 튜닝 1차
 
+- 의도: Phase 3까지 확정된 시스템 형상에 대한 베이스라인 측정 사이클. **Phase 5 재측정과의 before/after 비교 기준점을 확보**하는 것이 본 Phase의 핵심 가치. 측정 환경의 안정성 보호가 의무 — 측정 중 코드 변경(기능 추가, 비동기 패턴 추가, 품질 개선)은 비교 무효화 사유
 - 해결할 문제: BP2 (1차 사이클)
 - 대응 기술 문제: TP2
 - 근거:
@@ -469,25 +498,41 @@ Problem 작성 시점 기준 해당 없음. 현재 도메인 엔티티는 명시
   - 관측성(Phase 2) 인프라를 활용한 병목 탐지
   - "베이스라인 측정 → 튜닝 → 재측정" 학습 목표 핵심 사이클
 - 감수하는 제약: 로컬 장비 기준 측정이므로 절대 수치의 대외 재현성 제한. 상대 비교(before/after) 중심 해석
+- 범위 외 (인접 Phase 위임):
+  - 기반 확보 — Phase 0 BP5 / TP7 영역
+  - 기능 / 도메인 변경 — Phase 1 BP3 영역. 측정 환경 안정성 보호 (측정 중 변경 금지)
+  - 관측 인프라 신설 — Phase 2 BP4 / TP6 영역. Phase 4는 활용
+  - 비동기 패턴 신규 도입 — Phase 3 BP1 / TP1 영역. Phase 4는 도입된 패턴 측정
+  - 코드 품질 개선 / 메이저 업그레이드 / RFC 9457 — Phase 5 BP6 / TP8 영역. Phase 4 측정 후 Phase 5에서 변경 (반대 순서로 변경 시 비교 베이스라인 소실)
 - 전제하는 불확실성 해소: 3 (부하 테스트 목표 규모 및 수치) — 이 Phase 도입부에서 목표 규모 가정 확정
 
 ### Phase 5: 프로덕션 품질 개선 + 재측정 2차
 
+- 의도: **Phase 4 baseline 대비 동일 시나리오 재측정 비교를 위한 프로덕션 품질 개선.** 단순 버전 업데이트가 아닌 "before/after 비교 가능한 학습 사이클"이 본 Phase 핵심. 메이저 업그레이드 / 보안 표준 강화 / 응답 표준 전환은 비교 사이클의 변수이며, 변경 후 동일 시나리오 재측정이 의무. **Phase 0의 기반 확보(Node 버전 / migrations 활성화 / 의존성 정리)는 Phase 5 진입 시점에 이미 선행 완료된 상태가 전제 — Phase 0 영역의 작업을 본 Phase로 이관 금지** (PR #83 사이클 #86 deferred 정정 사례 — 4/29 commit 3e7045b로 Phase 0 통합)
 - 해결할 문제: BP6 + BP2 (2차 사이클)
 - 대응 기술 문제: TP8
 - 근거:
   - Phase 4와 동일 시나리오 부하 테스트를 프로덕션 품질 개선 후 재수행하여 before/after 비교 학습 가치 확보
   - 의존성 메이저 업그레이드(NestJS 11 등)의 breaking change 대응 경험
-  - bcrypt/argon2 전환, AES-GCM 전환, migrations 활성화의 실제 마이그레이션 경험
+  - bcrypt/argon2 전환, AES-GCM 전환의 실제 마이그레이션 경험 (migrations 인프라는 Phase 0 선행 완료 전제)
 - 감수하는 제약: Phase 4와 Phase 5 사이 코드 변경량이 커서 비교가 복합 요인. 개별 전환의 영향을 분리 측정하려면 추가 반복 필요
+- 범위 외 (인접 Phase 위임):
+  - 기반 확보 (Node 버전 선언 / 의존성 정리 / migrations 활성화 / 기반 결함 흡수) — Phase 0 BP5 / TP7 영역. Phase 5는 Phase 0 인프라 위에서 데이터 마이그레이션 작성 · 메이저 업그레이드 수행. **Phase 0 미완 항목을 Phase 5로 이관 금지**
+  - 기능 추가 / 도메인 재설계 — Phase 1 BP3 영역. 측정 비교의 일관성 보호
+  - 관측 인프라 신설 — Phase 2 BP4 / TP6 영역. Phase 5는 활용
+  - 새로운 비동기 패턴 도입 — Phase 3 BP1 / TP1 영역. Phase 5는 기존 비동기 흐름을 유지한 채 품질 개선 (응답 포맷·해싱·암호화 등 단면 교체)
+  - 측정 환경 신규 구축 — Phase 4 BP2 / TP2 영역. Phase 5는 동일 시나리오 재측정 (시나리오·도구·시각화 동일 유지가 비교 전제)
 - 전제하는 불확실성 해소: 8 (의존성 메이저 업그레이드 편입) — 이 Phase 범위로 확정
 
 ## Sources
 
 - docs/context.md (비즈니스 맥락, 기술 제약, 알려진 불확실성 전체)
-- docs/meeting-logs/2026-04-24.md (결정 1-7, 미결정 1-4)
+- docs/meeting-logs/2026-04-24.md (결정 1-7, 미결정 1-4 — MCPSI 신규 수립)
+- docs/meeting-logs/2026-04-29.md (결정 1-5, 미결정 1-3 — Phase 근거 부정형 경계 추가, Phase 0 운영 정의 역승격, Phase 5 의도 명문화)
+- 본 프로젝트 PR #83 사이클: 커밋 11270a2 (이관 이슈 #85·#86 plan 통합), 3e7045b (#86 영역 정합 정정 — Phase 5 deferred → Phase 0 통합)
 - 기존 코드 분석 (Explore 에이전트, 2026-04-24) — 엔티티 구조, 서비스 레이어 도메인 규칙, 인증 흐름
 - 추가 확인: src/user/service/user-auth.service.ts:94 (Google OAuth uid = payload.email 확인)
 - Swagger 문서화 품질 점검 (Explore 에이전트, 2026-04-24): 전역 설정/엔드포인트 데코레이터/DTO 메타데이터 현황 — `@ApiParam`·`@ApiQuery` 0% 사용, CLI plugin 비활성, 응답 스키마 표현 혼재 확인
 - `@nestjs/swagger` 최신 버전 조사 (2026-04-24 WebSearch): 11.3.0 릴리스 — NestJS 11 대응이므로 Phase 5 업그레이드와 묶임
 - 패턴 선정 근거 카테고리: Alexander "Timeless Way of Building" (Forces), Gamma et al. "Design Patterns" Ch.1 (Causes of Redesign), Fowler "Refactoring" + Kerievsky "Refactoring to Patterns" (Smell), Brown et al. "AntiPatterns" (AntiPattern)
+- Phase 근거 부정형 경계 방법론: IEEE 29148:2018 §6 Requirements engineering processes / Wiegers & Beatty "Software Requirements" 3e Ch.5 (mcpsi-problem SKILL.md Phase 근거 작성 원칙)

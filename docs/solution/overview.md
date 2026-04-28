@@ -66,14 +66,14 @@ Context Map 관계 패턴 해당 없음. 외부 통합은 Google OAuth 2.0 ID To
 
 ## Phase 정의
 
-problem.md Phase 근거 섹션을 따른다. 각 Phase의 해결 대상·근거·감수 제약은 problem.md 참조.
+problem.md Phase 근거 섹션을 따른다. 각 Phase의 해결 대상·근거·감수 제약·범위 외(인접 Phase 위임)는 problem.md 참조. 본 섹션은 각 Phase의 의도와 범위 요약만 제공한다 — 부정형 경계의 1차 진실은 problem.md.
 
-- Phase 0: 기반 확보 (BP5 / TP7) — Node 버전 선언 + 불필요 의존성 정리 + **migrations 활성화 (synchronize:false 전환)**
-- Phase 1: 기능 완성 + 도메인 재정비 (BP3 / TP3·TP4·TP5) — 댓글·답글·중복 요청 방지 + 커서 페이징 + User 식별자 재설계. **Phase 0에서 활성화된 migrations 인프라 위에서 데이터 보존형 마이그레이션 스크립트 작성**
-- Phase 2: 관측성 가시화 (BP4 / TP6) — Correlation ID, 메트릭/트레이싱, 대시보드
-- Phase 3: 비동기화 (BP1 / TP1) — 캐시/큐/Kafka + 알림 비동기 신규 + 집계 비동기 전환
-- Phase 4: 부하 테스트 1차 (BP2 / TP2) — Baseline + Load + Stress, Spike 조건부
-- Phase 5: 품질 개선 + 재측정 2차 (BP6 + BP2 / TP8) — bcrypt/AES-GCM/migrations/메이저 업그레이드 + 동일 시나리오 재측정
+- **Phase 0**: 기반 확보 (BP5 / TP7) — *비동기화/관측성 Phase 진입 + Phase 1 대규모 스키마 변경 진입 게이트.* Node 버전 선언 + 불필요 의존성 정리 + **migrations 활성화 (synchronize:false 전환)**. PR 사이클에서 발견된 기반 결함도 본 Phase에서 흡수 (plan-manager 운영 정의: "Phase 1 진입 게이트 + 발견된 결함 정리")
+- **Phase 1**: 기능 완성 + 도메인 재정비 (BP3 / TP3·TP4·TP5) — *기능 완성의 첫 마일스톤. Phase 1~3 누적이 곧 기능 완성.* 댓글·답글·중복 요청 방지 + 커서 페이징 + User 식별자 재설계. Phase 0에서 활성화된 migrations 인프라 위에서 데이터 보존형 마이그레이션 스크립트 작성
+- **Phase 2**: 관측성 가시화 (BP4 / TP6) — *측정 사이클의 전제 인프라. 측정 사이클 자체는 Phase 4.* Correlation ID, 메트릭/트레이싱, 대시보드
+- **Phase 3**: 비동기화 (BP1 / TP1) — ***기능적 구현의 마지막 단계. Phase 3 종료 시 모든 기능 완성, Phase 4가 측정할 시스템 형상 확정.*** 캐시/큐/Kafka + 알림 비동기 신규 + 집계 비동기 전환. 이후 Phase 4·5는 새 기능 도입 봉인
+- **Phase 4**: 부하 테스트 1차 (BP2 / TP2) — ***Phase 5 재측정과의 before/after 비교 기준점.*** Baseline + Load + Stress, Spike 조건부. 측정 환경 안정성 보호 — 측정 중 코드 변경(기능 추가, 비동기 패턴 추가, 품질 개선) 금지
+- **Phase 5**: 품질 개선 + 재측정 2차 (BP6 + BP2 / TP8) — ***Phase 4 baseline 대비 동일 시나리오 재측정 비교를 위한 프로덕션 품질 개선*** (단순 버전 업데이트 아님). argon2id/AES-GCM + 메이저 업그레이드(NestJS 11, TS 6, Jest 30) + RFC 9457 응답 표준 전환 + 동일 시나리오 재측정. **Phase 0 영역(Node 버전, migrations 활성화, 의존성 정리, 기반 결함 흡수)을 본 Phase로 이관 금지** — Phase 0 인프라 위에서 데이터 마이그레이션·메이저 업그레이드 수행이 본 Phase 활동
 
 각 Phase는 독립 Phase 진입 시점에 해당 Phase 범위의 Problem/Solution 재작성을 수행하여 "알려진 불확실성"을 해소하며 진행 (MCPSI 공통 변경 관리 정책 — ADR supersede 패턴).
 
@@ -117,10 +117,13 @@ async → security → observability → (infra 미적용) → (risk 미적용) 
 ## Sources
 
 - docs/context.md (비즈니스 맥락, 기술 제약, 알려진 불확실성 전체)
-- docs/problem.md (BP1~BP6, TP1~TP8, UC-1~7, Invariant 12, Phase 근거)
-- docs/meeting-logs/2026-04-24.md (결정 1-7, 미결정 1-4)
+- docs/problem.md (BP1~BP6, TP1~TP8, UC-1~7, Invariant 12, Phase 근거 — 각 Phase 범위 외 부정형 경계 포함)
+- docs/meeting-logs/2026-04-24.md (결정 1-7, 미결정 1-4 — MCPSI 신규 수립)
+- docs/meeting-logs/2026-04-29.md (결정 1-5, 미결정 1-3 — Phase 정의 의도 명문화 + 부정형 경계 정책 수용)
+- 본 프로젝트 PR #83 사이클: 커밋 11270a2, 3e7045b (#86 영역 정합 정정 — Phase 5 deferred → Phase 0 통합 사례, Phase 5 의도 명문화의 트리거)
 - docs/tech-notes/token-validation-strategies.md (Phase 0 auth baseline)
 - 방법론 근거:
   - Vernon "Implementing Domain-Driven Design" (2013) 4 Rules — Aggregate 설계
   - methodology-ddd.md Context Mapping 9 패턴
   - Molyneaux "The Art of Application Performance Testing" (2014) — 부하 테스트 유형 분류
+  - IEEE 29148:2018 §6 / Wiegers & Beatty "Software Requirements" 3e Ch.5 — Phase 근거 부정형 경계 정책 (problem.md 1차 적용)

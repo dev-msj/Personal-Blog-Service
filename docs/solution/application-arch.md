@@ -236,7 +236,7 @@ async-processing.md에서 이벤트 계약·파티션·순서 보장·DLQ·Idemp
 
 ### [확정] Expand-and-Contract + Lazy Migration (TP8)
 
-결정: Phase 5 보안 전환(bcrypt, AES-GCM)과 migrations 활성화 시 데이터 마이그레이션 전략으로 Expand-and-Contract + Lazy Migration 조합 [확정]
+결정: Phase 5 보안 전환(bcrypt, AES-GCM) 시점의 데이터 마이그레이션 전략으로 Expand-and-Contract + Lazy Migration 조합 [확정]. migrations 인프라는 Phase 0에서 선행 활성화된 상태 전제(line 248 참조)이며 본 결정의 적용 시점은 Phase 5
 
 근거: TP8 + Causes of Redesign 8 (synchronize:true로 스키마 변경 추적 불가) + Smell Oddball Solution (SHA256 3회 반복) + AntiPattern Reinvent the Wheel + Fowler "Expand-Contract" 리팩토링 패턴 + 업계 Lazy Migration 관행 (로그인 시점 비밀번호 재해싱)
 
