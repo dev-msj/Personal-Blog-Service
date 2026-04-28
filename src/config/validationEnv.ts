@@ -26,5 +26,7 @@ export const validationEnv = Joi.object({
     .optional(),
   COOKIE_SAME_SITE: Joi.string().valid('strict', 'lax', 'none').optional(),
   GOOGLE_CLIENT_ID: Joi.string().required(),
+  REDIS_HOST: Joi.string().required(),
+  REDIS_PORT: Joi.number().integer().positive().required(),
   REDIS_PASSWORD: Joi.string().required(),
 });
