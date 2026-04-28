@@ -1,30 +1,24 @@
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   HealthCheckError,
   HealthIndicator,
   HealthIndicatorResult,
 } from '@nestjs/terminus';
-
-interface IoRedisCacheManager {
-  store: {
-    getClient(): { ping(): Promise<string> };
-  };
-}
+import * as Redis from 'ioredis';
+import { REDIS_CLIENT } from '../../redis/redis.providers';
 
 @Injectable()
 export class RedisHealthIndicator extends HealthIndicator {
   constructor(
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: IoRedisCacheManager,
+    @Inject(REDIS_CLIENT)
+    private readonly client: Redis.Redis,
   ) {
     super();
   }
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     try {
-      const client = this.cacheManager.store.getClient();
-      await client.ping();
+      await this.client.ping();
       return this.getStatus(key, true);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
