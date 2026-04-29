@@ -18,6 +18,8 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
       // synchronize: false 강제. 스키마 변경은 migration 파일로만 적용한다.
       synchronize: false,
       migrationsRun: false,
+      // NestJS 런타임은 빌드된 dist 경로 참조. CLI/globalSetup용 경로는
+      // src/config/data-source.ts(ts-node 직접 실행)에서 별도 관리한다.
       migrations: ['dist/migrations/*.js'],
       // 테스트 환경에서는 Redis 캐시를 비활성화
       cache: isTestEnv
