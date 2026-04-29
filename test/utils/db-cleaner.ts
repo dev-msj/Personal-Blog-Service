@@ -39,7 +39,9 @@ export class DbCleaner {
       const systemTables = new Set(['migrations', 'typeorm_metadata']);
       for (const row of tables) {
         const tableName = row.TABLE_NAME || row.table_name;
-        if (tableName && !systemTables.has(tableName)) {
+        // information_schema가 반환하는 케이스는 lower_case_table_names 설정에
+        // 따라 OS/환경마다 다를 수 있으므로 비교는 case-insensitive로 수행한다.
+        if (tableName && !systemTables.has(tableName.toLowerCase())) {
           await queryRunner.query(`TRUNCATE TABLE \`${tableName}\``);
         }
       }
