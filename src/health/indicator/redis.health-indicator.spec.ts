@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { RedisHealthIndicator } from './redis.health-indicator';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { HealthCheckError } from '@nestjs/terminus';
+import { REDIS_CLIENT } from '../../redis/redis.providers';
 
 describe('RedisHealthIndicator', () => {
   let indicator: RedisHealthIndicator;
@@ -14,13 +14,9 @@ describe('RedisHealthIndicator', () => {
       providers: [
         RedisHealthIndicator,
         {
-          provide: CACHE_MANAGER,
+          provide: REDIS_CLIENT,
           useValue: {
-            store: {
-              getClient: () => ({
-                ping: mockPing,
-              }),
-            },
+            ping: mockPing,
           },
         },
       ],

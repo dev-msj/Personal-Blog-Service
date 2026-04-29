@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
-import { CacheModule } from '@nestjs/cache-manager';
 import { TerminusModule } from '@nestjs/terminus';
-import { redisConfig } from '../config/redisConfig';
+import { RedisModule } from '../redis/redis.module';
 import { HealthController } from './health.controller';
 import { RedisHealthIndicator } from './indicator/redis.health-indicator';
 
-// HealthModule 자기완결성: AppModule 등록 또는 E2E override 환경에서 CacheModule store가
-// in-memory로 교체되면 RedisHealthIndicator의 cacheManager.store.getClient()가 미정의되어
-// TypeError가 발생한다. HealthModule이 자체 CacheModule(redisConfig)을 직접 등록하여 차단한다.
+// HealthModule 자기완결성: RedisModule을 직접 import하여 REDIS_CLIENT를 inject 받는다.
+// CacheModule은 의존하지 않으므로 다른 spec의 CacheModule override 정책과 무관하게 동작한다.
 @Module({
-  imports: [TerminusModule, CacheModule.registerAsync(redisConfig)],
+  imports: [TerminusModule, RedisModule],
   controllers: [HealthController],
   providers: [RedisHealthIndicator],
 })

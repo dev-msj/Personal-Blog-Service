@@ -31,4 +31,20 @@ describe('AppController (e2e)', () => {
       .expect(200)
       .expect('Hello World!');
   });
+
+  // RedisHealthIndicator가 CacheModule(@nestjs/cache-manager) 대신 REDIS_CLIENT를 직접 inject
+  // 받음을 보장. AppModule 부트 환경에서 CacheModule.overrideModule()로 in-memory 캐시로
+  // 교체된 상태에서도 health 경로가 실 ioredis 연결로 동작해야 한다 (#67/#77/#86 회귀 방지).
+  it('GET /health → CacheModule override 환경에서도 redis up 상태를 반환한다', async () => {
+    const response = await request(app.getHttpServer()).get('/health');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      status: 'ok',
+      details: {
+        database: { status: 'up' },
+        redis: { status: 'up' },
+      },
+    });
+  });
 });

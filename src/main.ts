@@ -29,6 +29,10 @@ async function bootstrap() {
 
   setupApp(app);
 
+  // SIGTERM/SIGINT 수신 시 모듈의 OnModuleDestroy 훅을 호출. RedisModule이 ioredis
+  // 인스턴스를 quit()으로 graceful 종료하기 위해 필수.
+  app.enableShutdownHooks();
+
   await app.listen(3000);
 }
 bootstrap();
