@@ -17,8 +17,10 @@ export class DbCleaner {
   constructor(private readonly dataSource: DataSource) {}
 
   /**
-   * 모든 테이블의 데이터를 삭제
-   * 외래 키 제약 조건을 비활성화한 후 삭제하고 다시 활성화
+   * 모든 도메인 테이블의 데이터를 삭제.
+   * TypeORM 시스템 테이블(migrations, typeorm_metadata)은 제외한다.
+   * 시스템 테이블을 함께 TRUNCATE하면 다음 globalSetup의 runMigrations가
+   * 적용 이력을 잃고 InitialSchema를 재실행해 'Table already exists'로 실패한다.
    */
   async cleanAll(): Promise<void> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -34,9 +36,12 @@ export class DbCleaner {
         AND table_type = 'BASE TABLE'
       `);
 
+      const systemTables = new Set(['migrations', 'typeorm_metadata']);
       for (const row of tables) {
         const tableName = row.TABLE_NAME || row.table_name;
-        if (tableName) {
+        // information_schema가 반환하는 케이스는 lower_case_table_names 설정에
+        // 따라 OS/환경마다 다를 수 있으므로 비교는 case-insensitive로 수행한다.
+        if (tableName && !systemTables.has(tableName.toLowerCase())) {
           await queryRunner.query(`TRUNCATE TABLE \`${tableName}\``);
         }
       }
