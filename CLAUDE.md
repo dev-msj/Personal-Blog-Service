@@ -54,7 +54,7 @@ npx jest --testPathPattern="post.service"
 npm run migration:run         # 미적용 migration 전체 실행 (dev DB 최초 세팅 필수)
 npm run migration:revert      # 마지막 적용 migration revert (down 실행)
 npm run migration:show        # 적용 상태 출력 ([X] 적용 / [ ] 미적용)
-npm run migration:generate -- migrations/<Name>   # entity diff로 migration 자동 생성
+npm run migration:generate -- src/migrations/<Name>   # entity diff로 migration 자동 생성
 npm run typeorm -- <command>  # CLI 직접 호출
 ```
 
