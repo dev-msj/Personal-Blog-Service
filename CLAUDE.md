@@ -71,7 +71,7 @@ src/
 ├── blog/           # Post, PostLike
 ├── user/           # UserAuth, UserInfo, JWT, OAuth
 ├── health/         # @nestjs/terminus 기반 health check (RedisModule을 직접 import하여 REDIS_CLIENT inject)
-├── redis/          # 단일 ioredis 인스턴스 Provider (REDIS_CLIENT 토큰 + OnModuleDestroy로 quit())
+├── redis/          # NestJS CacheModule + health 경로가 공유하는 ioredis 인스턴스 Provider (REDIS_CLIENT 토큰 + OnModuleDestroy로 quit()). production TypeORM 쿼리 캐시는 별도 ioredis 클라이언트로 동작
 ├── config/         # TypeORM, Redis, Winston, JWT, env validation (Joi)
 ├── constant/       # ErrorCode enum, UserRole enum
 ├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField()
