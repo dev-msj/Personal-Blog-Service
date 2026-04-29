@@ -15,7 +15,10 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
       password: configService.get('DB_PASSWORD'),
       database: configService.get('DB_DATABASE'),
       autoLoadEntities: true,
-      synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
+      // synchronize: false 강제. 스키마 변경은 migration 파일로만 적용한다.
+      synchronize: false,
+      migrationsRun: false,
+      migrations: ['dist/migrations/*.js'],
       // 테스트 환경에서는 Redis 캐시를 비활성화
       cache: isTestEnv
         ? false
