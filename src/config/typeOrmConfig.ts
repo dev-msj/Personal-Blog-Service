@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 
@@ -20,7 +21,8 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
       migrationsRun: false,
       // NestJS 런타임은 빌드된 dist 경로 참조. CLI/globalSetup용 경로는
       // src/config/data-source.ts(ts-node 직접 실행)에서 별도 관리한다.
-      migrations: ['dist/migrations/*.js'],
+      // __dirname(dist/src/config) 기준 절대 경로로 cwd 의존성을 제거한다.
+      migrations: [path.join(__dirname, '..', 'migrations', '*.js')],
       // 테스트 환경에서는 Redis 캐시를 비활성화
       cache: isTestEnv
         ? false

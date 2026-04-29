@@ -13,6 +13,8 @@ dotenv.config({
 // TypeORM CLI(typeorm-ts-node-commonjs)와 Jest globalSetup 공용 DataSource.
 // NestJS DI 외부에서 ts-node로 직접 실행되므로 ts 소스 경로를 참조한다.
 // 런타임(빌드 후 dist) DataSource는 src/config/typeOrmConfig.ts에서 별도 정의.
+// __dirname(src/config) 기준 절대 경로로 cwd 의존성을 제거한다.
+const srcRoot = path.resolve(__dirname, '..');
 export default new DataSource({
   type: 'mysql',
   host: process.env.DB_HOST,
@@ -20,8 +22,8 @@ export default new DataSource({
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  entities: ['src/**/*.entity.ts'],
-  migrations: ['migrations/*.ts'],
+  entities: [path.join(srcRoot, '**', '*.entity.ts')],
+  migrations: [path.join(srcRoot, 'migrations', '*.ts')],
   synchronize: false,
   migrationsRun: false,
 });
