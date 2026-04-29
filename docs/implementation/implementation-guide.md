@@ -261,6 +261,13 @@ pending (typeorm migrations 테이블에 미등록)
 - `test/jest-e2e.json` (globalSetup 등록)
 - `env/.development.env` / `env/.test.env` (DB_SYNCHRONIZE=false 명시 — 가이드 수준)
 
+#### Phase 1 첫 마이그레이션 이슈에서 다룰 후속 항목 (TODO)
+
+본 흐름은 인프라 확보까지를 다루며 다음 항목은 Phase 1 첫 데이터 보존형 마이그레이션 이슈와 페어링하여 작성한다 (PR #94 2차 리뷰 (5) 발견 사항).
+
+- 데이터 보존형 마이그레이션 작성 절차 가이드: generate 결과 검토 → 수동 백필 SQL 작성 기준 → up/down 가역성 e2e 절차. VARCHAR uid → BIGINT user_id 같이 generate가 자동 작성할 수 없는 변환의 작성 경계를 명시
+- up/down 가역성 회귀 e2e: 마이그레이션 추가 시 down → up 순환을 자동 검증하는 spec. 데이터 보존(예: BIGINT → VARCHAR rollback truncation) 회귀를 CI에서 잡는다
+
 ---
 
 ### 흐름 5. gitleaks pre-commit 훅 추가
