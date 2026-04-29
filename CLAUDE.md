@@ -49,7 +49,16 @@ npm run test:e2e
 # 단일 테스트 파일
 npx jest path/to/file.spec.ts
 npx jest --testPathPattern="post.service"
+
+# TypeORM migrations (Phase 0 #79)
+npm run migration:run         # 미적용 migration 전체 실행 (dev DB 최초 세팅 필수)
+npm run migration:revert      # 마지막 적용 migration revert (down 실행)
+npm run migration:show        # 적용 상태 출력 ([X] 적용 / [ ] 미적용)
+npm run migration:generate -- migrations/<Name>   # entity diff로 migration 자동 생성
+npm run typeorm -- <command>  # CLI 직접 호출
 ```
+
+개발 DB 최초 세팅: `docker-compose up -d` → `npm run migration:run`. 기존 환경에 synchronize:true로 생성된 스키마가 잔존하면 옵션 A(`docker-compose down` + `data/mysql` 삭제 + `up -d` + `migration:run`) 또는 옵션 B(`migrations` 테이블에 InitialSchema 레코드 baseline INSERT) 중 선택. E2E는 globalSetup이 자동으로 migration을 실행하므로 별도 수동 절차 불필요.
 
 ## 아키텍처 개요
 
@@ -227,7 +236,7 @@ env/.test.env
 
 ### 필수 환경변수
 
-- DB: DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE, DB_SYNCHRONIZE
+- DB: DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE
 - Redis: REDIS_HOST, REDIS_PORT, REDIS_TTL
 - JWT: JWT_SECRET, JWT_ISSUER, JWT_ACCESSTOKEN_EXPIRE_TIME (기본 1h), JWT_REFRESHTOKEN_EXPIRE_TIME (기본 30d)
 - Cookie: COOKIE_MAX_AGE (기본 30일 ms), COOKIE_SECURE (production 자동), COOKIE_SAME_SITE (기본 strict)
@@ -318,7 +327,7 @@ afterAll(async () => { await app.close(); });
 
 E2E 파일: `test/*.e2e-spec.ts`. 현재 user-auth/post/app/health 4개. health.e2e-spec.ts는 HealthModule 자기완결성을 검증하는 격리 부트 (#77 / #67 / #86 해결). HealthModule이 `RedisModule`을 직접 import하여 `REDIS_CLIENT`를 inject 받으며 AppModule 전역 등록 또는 다른 spec의 `.overrideModule(CacheModule)`에 영향을 받지 않는다. app.e2e-spec.ts는 AppModule 전체 부트 + CacheModule override 환경에서도 `/health`가 동일하게 동작함을 통합 회귀 검증한다.
 
-Phase 0 #79 완료 후 test/global-setup.ts에서 migration 자동 실행 통합 예정.
+Phase 0 #79에서 `test/global-setup.ts`가 E2E 시작 시 `dataSource.runMigrations()`를 자동 실행한다. `initialize()` 실패 시에만 5회/2초 간격 재시도(컨테이너 미기동 대응), `runMigrations()` 실패는 즉시 노출. `DbCleaner`는 데이터 정리만 담당하고 스키마는 globalSetup이 책임진다.
 
 ## Git 규칙
 
