@@ -1,4 +1,6 @@
-# Problem
+# Problem — Overview
+
+비즈니스 문제·기술 문제·Pattern Selection 인지층·Phase 근거·해결 범위. 도메인 의미 명세(Invariant/Decision Table/State Machine)는 domain-spec.md, Use Case는 use-cases.md. NFR/Threat 활성 판정 결과는 본 문서 말미.
 
 ## 비즈니스 문제
 
@@ -55,10 +57,10 @@
   - 메트릭 수집 및 대시보드 구축 (구체 스택은 Solution 단계 선정 — Prometheus/Grafana/OpenTelemetry 후보군)
   - 주요 엔드포인트의 latency/throughput 관측 가능한 상태
 
-### BP5. 비동기화/관측성 도입의 선행 기반 부재
+### BP5. 비동기화/관측성 도입의 선행 기반 부재 (Phase 0에서 해소 완료, 2026-05-11)
 
 - 대상: 개발자 본인 + 장래 협업자 재현성
-- 현상:
+- 현상 (Phase 0 진입 시점):
   - Node.js 런타임 버전 선언 누락 (.nvmrc, package.json engines, CI workflow 전부 미선언)
   - 사용되지 않는 `redis` 의존성 선언
   - TypeORM `synchronize: true` 운영, migrations/ 디렉토리 존재하나 파일 없음 — 스키마 변경 이력 추적/롤백 불가, 데이터 보존형 마이그레이션 불가
@@ -67,10 +69,13 @@
   - Jest 30 등 상위 도구 도입 시 Node 버전이 선행 조건
   - Phase 1의 대규모 스키마 변경(User Aggregate 재설계 — uid VARCHAR → user_id BIGINT FK 전파, user_auth_provider 신설, 외래키 재배치)이 synchronize로는 데이터 손실 없이 처리 불가 → migrations 활성화가 Phase 1 선행 조건
   - 관측성/비동기화 Phase 진입 전에 환경 기준 필요
-- 성공 지표:
-  - Node 버전이 세 지점에 일관 선언됨 (.nvmrc + package.json engines + CI workflow node-version)
-  - 의존성 정리 완료 (`redis` 제거 또는 역할 문서화)
-  - migrations 활성화 완료 (`synchronize:false` 전환 + 현 스키마를 기준 마이그레이션 파일로 export)
+- 성공 지표 (모두 달성):
+  - ✅ Node 버전 세 지점 일관 선언 (.nvmrc + package.json engines + CI workflow node-version) — #75
+  - ✅ 의존성 정리 (`redis` 미사용 의존성 제거) — #76
+  - ✅ migrations 활성화 (`synchronize:false` 전환 + InitialSchema export + E2E globalSetup runMigrations) — #79
+  - ✅ HealthModule E2E 격리 부트 + RedisHealthIndicator ioredis Provider inject — #77, #85, #86
+  - ✅ gitleaks pre-commit 훅 — #78
+  - ✅ 전역 ValidationPipe path 파라미터 NaN 변환 결함 수정 — #89
 
 ### BP6. 프로덕션 수준 코드 품질 개선을 통한 학습 가치 확보
 
@@ -195,20 +200,21 @@
   - Smell: Shotgun Surgery — Correlation ID 도입 시 로그 호출 지점 다수 수정 필요
   - AntiPattern (Architectural): Blind Faith — 관측 없이 시스템 정상성 가정
 
-### TP7. Phase 0 기반 확보 (Node 버전 + 의존성 정리 + migrations 활성화)
+### TP7. Phase 0 기반 확보 (Node 버전 + 의존성 정리 + migrations 활성화) — Phase 0 종료(2026-05-11) 시점 해소 완료
 
 - 파생: BP5
 - 기술적 도전:
-  - Node.js 런타임 버전 세 지점 일관 선언 (.nvmrc 신설, package.json engines 필드 추가, GitHub Actions workflow node-version 명시)
-  - Node 버전 선택 (현 시점 Active LTS — 24.x 또는 Maintenance LTS — 22.x)
-  - `redis` 의존성 제거 또는 역할 문서화
+  - Node.js 런타임 버전 세 지점 일관 선언 (.nvmrc 신설, package.json engines 필드 추가, GitHub Actions workflow node-version 명시) — Node 22.x LTS 선택
+  - `redis` 의존성 제거 또는 역할 문서화 — 제거 채택
   - **TypeORM migrations 활성화**: `synchronize:false` 전환, 현 스키마를 기준 마이그레이션 파일로 export. Phase 1부터 모든 스키마 변경은 migration 파일로 작성 전제
+  - PR 사이클 발견 결함 흡수: HealthModule 자기완결성, RedisHealthIndicator 단일 ioredis Provider inject, ValidationPipe path 파라미터 NaN 결함
 - 제약:
   - Node 버전 변경이 기존 개발자 환경에 영향 (1인 프로젝트라 현실적 제약 낮음)
   - migrations 활성화 이후 Phase 1 User Aggregate 재설계 스키마 변경은 데이터 보존형 마이그레이션 로직(기존 uid → user_id 매핑, OAuth 사용자 식별) 작성 필수 — Phase 1 첫 작업으로 편입
 - 근거 카테고리:
   - Causes of Redesign 3: Dependence on hardware and software platform — 런타임 버전 미선언
   - Causes of Redesign 8: Inability to alter classes conveniently — synchronize:true로 스키마 변경 추적 불가, 데이터 보존 변경 불가
+  - AntiPattern (Managerial): Blind Faith — 환경 기준 없이 로컬 의존
 
 ### TP8. 프로덕션 수준 품질 갭 (보안/운영 표준)
 
@@ -236,159 +242,35 @@
   - Smell (Kerievsky): Oddball Solution — SHA256 3회 반복 해싱 + HTTP 200 + body ErrorCode 컨벤션 (RFC 9457 표준 대체)
   - AntiPattern (Architectural): Reinvent the Wheel — 자체 해싱 구현 + 자체 응답 컨벤션 (Spring Boot 3+/ASP.NET Core 7+ native 표준이 사실상 존재)
 
-## 도메인 Invariant
+## Pattern Selection 근거 카테고리
 
-UserAuth / UserInfo 관련:
-- UserAuth.uid는 고유하며 한 번 부여되면 변경되지 않는다 (현 구현 기준 — TP5 해결 시 "내부 userId"로 역할 이전 가능성)
-- UserInfo.nickname은 전역 유일 (UNIQUE 제약)
-- UserAuth와 UserInfo는 1:1 관계이며 생명주기가 일치한다 (CASCADE 삭제)
-- Google OAuth 경로로 생성된 UserAuth는 socialYN='Y'이며 일반 경로는 socialYN='N'이다 (현 구현 — TP5 해결 시 재정비 대상)
+프로젝트 모드: 레거시 운영/유지보수 (기존 코드 위에 기능 추가 + 품질 개선 혼재 — context/constraints.md "기존 코드 상태" 기록 존재 + BP6 코드 품질 개선이 비즈니스 문제로 포함)
 
-Post / PostLike 관련:
-- Post.postUid는 UserAuth.uid를 참조하며, Post의 작성자와 수정/삭제 권한자는 동일한 uid를 가진다 (본인만 수정/삭제)
-- UserAuth가 삭제되면 연관된 Post가 모두 함께 삭제된다 (CASCADE)
-- Post가 삭제되면 연관된 PostLike가 모두 함께 삭제된다 (CASCADE)
-- Post.hits는 0 이상이며 상세 조회 시 단조 증가한다 (감소 불가)
-- PostLike는 (postId, uid) 쌍당 최대 1건이다 (스키마 강제 복합 PK)
-- UserAuth가 삭제되면 해당 사용자의 PostLike가 모두 함께 삭제된다 (CASCADE)
+각 TP의 근거 카테고리는 해당 TP 항목에 인라인 명시. 본 섹션은 enumerate (Solution 패턴 선정 입력으로 사용).
 
-인증/인가 관련:
-- 인증 통과 조건: AccessToken의 서명/만료 검증 통과 AND RefreshToken의 DB 저장값 일치가 동시에 성립 (하나라도 실패 시 401)
-- 토큰 갱신 시 AccessToken과 RefreshToken은 함께 재발급되며 DB 저장값도 동시에 갱신된다 (Rotation 원자성 — 부분 성공 금지)
-- Google OAuth 로그인 시, 기존 uid가 있으면 socialYN 값과 무관하게 로그인이 성공한다 (기존 계정 + OAuth 병용 — TP5 해결 시 동일인 식별 기반으로 재정비 대상)
+Forces 충돌 (Alexander):
+- F1 사용자 응답성 vs 동기 처리 완결성 — 희생 시 손실: 응답성↓ 또는 처리 완결성↓ (TP1)
+- F2 학습 가치 최대화 vs 구현 완성 시간 — 희생 시 손실: 학습 깊이↓ 또는 범위 미완수 (TP8)
+- F3 측정 정확성 vs 로컬 장비 한계 — 희생 시 손실: 대외 재현성↓ (TP2)
+- F4 개발 단순성 vs 성능 분석 가능성 — 희생 시 손실: 관측 오버헤드↑ 또는 튜닝 근거 부재 (TP6)
+- F5 이상적 식별 기반(본인인증 CI) vs 학습 프로젝트 예산 제약 — 희생 시 손실: 동일인 식별 정확도↓ 또는 예산 초과 (TP5)
+- F6 비동기화 대상 존재 vs 선행 기능 필요 (알림이 댓글/답글 기능 전제) — 희생 시 손실: 비동기 실험 대상 축소 (TP1, TP3)
 
-## Use Cases
+Causes of Redesign (GoF, 8 항목 중 매칭):
+- 3 Dependence on hardware/software platform — TP2, TP7, TP8
+- 4 Dependence on object representations — TP1 (PostLike count), TP4 (offset position), TP5 (uid 다중 역할)
+- 5 Algorithmic dependencies — TP1 (조회수 동기 트랜잭션 결합), TP4 (offset 계산)
+- 6 Tight coupling — TP1 (요청-처리-집계 단일 흐름), TP6 (로깅 Winston 결합)
+- 7 Extending functionality — TP3 (기능 확장 지점 설계 부재)
+- 8 Inability to alter classes conveniently — TP7, TP8 (synchronize:true)
 
-### UC-1: 회원가입 (uid + password)
+Smell (Fowler/Kerievsky, 레거시 모드 활성):
+- Oddball Solution — TP5 (OAuth uid가 email), TP8 (SHA256 3회 반복 해싱, HTTP 200 + body ErrorCode 컨벤션)
+- Shotgun Surgery — TP6 (Correlation ID 도입 시 로그 호출 지점 다수 수정)
 
-- Primary Actor: 미인증 사용자
-- Preconditions: 해당 uid가 시스템에 존재하지 않는다
-- Main Success Scenario:
-  1. 사용자가 uid + password 제출
-  2. 시스템이 uid 중복 검증 (isExist(uid))
-  3. 시스템이 salt 생성 + SHA256 3회 반복 해싱
-  4. UserAuth 저장 (socialYN='N', userRole=USER)
-- Extensions:
-  - 2a. uid 중복: UserAlreadyExistsException
-- Success End Condition: UserAuth 생성 완료, 성공 응답 반환 (JWT는 별도 로그인 단계)
-- Failed End Condition: 기존 UserAuth 상태 불변, 실패 응답 반환
-
-### UC-2: 로그인 (uid + password)
-
-- Primary Actor: 미인증 사용자
-- Preconditions: 해당 uid로 UserAuth 존재
-- Main Success Scenario:
-  1. 사용자가 uid + password 제출
-  2. 시스템이 UserAuth 조회
-  3. 저장된 salt로 비밀번호 재해싱 후 저장된 해시와 비교
-  4. JWT(access + refresh) 발급
-  5. DB의 refreshToken 갱신 + HTTPOnly 쿠키로 refreshToken 전달
-- Extensions:
-  - 2a. UserAuth 미존재: UserNotFoundException
-  - 3a. 비밀번호 불일치: AuthInvalidPasswordException
-- Success End Condition: JWT 발급 완료, DB 상태 갱신
-- Failed End Condition: DB 상태 불변
-
-### UC-3: Google OAuth 로그인/자동가입
-
-- Primary Actor: 미인증 사용자 (Google 인증 완료)
-- Preconditions: 유효한 Google ID Token 보유
-- Main Success Scenario:
-  1. 사용자가 credentialToken 제출
-  2. 시스템이 google-auth-library로 토큰 검증
-  3. payload.email을 uid로 사용
-  4. isExist(uid) 확인
-  5. (신규) UserAuth 생성 (socialYN='Y', password='-', salt='-')
-  6. JWT 발급 + refreshToken 갱신
-- Extensions:
-  - 2a. 토큰 검증 실패: AuthInvalidOauthTokenException
-  - 4a. 기존 사용자: 신규 생성 생략, 바로 JWT 발급
-- Success End Condition: JWT 발급 완료, (신규 시) UserAuth 생성
-- Failed End Condition: DB 상태 불변
-- Known Issue: 현 구현은 `payload.email`을 uid로 사용하여 일반 가입과 OAuth 가입 간 동일인 식별 기반 부재. TP5에서 재설계 대상
-
-### UC-4: 토큰 갱신 (Rotation)
-
-- Primary Actor: 인증된 사용자 (AccessToken 만료 상태)
-- Preconditions: 유효한 RefreshToken HTTPOnly 쿠키 보유
-- Main Success Scenario:
-  1. 클라이언트가 POST /users/auth/refresh 호출 (쿠키 자동 전송)
-  2. 시스템이 refreshToken 서명/만료 검증
-  3. DB에 저장된 refreshToken과 일치 여부 검증
-  4. 새 access + refresh 토큰 발급 (Rotation)
-  5. DB의 refreshToken을 새 값으로 갱신 + 쿠키 재설정
-- Extensions:
-  - 1a. refreshToken 누락: AuthRefreshTokenRequiredException
-  - 2a. 토큰 검증 실패: AuthInvalidRefreshTokenException
-  - 3a. DB 불일치: AuthInvalidRefreshTokenException (세션 무효화 또는 탈취 의심)
-- Success End Condition: 새 JWT 발급, DB 상태 원자적 갱신
-- Failed End Condition: DB 상태 불변 (Rotation 원자성 필수)
-- Invariant: Rotation 원자성 — 부분 성공 시 복구 로직 필요
-
-### UC-5: 글 상세 조회 (hits 증가)
-
-- Primary Actor: 인증된 사용자
-- Preconditions: 해당 postId의 Post 존재
-- Main Success Scenario:
-  1. 클라이언트가 GET /posts/:postId 호출 (경로는 암호화된 PK)
-  2. DecryptPrimaryKeyPipe로 PK 복호화
-  3. Post 조회
-  4. hits 증가 (동기, 현 구현 — Phase 3 비동기화 대상)
-  5. PostLike 정보 포함 DTO 반환
-- Extensions:
-  - 2a. 복호화 실패: InvalidEncryptedParameterException
-  - 3a. Post 미존재: PostNotFoundException
-- Success End Condition: 상세 정보 반환, hits +1
-- Failed End Condition: hits 불변
-- Known Issue: hits 증가가 요청 트랜잭션에 포함됨 (BP1/TP1 대상 — Phase 3에서 비동기화)
-
-### UC-6: 좋아요 / 취소
-
-- Primary Actor: 인증된 사용자
-- Preconditions: 해당 postId의 Post 존재
-- Main Success Scenario (추가):
-  1. POST /posts/:postId/likes 호출
-  2. DecryptPrimaryKeyPipe로 PK 복호화
-  3. 복합 PK (postId + uid)로 PostLike 존재 여부 확인
-  4. 신규 PostLike 저장
-- Extensions (추가):
-  - 3a. 이미 존재: PostLikeAlreadyExistsException
-- Main Success Scenario (취소):
-  1. DELETE /posts/:postId/likes 호출
-  2. PostLike 조회
-  3. 삭제
-- Extensions (취소):
-  - 2a. 미존재: PostLikeNotFoundException
-- Success End Condition: PostLike 추가 또는 제거
-- Failed End Condition: 상태 불변
-- Known Issue: 좋아요 집계(PostLike count)가 조회 시점마다 `getPostLikeMapByPostIds()`로 배치 수행. 비동기 집계 캐시 전환은 Phase 3 대상
-
-### UC-7: 글 목록 조회 (페이징)
-
-- Primary Actor: 인증된 사용자
-- Preconditions: 없음
-- Main Success Scenario (Phase 1 이후 — 커서 기반):
-  1. 클라이언트가 GET /posts?cursor={lastPostId}&limit=20 호출 (첫 페이지는 cursor 없음)
-  2. 시스템이 writeDatetime DESC 정렬로 cursor 다음 항목 20개 조회
-  3. N+1 회피 — `getPostLikeMapByPostIds()`로 좋아요 정보 배치 로드
-  4. 다음 페이지용 cursor (마지막 항목의 postId) 포함하여 반환
-- Extensions:
-  - 1a. 잘못된 cursor: InvalidEncryptedParameterException 또는 빈 결과
-- Success End Condition: 20개 이하 항목 + 다음 cursor 반환
-- Failed End Condition: 빈 결과 반환
-- Current Implementation (Phase 1 이전): offset 페이징 (take=20, skip=page×20). 깊은 페이지 성능 저하 + 동시 쓰기 시 중복/누락 위험 — TP4 대상
-- Variant: 특정 사용자 글 목록 (GET /posts/users/:postUid)도 동일 페이징 전략 적용
-
-## Decision Tables
-
-해당 없음. 현 도메인의 조건 조합 규칙이 단순 if-else 수준으로 충분 (OAuth 분기, 인증 분기 모두 조건 2개 이하). 향후 ADMIN 차등 권한 도입, 댓글 모더레이션 등 복잡 조합 규칙이 추가되면 해당 Phase의 Problem 재작성에서 편입.
-
-## State Machines
-
-Problem 작성 시점 기준 해당 없음. 현재 도메인 엔티티는 명시적 상태 전이가 없음 (Post는 published 단일, User는 active 단일, PostLike는 이진 토글).
-
-향후 State Machine 적용 가치가 발생하는 시점:
-- Phase 3 (비동기화): **알림 기능 도입 시** 알림 상태(pending → sent / failed → retried / expired)가 명시적 상태 전이 대상 — Phase 3의 Problem 재작성에서 State Machine 작성 예정
+AntiPattern (Brown, 레거시 운영 모드 활성):
+- Blind Faith (Managerial) — TP6 (관측 없이 시스템 정상성 가정), TP7 (환경 기준 없이 로컬 의존)
+- Reinvent the Wheel (Architectural) — TP8 (자체 해싱 + 자체 응답 컨벤션)
 
 ## 해결 범위
 
@@ -414,9 +296,10 @@ Problem 작성 시점 기준 해당 없음. 현재 도메인 엔티티는 명시
 
 비즈니스 우선순위와 의존성에 따른 Phase 분리:
 
-### Phase 0: 기반 확보
+### Phase 0: 기반 확보 (2026-05-11 종료 선언)
 
-- 의도: 비동기화/관측성 Phase 진입 + Phase 1 대규모 스키마 변경 진입 게이트. PR 사이클에서 발견된 결함(예: #77 E2E HealthModule, #85·#86 redisConfig 영역, #89 production 엔드포인트)을 흡수하는 영역으로 운영. plan-manager 마일스톤 정의 "Phase 1 진입 게이트 + 발견된 결함 정리"가 본 Phase의 운영 정의
+- 의도: 비동기화/관측성 Phase 진입 + Phase 1 대규모 스키마 변경 진입 게이트. PR 사이클에서 발견된 결함(#77 E2E HealthModule, #85·#86 redisConfig 영역, #89 production 엔드포인트)을 흡수하는 영역으로 운영. plan-manager 마일스톤 정의 "Phase 1 진입 게이트 + 발견된 결함 정리"가 본 Phase의 운영 정의
+- 상태: 종료 (2026-05-11). 8개 이슈 #75/#76/#77/#78/#79/#85/#86/#89 closed. Phase 1 진입 가능
 - 해결할 문제: BP5 (비동기화/관측성 선행 기반 부재)
 - 대응 기술 문제: TP7
 - 근거:
@@ -524,15 +407,37 @@ Problem 작성 시점 기준 해당 없음. 현재 도메인 엔티티는 명시
   - 측정 환경 신규 구축 — Phase 4 BP2 / TP2 영역. Phase 5는 동일 시나리오 재측정 (시나리오·도구·시각화 동일 유지가 비교 전제)
 - 전제하는 불확실성 해소: 8 (의존성 메이저 업그레이드 편입) — 이 Phase 범위로 확정
 
+## 비기능 요구
+
+NFR 활성 여부: 비활성
+
+사유: 정량 NFR 수치(목표 RPS / p99 latency / 동시 사용자 / 데이터 volume) 부재. 본 프로젝트는 1인 학습 프로젝트로 실 사용자 트래픽이 없어 정량 NFR을 사전 확정할 입력이 없다. 부하 테스트 목표 규모는 Phase 4 진입 시점에 가정 기반으로 산정하는 정책(docs/context/unknowns.md "부하 테스트 목표 규모 가정"). Phase 4 진입 시 본 판정을 활성으로 전환하고 problem-nfr 호출하여 QAS 6요소 작성 예정.
+
+context overview.md §사업 목표 및 성공 지표 4의 "수치 목표 미확정 + 가정 확정 후 산정" 정책과 정합.
+
+## 보안/위협 모델링
+
+Threat 활성 여부: 활성
+
+적용 조건 충족:
+- 민감 데이터: 인증 정보(password 해시 + salt, refreshToken, JWT 시크릿) + PII(email, nickname, introduce) 보관
+- 외부 노출 API: 인터넷 노출 엔드포인트 16개 (인증 4 + 유저 정보 4 + 글 6 + 좋아요 2)
+- 외부 신뢰 경계: Google OAuth ID Token 검증 (외부 토큰 → 내부 User Aggregate 변환)
+
+상세는 docs/problem/threat-model.md 참조 (problem-threat 서브 스킬 산출). STRIDE 6범주 + OWASP Top 10 2021 매핑 대상.
+
 ## Sources
 
-- docs/context.md (비즈니스 맥락, 기술 제약, 알려진 불확실성 전체)
-- docs/meeting-logs/2026-04-24.md (결정 1-7, 미결정 1-4 — MCPSI 신규 수립)
-- docs/meeting-logs/2026-04-29.md (결정 1-5, 미결정 1-3 — Phase 근거 부정형 경계 추가, Phase 0 운영 정의 역승격, Phase 5 의도 명문화)
+- docs/context/overview.md (비즈니스 맥락, 이해관계자, 시간 제약, 참고 서비스)
+- docs/context/domain.md (UL, BC, 도메인 규칙, 워크플로우)
+- docs/context/constraints.md (기술 제약, 의존성 갭, 기존 코드 상태, 보안 경로 후보)
+- docs/context/unknowns.md (부하 테스트 목표 규모 / ADMIN 권한 / Domain Event 인벤토리 / 클라우드 인프라 / 의존성 업그레이드 일정)
+- docs/meeting-logs/2026-04-24.md (MCPSI 신규 수립)
+- docs/meeting-logs/2026-04-29.md (Phase 근거 부정형 경계 추가, Phase 0 운영 정의 역승격, Phase 5 의도 명문화)
+- docs/meeting-logs/2026-05-11.md (Phase 0 종료 + Phase 1 진입 + mcpsi 전 단계 재실행)
 - 본 프로젝트 PR #83 사이클: 커밋 11270a2 (이관 이슈 #85·#86 plan 통합), 3e7045b (#86 영역 정합 정정 — Phase 5 deferred → Phase 0 통합)
-- 기존 코드 분석 (Explore 에이전트, 2026-04-24) — 엔티티 구조, 서비스 레이어 도메인 규칙, 인증 흐름
-- 추가 확인: src/user/service/user-auth.service.ts:94 (Google OAuth uid = payload.email 확인)
-- Swagger 문서화 품질 점검 (Explore 에이전트, 2026-04-24): 전역 설정/엔드포인트 데코레이터/DTO 메타데이터 현황 — `@ApiParam`·`@ApiQuery` 0% 사용, CLI plugin 비활성, 응답 스키마 표현 혼재 확인
-- `@nestjs/swagger` 최신 버전 조사 (2026-04-24 WebSearch): 11.3.0 릴리스 — NestJS 11 대응이므로 Phase 5 업그레이드와 묶임
+- 기존 코드 분석 (Explore, 2026-04-24) + 코드 직접 확인 (src/user/service/user-auth.service.ts:94 — Google OAuth uid = payload.email 확인)
+- Swagger 문서화 품질 점검 (Explore, 2026-04-24): `@ApiParam`·`@ApiQuery` 0% 사용, CLI plugin 비활성, 응답 스키마 혼재
+- `@nestjs/swagger` 11.3.0 릴리스 조사 (2026-04-24 WebSearch): NestJS 11 대응으로 Phase 5 업그레이드와 묶임
 - 패턴 선정 근거 카테고리: Alexander "Timeless Way of Building" (Forces), Gamma et al. "Design Patterns" Ch.1 (Causes of Redesign), Fowler "Refactoring" + Kerievsky "Refactoring to Patterns" (Smell), Brown et al. "AntiPatterns" (AntiPattern)
-- Phase 근거 부정형 경계 방법론: IEEE 29148:2018 §6 Requirements engineering processes / Wiegers & Beatty "Software Requirements" 3e Ch.5 (mcpsi-problem SKILL.md Phase 근거 작성 원칙)
+- Phase 근거 부정형 경계 방법론: IEEE 29148:2018 §6 Requirements engineering processes / Wiegers & Beatty "Software Requirements" 3e Ch.5

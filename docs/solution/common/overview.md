@@ -85,29 +85,22 @@ Phase 6 Core 출력 — 적용 Extension 판별 결과:
 - **security**: 적용 — TP8 Phase 5 확정 범위 (bcrypt/argon2, AES-GCM, 쿠키/시크릿 관리 재정비). API 수신 Idempotency 측면도 security 소관 (§6 소유권 매트릭스)
 - **observability**: 적용 — TP6 Phase 2 확정 범위, AntiPattern "Blind Faith" 해소의 primary
 - **infra** (infra-network + environment): 미적용 — 배포 모델 "로컬 단독 / POC" (Docker Compose). Problem Out-of-scope "클라우드 배포 및 관련 인프라 설계"로 확정. Core는 "의도적 생략 + 근거: 로컬 POC" 기록. 클라우드 배포 트리거(알려진 불확실성 6) 충족 시 별도 편입
+- **runtime**: 적용 — cross-Aggregate 이벤트 흐름 다수(PostViewed/PostLiked/CommentCreated/ReplyCreated → notification, Outbox → Kafka → Consumer → BullMQ 다단), Aggregate State 명확(notification.state PENDING→SENT/FAILED, outbox.published_at), UC Extensions ≥7로 시각화 가치 충족. Saga 흐름 시각화는 async §2.1 미적용 사유 인용으로 비활성. 부하/장애 시뮬레이션은 NFR 비활성 + 안전 중대 비해당으로 비활성
 - **risk**: 미적용 — 개인 학습 프로젝트, 안전 중대/고가용성(SLA 99.99%+)/금융(PCI-DSS)/의료(HIPAA)/규제(KISA CSAP/ISMS) 모두 비해당
 - **frontend**: 미적용 — Problem Out-of-scope "프론트엔드/모바일 앱"
 - **refactor**: 미적용 — 레거시 운영 모드이나 Phase별 점진 리팩토링 수준, Strangler Fig/대규모 병렬 운영 요구 없음. Core 내 Kerievsky 3방향 결정(application-arch.md §3방향 리팩토링) 및 각 Phase 내부 리팩토링으로 충분
 
 ### 순차 실행 권장 순서
 
-async → security → observability → (infra 미적용) → (risk 미적용) → (frontend 미적용) → (refactor 미적용)
+async → security → observability → (infra 미적용) → runtime → (risk 미적용) → (frontend 미적용) → (refactor 미적용)
 
-근거: downstream Extension(security/observability)이 async가 정의한 이벤트 경계·Idempotency(이벤트 수신 측)를 포인터로 참조. async 선행 시 포인터 연결만으로 충분.
-
-## 후속 Phase 인계 메모
-
-다음 항목은 Core 범위가 아닌 후속 Phase/단계에서 처리:
-
-- **implementation-guide.md**의 "Phase 산출 문서" 섹션: CLAUDE.md "기술 블로그 문서화 규칙"에 따라 Phase별 Type A(설계) / Type B(회고) 블로그 이슈 선언. 각 Phase 진입 시 Implementation 단계에서 확정 (미팅 로그 2026-04-24 결정 3·4·5)
-- **issue-plan.md**의 narrative 타입 이슈: Type A/B 독립 이슈 생성 + `depends_on` / `pair_with` / `aggregates` 필드 반영
-- **기존 14개 열린 이슈 재분류**: Phase 편입 대상 여부를 Implementation 단계의 "기존 마일스톤/이슈 정리" 절차에서 확정 (미팅 로그 결정 2)
-- **각 Phase 진입 시 Problem/Solution 재작성**: 현 Phase 근거 범위가 확정된 뒤 해당 Phase의 알려진 불확실성(3·4·5·8 등)이 해소되는 시점에 상세화
+근거: downstream Extension(security/observability)이 async가 정의한 이벤트 경계·Idempotency(이벤트 수신 측)를 포인터로 참조. async 선행 시 포인터 연결만으로 충분. runtime은 async/security/observability/infra가 결정한 흐름·실패 모드·인프라 토폴로지를 입력으로 받아 Sequence/State Machine 다이어그램과 부하/장애 시뮬레이션 시나리오를 작성하므로 risk 직전 위치.
 
 ## Core 산출물 요약 (Extension 입력 참조)
 
-- A 카테고리 파일: docs/solution/overview.md, application-arch.md, data-design.md
-- async-processing.md: async Extension 생성 예정
+- A 카테고리 파일: common/overview.md, common/application-arch.md, common/data-design.md
+- Extension 파일: common/async.md, common/security.md, common/observability.md, common/runtime-behavior.md
+- Phase 증분: phase-{N}/scope.md, phase-{N}/arch-increment.md, phase-{N}/data-migration.md, phase-{N}/<topic>-deployment.md
 - 핵심 Aggregate: User, Post (상세는 application-arch.md §Aggregates)
 - Command→Event 매핑: application-arch.md §Aggregate 섹션에 cross-Aggregate 이벤트 명시 (async Extension 입력)
 - 채택 패턴: EDA + Publisher-Subscriber, Idempotency Key, Identity Separation + Account Linking, Interceptor + AsyncLocalStorage, Expand-and-Contract + Lazy Migration, Load Testing Methodology + User Journey Scenario, Cursor-based Pagination, Adjacency List (상세는 application-arch.md §채택 패턴)
@@ -116,14 +109,14 @@ async → security → observability → (infra 미적용) → (risk 미적용) 
 
 ## Sources
 
-- docs/context.md (비즈니스 맥락, 기술 제약, 알려진 불확실성 전체)
-- docs/problem.md (BP1~BP6, TP1~TP8, UC-1~7, Invariant 12, Phase 근거 — 각 Phase 범위 외 부정형 경계 포함)
+- docs/context/{overview,domain,constraints,unknowns}.md (비즈니스 맥락, 기술 제약, 알려진 불확실성 전체)
+- docs/problem/{overview,use-cases,domain-spec,threat-model}.md (BP1~BP6, TP1~TP8, UC-1~7, Invariant 12, Phase 근거 — 각 Phase 범위 외 부정형 경계 포함)
 - docs/meeting-logs/2026-04-24.md (결정 1-7, 미결정 1-4 — MCPSI 신규 수립)
 - docs/meeting-logs/2026-04-29.md (결정 1-5, 미결정 1-3 — Phase 정의 의도 명문화 + 부정형 경계 정책 수용)
-- 본 프로젝트 PR #83 사이클: 커밋 11270a2, 3e7045b (#86 영역 정합 정정 — Phase 5 deferred → Phase 0 통합 사례, Phase 5 의도 명문화의 트리거)
-- docs/tech-notes/token-validation-strategies.md (Phase 0 auth baseline)
+- 본 프로젝트 PR #83 사이클: 커밋 11270a2, 3e7045b (#86 영역 정합 정정 — Phase 5 deferred → Phase 0 통합 사례)
+- docs/tech-notes/token-validation-strategies/ (Phase 0 auth baseline)
 - 방법론 근거:
   - Vernon "Implementing Domain-Driven Design" (2013) 4 Rules — Aggregate 설계
   - methodology-ddd.md Context Mapping 9 패턴
   - Molyneaux "The Art of Application Performance Testing" (2014) — 부하 테스트 유형 분류
-  - IEEE 29148:2018 §6 / Wiegers & Beatty "Software Requirements" 3e Ch.5 — Phase 근거 부정형 경계 정책 (problem.md 1차 적용)
+  - IEEE 29148:2018 §6 / Wiegers & Beatty "Software Requirements" 3e Ch.5 — Phase 근거 부정형 경계 정책

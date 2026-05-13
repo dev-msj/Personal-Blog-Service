@@ -9,7 +9,7 @@
 - 시크릿 저장소 정책
 - 데이터 보호 — 비밀번호 해싱, PK 암호화, PII 처리
 - Rate Limiting (애플리케이션 계층)
-- **API 수신 측 Idempotency-Key 헤더 처리** (§7 상호의존 경계 — 이벤트 수신 측 Idempotency는 async-processing.md §6 primary)
+- **API 수신 측 Idempotency-Key 헤더 처리** (§7 상호의존 경계 — 이벤트 수신 측 Idempotency는 async.md §6 primary)
 - 침해 대응 알림 (학습 프로젝트 최소화)
 - OWASP Top 10 대응 매핑
 
@@ -17,7 +17,7 @@
 - 감사 로그 상세 → observability.md
 - 환경 변수 일반 관리 → environment.md (미적용 — 로컬 POC, env 파일로 대체. 시크릿 카테고리만 이 파일에서 실체)
 - 네트워크 DDoS 계층 → infra-network.md (미적용 — 로컬 POC)
-- 이벤트 수신 측 Idempotency → async-processing.md §6
+- 이벤트 수신 측 Idempotency → async.md §6
 - 비밀번호 해시 / PK 암호문의 테이블 DDL → data-design.md (정책 primary는 이 파일)
 
 ## 1. 인증 (Authentication)
@@ -40,7 +40,7 @@
 - **SHA256 3회 반복 (현 구현)** — Oddball Solution Smell, Reinvent the Wheel AntiPattern (problem.md TP8 근거)
 
 **파급 효과**:
-- Phase 5 Lazy Migration: 로그인 성공 시점에 재해싱하여 argon2id로 교체 (async-processing.md §3.4 Expand-and-Contract 패턴 준용)
+- Phase 5 Lazy Migration: 로그인 성공 시점에 재해싱하여 argon2id로 교체 (async.md §3.4 Expand-and-Contract 패턴 준용)
 - 기존 사용자 비밀번호는 재로그인 이전까지 SHA256 해시 유지 — 알고리즘 prefix(`$argon2id$` vs 기존 포맷)로 판별
 - `user_auth.password` 컬럼 VARCHAR(1000) 유지 (argon2id 결과 ~97자, 여유 충분)
 - 라이브러리: `argon2` (Node.js 네이티브 바인딩) — Phase 5 진입 시 의존성 추가
@@ -67,10 +67,10 @@
 - Rotation 원자성: `QueryRunner` 기반 명시적 트랜잭션 — data-design.md §트랜잭션/동시성 Rotation 원자성 [확정] 참조
 - Refresh Token Reuse Detection: **Phase 2 관측성 도입 후 검토** — 현 구현은 "DB 저장값 불일치 시 401" 기본 방어. Reuse 탐지(이전 토큰 재사용 시 모든 세션 무효화)는 학습 프로젝트 후속 과제로 기록
 
-**근거**: problem.md UC-4 Main Success Scenario + Invariant "Rotation 원자성" + docs/tech-notes/token-validation-strategies.md Phase 0 Type A 블로그의 Refresh Token 서버측 검증 방식 + OWASP JWT Cheat Sheet "Short-lived access tokens + rotating refresh tokens"
+**근거**: problem.md UC-4 Main Success Scenario + Invariant "Rotation 원자성" + docs/tech-notes/token-validation-strategies/ Phase 0 Type A 블로그의 Refresh Token 서버측 검증 방식 + OWASP JWT Cheat Sheet "Short-lived access tokens + rotating refresh tokens"
 
 **기각 대안**:
-- AccessToken 단일 (장기 수명) — 즉시 무효화 불가, 탈취 시 최대 수명까지 노출 (docs/tech-notes/token-validation-strategies.md "Access Token만 사용하는 표준 방식의 한계" 근거)
+- AccessToken 단일 (장기 수명) — 즉시 무효화 불가, 탈취 시 최대 수명까지 노출 (docs/tech-notes/token-validation-strategies/ "Access Token만 사용하는 표준 방식의 한계" 근거)
 - Access 5분 / Refresh 7일 (더 짧은 수명) — 학습 프로젝트에서 네트워크 호출 증가 대비 보안 이득 미미. 현재 1h/30d 조합 유지
 
 ### [확정] MFA — 해당 없음
@@ -80,6 +80,8 @@
 **근거**: context.md [이해관계자] 단일 개발자 학습 프로젝트 + 규제 요구 없음 + OWASP ASVS Level 1 요구 수준 초과. Phase 5 범위에도 없음
 
 **기각 대안**: TOTP 기반 MFA — 학습 가치는 있으나 블로그 서비스 도메인에 필수 아님. 후속 학습 과제
+
+**파급 효과**: refresh_token 단일 인증 자격에 침해 대응이 의존하므로 §1 토큰 회전 + §7 침해 대응 알림(로그인 실패 카운트·잠금) + 데이터 보호 §3 시크릿 관리가 1차 방어. 사용자가 자격 탈취를 의심하는 경로(명시 로그아웃·전 세션 무효화)는 §1 refreshToken DB 갱신·삭제 의존. MFA 인터셉터/UI 및 백업 코드 저장소 미작성. 트리거 조건(B2B 도메인 진입, 규제 요구, 침해 사례 누적) 충족 시 별도 Phase에서 재검토.
 
 ## 2. 인가 (Authorization)
 
@@ -180,11 +182,17 @@
 - 로컬 개발/테스트 환경: HTTPS 미강제 (Docker Compose 내 localhost 통신)
 - 프로덕션 배포 시점(out-of-scope 트리거): TLS 1.2+ 강제, 인증서는 Let's Encrypt 또는 CSP 제공 관리형 인증서 (infra-network Extension 활성화 시점)
 
-**근거**: context.md [배포 모델] 로컬 POC + problem.md Out-of-scope 클라우드 배포
+**근거**: context.md [배포 모델] 로컬 POC + problem.md Out-of-scope 클라우드 배포 + OWASP ASVS V9 (Communication) + RFC 8446 TLS 1.3 권장
+
+**기각 대안**: (1) 로컬에서도 self-signed 인증서로 HTTPS 강제 — Docker Compose dev 워크플로우(브라우저 신뢰 등록·E2E 테스트 cert pinning) 부담이 학습 가치 초과. (2) TLS 1.2 미만 허용 — POODLE/BEAST 등 OWASP Top 10 A02:2021 Cryptographic Failures 대응 실패. (3) 자체 인증서 운영(internal CA) — CSP 관리형 인증서 자동 갱신 대비 운영 부담 과다, 학습 프로젝트 out-of-scope
+
+**파급 효과**: 로컬 환경의 HTTPS 미강제 정책으로 인증/refreshToken 쿠키 흐름이 평문에 노출되므로 본 환경은 외부 공개 금지(테스트 데이터만). 프로덕션 트리거 충족 시 infra-network Extension에서 ALB/CloudFront/Ingress 종단 TLS 위임 결정 활성화 + COOKIE_SECURE=true 자동화(현 config는 production 자동 분기, common/data-design §환경 변수). 인증서 만료 알림은 observability.md §4.2 알림 룰에 추가 대상.
 
 ### [확정] 비밀번호 저장 — argon2id (Phase 5)
 
-상세: §1 인증 §종단 사용자 인증 방식 참조. 중복 기술 금지.
+**결정**: §1 인증 §종단 사용자 인증 방식 참조. 본 섹션은 데이터 보호 관점 포인터만 두며 중복 기술 금지.
+
+**근거 + 기각 대안 + 파급 효과**: §1 본문 참조. 본 섹션은 §4 데이터 보호 카테고리 인덱스 유지 목적.
 
 ### [확정] PK 암호화 — AES-GCM (Phase 5 전환)
 
@@ -363,7 +371,7 @@
 
 ## 8. API 수신 측 Idempotency-Key 헤더 (§7 상호의존 경계)
 
-**경계**: 이 섹션은 **API 수신 측(HTTP 클라이언트 재시도 방어)**의 중복 처리 방지. 이벤트 수신 측(Kafka/BullMQ consumer 중복 방지)은 async-processing.md §6 primary.
+**경계**: 이 섹션은 **API 수신 측(HTTP 클라이언트 재시도 방어)**의 중복 처리 방지. 이벤트 수신 측(Kafka/BullMQ consumer 중복 방지)은 async.md §6 primary.
 
 ### [확정] Idempotency-Key 헤더 규약
 
@@ -419,7 +427,27 @@
 
 **근거**: 중복 감지 급증은 클라이언트 오작동 또는 공격 시그널
 
-## 9. OWASP Top 10 2021 대응 매핑
+## 9. Threat Mitigation 매트릭스 (STRIDE-N 1:1 커버리지)
+
+problem/threat-model.md의 STRIDE-1~11 11건 각각에 대해 본 파일의 어느 결정·섹션이 완화하는지 1:1 매핑한다. 자산(ASSET-N) / 공격면(ATTACK-SURFACE-N) 식별자는 problem/threat-model.md §자산 / §공격면 참조.
+
+| STRIDE-N | 카테고리 | 대상 자산 / 공격면 | 본 파일의 완화 결정 | 보완 영역 (타 파일) |
+|---|---|---|---|---|
+| STRIDE-1 | Spoofing — 로그인 brute-force / credential stuffing | ASSET-1, ASSET-2 / ATTACK-SURFACE-1 | §5 Rate Limiting (login 분당 10회 IP) + §7 로그인 실패 카운트 (5회 잠금 / 15분) + §1 argon2id (Phase 5 전환) | observability.md §4.2 알림 룰 (비정상 로그인 감지) |
+| STRIDE-2 | Spoofing — Google OAuth ID Token 위조 | ASSET-1, ASSET-4 / ATTACK-SURFACE-5 | §외부 서비스 회복력 (google-auth-library aud/iss/exp 검증 자동) + §1 종단 사용자 인증 흐름 (Phase 1 TP5 provider_subject 분리로 email→sub 식별 전환) | data-design.md §user_auth_provider (provider, provider_subject UNIQUE) |
+| STRIDE-3 | Spoofing — 토큰 탈취 / replay | ASSET-2 / ATTACK-SURFACE-2·3·4 | §1 토큰 수명·회전 (Token Rotation + DB 대조 + HTTPOnly + sameSite=strict) + §4.1 전송 중 암호화 (프로덕션 TLS 1.2+) | observability.md §5.2 감사 이벤트 `auth.token.invalid_refresh` |
+| STRIDE-4 | Tampering — 타인 글 수정/삭제 (권한 우회) | ASSET-5 / ATTACK-SURFACE-3 | §2.2 IDOR 방어 — 리소스 소유권 판정 (Service 레이어 강제) + §4 PK 암호화 (순차 추측 차단) | application-arch.md §Post Aggregate Invariant "본인만 수정/삭제" + E2E 권한 테스트 |
+| STRIDE-5 | Tampering — 입력 인젝션 (SQL/JSON/Mass Assignment) | ASSET-1, ASSET-4 / ATTACK-SURFACE-1·2·3 | §10.A03 가이드 (TypeORM 파라미터 바인딩 + class-validator + ValidationPipe whitelist:true) | application-arch.md (PathParamAwareValidationPipe), 신규 엔드포인트 동일 패턴 강제 (defensive-coding.md) |
+| STRIDE-6 | Repudiation — 행위 부인 (감사 부재) | ASSET-8 / ATTACK-SURFACE-1·3 | §7 [확정] 포렌식 로그 보존 30일 (감사 가능 기록 존재 보장) | observability.md §5 audit_log 정책 (대상 이벤트 8종) + §1.4 Correlation ID 전파 |
+| STRIDE-7 | Information Disclosure — PII 유출 (응답/로그) | ASSET-4 / ATTACK-SURFACE-3·5 | §4 PII 식별 및 처리 표 (password/refresh_token/credentialToken/provider_subject 등 분류) + §6.3 사용자 노출 메시지 (스택 트레이스 차단) + Phase 1 TP5 userId(BIGINT) 분리로 email 외래키 전파 경로 제거 | observability.md §1.3 PII 마스킹 (Winston formatter redact) |
+| STRIDE-8 | Information Disclosure — PK 패턴 노출 (AES-ECB) | ASSET-6 / ATTACK-SURFACE-6 | §4 PK 암호화 — AES-GCM (Phase 5 전환, IV 12B + Authentication Tag 16B) + PK_SECRET_KEY 16자→32자(AES-256) 확장 | data-design.md (응답 PK 컬럼은 평문 BIGINT, 암호화는 응답 직렬화 시점) |
+| STRIDE-9 | Information Disclosure — 시크릿 유출 | ASSET-3 / ATTACK-SURFACE-7 | §3.1 시크릿 저장소 (env 파일 + GitHub Actions Secrets) + §3.3 gitleaks pre-commit (staged 차단) + ConfigService 강제 (process.env 직접 접근 금지) | observability.md §1.3 마스킹 키 블랙리스트 (cookie/authorization/idempotency_key 포함) |
+| STRIDE-10 | Denial of Service — 자원 고갈 | ASSET-7 / ATTACK-SURFACE-1·3 | §5 Rate Limiting (경로별 분당 10~200회) + §8 Idempotency-Key (중복 요청 차단) | async.md §1 UC-5/6 hits·likes 비동기 전환 (Phase 3 동기 자원 부하 제거) + observability.md §4.2 알림 룰 |
+| STRIDE-11 | Elevation of Privilege — 권한 상승 | ASSET-5, ASSET-4 / ATTACK-SURFACE-2·3·4 | §2 인가 RBAC (@Roles) + §2.2 IDOR 방어 (Service 레이어 소유권 검증) + AuthGuard 전역 기본 + @Public allowlist 방식 | E2E 권한 회귀 테스트 (defensive-coding.md "인증/인가" 규칙), ADMIN 차등 권한 도입 시 Decision Table |
+
+11행 모두 본 파일의 결정에 1:1 매핑 완료. 트리거 조건(외부 노출 API 추가 / 신규 규제 / 새 민감 데이터)에 따라 STRIDE-N 추가 시 본 매트릭스 동기화 의무 — problem/threat-model.md §단계간 재통과 트리거 참조.
+
+## 10. OWASP Top 10 2021 대응 매핑
 
 | 카테고리 | 대응 섹션 | 현 상태 / Phase 계획 |
 |---|---|---|
@@ -454,16 +482,16 @@
 
 ## Graceful Shutdown
 
-async-processing.md §8.5 Graceful Shutdown 참조. security 관점 보강:
+async.md §8.5 Graceful Shutdown 참조. security 관점 보강:
 
 - SIGTERM 시 **진행 중 Idempotency Key 처리 완료 대기** — Redis의 pending 상태 key는 완료 응답으로 전환하거나 30초 타임아웃 시 오류 응답 저장(후속 재시도가 중복으로 감지되지 않도록)
 - 로그인 실패 카운터 / Rate Limit 카운터: Redis 이므로 프로세스 재시작 무관 유지
 
 ## Sources
 
-- docs/context.md
-- docs/problem.md (BP3, BP6, TP3, TP5, TP8, UC-1~7, Invariant 12, §보안 관련 경로 후보)
-- docs/solution/overview.md, application-arch.md, data-design.md, async-processing.md
+- docs/context/{overview,domain,constraints,unknowns}.md
+- docs/problem/{overview,use-cases,domain-spec,threat-model}.md (BP3, BP6, TP3, TP5, TP8, UC-1~7, Invariant 12, §보안 관련 경로 후보)
+- docs/solution/common/{overview,application-arch,data-design,async}.md
 - docs/meeting-logs/2026-04-24.md
 - ~/.claude/skills/security-standards/SKILL.md (CWE/OWASP 매핑)
 - ~/.claude/skills/mcpsi-solution/references/checklist-common.md (외부 서비스 회복력 / Graceful Shutdown / 동시성)

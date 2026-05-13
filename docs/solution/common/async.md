@@ -510,6 +510,12 @@ application-arch.md §Aggregates Command→Event 매핑 기반 전수 목록.
 
 ## 대표 처리 흐름도
 
+시각화 primary는 ../common/runtime-behavior.md §3 (Sequence Diagram) / §4 (State Machine). 본 섹션은 정책 관점의 텍스트 골격만 기술하며, 각 흐름은 다음과 매핑된다:
+
+- 흐름 1 (hits 비동기 집계) ↔ runtime-behavior.md §3.1 SEQ-1
+- 흐름 2 (댓글 → 알림 비동기) ↔ runtime-behavior.md §3.4 SEQ-4
+- 관련 State Machine: runtime-behavior.md §4.1 STM-Notification, §4.2 STM-Outbox
+
 ### 흐름 1: 글 상세 조회 + hits 비동기 집계 (Phase 3 대표)
 
 ```
@@ -580,10 +586,10 @@ BullMQ `notification` 큐 worker
 
 ## Sources
 
-- docs/context.md
-- docs/problem.md (BP1, TP1, UC-5/6 및 Phase 1 신규 UC)
-- docs/solution/overview.md, application-arch.md (Command→Event 매핑 전수)
-- docs/solution/data-design.md (Phase 3 outbox / processed_events 스키마 선언)
+- docs/context/{overview,domain,constraints,unknowns}.md
+- docs/problem/{overview,use-cases,domain-spec,threat-model}.md (BP1, TP1, UC-5/6 및 Phase 1 신규 UC)
+- docs/solution/common/overview.md, application-arch.md (Command→Event 매핑 전수)
+- docs/solution/common/data-design.md (outbox / processed_events / notification 스키마)
 - docs/meeting-logs/2026-04-24.md
 - ~/.claude/skills/mcpsi-solution/references/checklist-async.md (Saga/DLQ/순서/Idempotency/재처리/스키마/실패 모드 7개 섹션)
 - ~/.claude/skills/mcpsi-solution/references/checklist-common.md (외부 서비스 회복력, Graceful Shutdown)
