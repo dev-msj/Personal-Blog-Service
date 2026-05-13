@@ -1,373 +1,530 @@
-# Implementation Guide — Phase 0: 기반 확보
+# Implementation Guide — Phase 1: 기능 완성 + 도메인 재정비
 
-## Phase 0 개요
+## Phase 1 개요
 
-- 해결 대상 Problem: BP5 / TP7
+- 해결 대상 Problem: BP3 (기능 완성도), TP3 (중복 요청 방지 + 댓글/답글), TP4 (커서 페이징), TP5 (User 식별자 재설계)
+- 보조 영역: 보안 강화 (security.md §2·§5·§7 적용)
 - Solution 출처:
-  - overview.md §Phase 정의 — "Phase 0: 기반 확보"
-  - application-arch.md §Phase별 진화 로드맵 Phase 0 행 (migrations 활성화 + gitleaks pre-commit)
-  - data-design.md §Phase 0: 기반 확보 — migrations 활성화 (synchronize:false 전환, 기준 마이그레이션 export, 스크립트 등록, E2E 갱신)
-  - security.md §3 시크릿 관리 — gitleaks pre-commit 훅 [가이드]
-- Phase 1 진입 게이트 의미: Phase 1 User Aggregate 재설계(uid VARCHAR → user_id BIGINT FK 전파, user_auth_provider 신설, 외래키 재배치)는 데이터 보존형 마이그레이션이 필수이며, synchronize:true로는 처리 불가. Phase 0 migrations 활성화가 Phase 1 모든 작업의 선행 조건
+  - docs/solution/phase-1/scope.md — 범위 5개
+  - docs/solution/phase-1/arch-increment.md — 모듈 변경
+  - docs/solution/phase-1/data-migration.md — 7단계 데이터 보존형 마이그레이션
+  - docs/solution/phase-1/async-deployment.md — Idempotency-Key 수신 측
+  - docs/solution/phase-1/security-deployment.md — IDOR / Throttler / 로그인 실패 카운트
+  - docs/solution/phase-1/runtime-deployment.md — 인증 흐름 재작성 + Comment/Reply 동기 흐름
+  - docs/solution/common/application-arch.md §3방향 리팩토링 [확정] — Refactoring Towards Patterns
+- Phase 0 전제: synchronize:false migrations 인프라 + 단일 ioredis Provider(REDIS_CLIENT) + HealthModule 자기완결성 + gitleaks pre-commit + #89 PathParamAwareValidationPipe 회귀 보호
 
 ## Scope
 
-### In Scope (Phase 0)
+### In Scope (Phase 1)
 
-- Node.js 22.x Maintenance LTS 버전 선언 (.nvmrc + package.json engines + GitHub Actions setup-node)
-- 미사용 redis 의존성 제거
-- E2E HealthModule CACHE_MANAGER 의존성 해결 (기존 이슈 #67 흡수)
-- TypeORM migrations 활성화 (synchronize:false 전환 + InitialSchema export + npm scripts + E2E globalSetup 통합)
-- gitleaks pre-commit 훅 추가 + 베이스라인 정리
+1. User Aggregate 재설계 — user / user_auth / user_auth_provider / user_info 4테이블 + OAuth Account Linking
+2. 댓글·답글 기능 — comment / reply 신설 + CRUD API + 커서 페이징 / 전체 조회
+3. 커서 페이징 (TP4) — Post 목록·사용자별 Post / Comment 목록
+4. Idempotency-Key 헤더 적용 (TP3) — 모든 Write API
+5. 보안 강화 — IDOR Service 레이어 / @nestjs/throttler 전역 / 로그인 실패 카운트 / COMMON_TOO_MANY_REQUESTS
+6. 흡수 이슈 — #61 Provider 단위 테스트 컨벤션 / #69 UnexpectedCodeException 통합 / #70 verifyRefreshToken throw 통일 / #73 PostLike 예외 컨텍스트
 
-### Out of Scope (Phase 0)
+### Out of Scope (인접 Phase 위임)
 
-- bcrypt/argon2 비밀번호 해싱 전환 → Phase 5 TP8 / security.md §1
-- AES-ECB → AES-GCM 전환 → Phase 5 TP8 / security.md §4
-- NestJS 10→11, TypeScript 5→6, Jest 29→30 등 메이저 업그레이드 → Phase 5
-- Correlation ID 전파, observability 모듈 신설 → Phase 2
-- 본격 CI 파이프라인(빌드/테스트 자동 실행 워크플로우) → Phase 5 또는 클라우드 배포 트리거 시
+- Outbox / Kafka / BullMQ / notification 모듈 → Phase 3 (async-deployment.md §Phase 3 위임)
+- observability/ 모듈 (Correlation ID Interceptor / audit_log / Metrics / Tracing) → Phase 2
+- argon2id / AES-GCM 전환 → Phase 5
+- RFC 9457 Problem Details → Phase 5
+- ADMIN 차등 권한 → out-of-scope 트리거 시
+- Swagger 대규모 리팩토링(#45) → Phase 5
 
-## Phase 0의 특수성
+## 1. Flow 인덱스
 
-Phase 0은 도메인 유즈케이스(UC-1~7) 변경이 없는 인프라 작업 Phase다. writing-principles.md "유즈케이스 실현 흐름"은 Phase 0에 직접 적용되지 않으므로, 본 가이드는 인프라 작업 흐름 중심으로 구성한다. 각 흐름의 정상 경로 / 검증 / 실패·롤백 경로 / 변경 파일을 고정하여 구현자 결정점을 제거한다.
+흐름 서술 본문은 docs/implementation/flows/{flow-id}.md에 단일 위치. 본 인덱스는 flow-id + 커버 UC + Aggregate + runtime-behavior 매핑만 제공.
 
-확정된 사용자 결정 (5개 이슈 분해 입력):
-- Node.js 22.x Maintenance LTS 채택 — 기존 @types/node ^20.3.1과의 갭이 작은 보수적 선택
-- gitleaks 실행 방식: `npx gitleaks protect --staged --redact` (별도 binary 설치 없이 실행)
-- 기존 오픈 이슈 #67 (E2E HealthModule CACHE_MANAGER 의존성) Phase 0 흡수
+| flow-id | 커버 UC | Aggregate | runtime-behavior | 경로 |
+|---------|---------|-----------|------------------|------|
+| user-register | UC-1 | User | — | flows/user-register.md |
+| user-login | UC-2 | User | — | flows/user-login.md |
+| user-oauth-login | UC-3 | User | SEQ-3 instantiation | flows/user-oauth-login.md |
+| user-token-refresh | UC-4 | User | DT-2 R5·R6 instantiation | flows/user-token-refresh.md |
+| blog-post-write | 단순 CRUD + INV-6 | Post | — | flows/blog-post-write.md |
+| blog-post-read-detail | UC-5 | Post | SEQ-1 Phase 1 부분 | flows/blog-post-read-detail.md |
+| blog-post-list | UC-7 | Post | — | flows/blog-post-list.md |
+| post-like-toggle | UC-6 | Post (PostLike) | SEQ-2 Phase 1 부분 | flows/post-like-toggle.md |
+| comment-write | UC-8 + 수정/삭제 | Post (Comment) | SEQ-4a Phase 1 부분 | flows/comment-write.md |
+| reply-write | UC-9 + 수정/삭제 | Post (Reply) | SEQ-4a 패턴 공유 | flows/reply-write.md |
+| comment-list-read | 단순 CRUD | Post (Comment + Reply) | — | flows/comment-list-read.md |
+| idempotency-key-handle | UC-1·6·8·9 *a Extension (cross-cutting) | (cross-cutting, Redis) | SEQ-2 Idempotency 분기 instantiation | flows/idempotency-key-handle.md |
 
-## 작업 흐름
+## 2. Aggregate / Invariant 재수록
 
-### 흐름 1. Node 22.x LTS 버전 선언
+### User Aggregate
 
-#### 정상 경로
+application-arch.md §User Aggregate + data-design.md §user/user_auth/user_auth_provider/user_info + domain-spec.md §Phase 진화에 따른 INV 변경 예고 통합:
 
-1. 프로젝트 루트에 `.nvmrc` 신설. 단일 라인 `22` (또는 `lts/jod` 코드네임). 22 line 안에서 nvm이 최신 patch 자동 선택
-2. `package.json`에 `engines` 필드 추가:
-   ```json
-   "engines": { "node": ">=22.0.0 <23.0.0" }
-   ```
-   - 22 메이저 한정. 23 진입 시 즉시 경고
-3. `.github/workflows/main.yml`에 setup-node step 추가. 현 workflow는 actions/github-script만 사용하지만, 향후 빌드/테스트 워크플로우 확장의 베이스라인으로 setup-node를 jobs.move-to-in-progress.steps 첫 단계로 등록:
-   ```yaml
-   - uses: actions/setup-node@v4
-     with:
-       node-version-file: '.nvmrc'
-   ```
-   - `node-version-file` 사용으로 .nvmrc와 단일 진실 공급원 유지
+Invariants (Phase 1 재정의):
+- INV-1' [확정]: UserAuth.login_id는 전역 유일 (일반 가입 경로). NULL 허용 (OAuth-only 사용자) 단, NULL이 아닌 값은 UNIQUE
+- INV-2 [확정]: UserInfo.nickname은 전역 유일
+- INV-3 [확정]: 한 User에 UserAuth 1:0..1, UserInfo 1:1, UserAuthProvider 1:0..N
+- INV-4 [확정]: 비밀번호는 평문 미저장 (현 SHA256 3회, Phase 5 argon2id)
+- INV-AP1 [확정] (신규): UserAuthProvider의 (provider, provider_subject) 조합은 전역 유일 (스키마 UNIQUE 강제)
+- INV-10 [확정]: 인증 통과 = AccessToken 서명/만료 OK ∧ RefreshToken DB 일치
+- INV-11 [확정]: RefreshToken Rotation 원자성 — access + refresh + DB 갱신 단일 트랜잭션
+- INV-12 폐기, INV-5 폐기 (TP5 재설계로 socialYN 제거)
 
-#### 검증
+내부 Entity 카디널리티는 application-arch.md §User Aggregate 참조.
 
-- `nvm use` (Linux/macOS) 또는 `nvm use $(cat .nvmrc)` (Windows nvm-windows) → 활성 Node 버전이 22.x인지 확인
-- `node --version` 출력이 v22.x.y인지 확인
-- `npm install` 정상 종료 (engines 검증 통과). lockfile 변동 없음
-- `npm run test` / `npm run test:e2e` / `npm run build` 모두 통과
-- GitHub Actions workflow 실행 시 setup-node step이 v22 활성화 로그 출력
+### Post Aggregate
 
-#### 실패 / 롤백 경로
+Invariants:
+- INV-6 [확정]: Post 본인만 수정/삭제 (Post.user_id = authUserId)
+- INV-7 [확정]: hits ≥ 0, 단조 증가 (Phase 3 비동기 전환 시 eventual consistency)
+- INV-8 [확정]: PostLike (post_id, user_id) UNIQUE — 1인 1회
+- INV-9 [확정]: User 삭제 시 Post/PostLike/Comment/Reply CASCADE, Post 삭제 시 PostLike/Comment/Reply CASCADE, Comment 삭제 시 Reply CASCADE
+- INV-Cmt1 [확정] (신규): Comment.post_id 참조 무결성 (fk_comment_post)
+- INV-Cmt2 [확정] (신규): Comment.user_id 참조 무결성 (fk_comment_user)
+- INV-Rpl1 [확정] (신규): Reply.comment_id 참조 무결성 (fk_reply_comment)
+- INV-Rpl2 [확정] (신규): 계층 깊이 1단 제한 (Reply → Reply 불가, application-level 강제)
 
-- engines 위배 (Node < 22 환경에서 npm install): `EBADENGINE` warning. 학습 프로젝트라 strict 모드 미설정이므로 warning만. 개발자가 nvm use로 전환 권장
-- 기존 코드가 Node 22에서 동작하지 않는 경우: 보고된 사례 없음. 발생 시 .nvmrc / engines를 20으로 임시 하향 후 재조사
-- 롤백: 3개 파일 변경분 revert. lockfile 영향 없음
+Phase 1 종료 시점에 domain-spec.md §Phase 진화 변경 예고 신규 INV 4건을 problem/domain-spec.md에 사후 정형화 (unknowns.md에 명시된 후속 액션).
 
-#### 변경 파일
+## 3. 인터페이스 시그니처
 
-- `.nvmrc` (신설)
-- `package.json` (engines 필드 추가)
-- `.github/workflows/main.yml` (setup-node step 추가)
+각 Service/Repository/Util의 시그니처 단일 진실 원천. flows/ §5에서 본 섹션을 역참조.
 
----
+### 3.1 user-auth.service
 
-### 흐름 2. 미사용 redis 의존성 제거
-
-#### 사전 확인
-
-- src 내 `from 'redis'` import 0건 (이전 Phase 1 분석 결과 — context.md [의존성 버전 갭 분석] "redis ^5.8.2 패키지 선언되어 있으나 src 내 직접 import 없음")
-- 실제 Redis 통신은 `cache-manager-ioredis` 어댑터 경유 (src/health/indicator/redis.health-indicator.ts의 CACHE_MANAGER inject가 ioredis 클라이언트 노출)
-- 따라서 `redis` 패키지 제거가 런타임 동작에 영향 없음
-
-#### 정상 경로
-
-1. `package.json` dependencies에서 `"redis": "^5.8.2"` 라인 제거
-2. `npm install` 실행 → package-lock.json에서 redis 및 transitive dep 제거
-3. 컴파일/테스트로 회귀 검증
-
-#### 검증
-
-- `npm install` 후 `node_modules/redis` 디렉토리 부재 확인
-- `npm run build` 통과
-- `npm run test` 통과 (14개 unit test)
-- `npm run test:e2e` 통과 (3개 E2E test) — 특히 health endpoint Redis 검사가 cache-manager-ioredis 경유로 정상 동작하는지 확인 (단, 흐름 3 #67 해결과 의존)
-- `grep -r "from 'redis'" src/` 결과 0건 재확인
-
-#### 실패 / 롤백 경로
-
-- 누락된 transitive 사용 발견 시: `npm install redis@^5.8.2`로 즉시 복원
-- 롤백: package.json 변경분 revert + `npm install`
-
-#### 변경 파일
-
-- `package.json` (dependencies에서 redis 제거)
-- `package-lock.json` (자동 갱신)
-
----
-
-### 흐름 3. E2E HealthModule CACHE_MANAGER 의존성 해결 (#67 흡수)
-
-#### 원인 분석
-
-- `src/health/health.module.ts`는 `CacheModule`을 import하지 않고 `RedisHealthIndicator`만 providers에 등록
-- `RedisHealthIndicator`(src/health/indicator/redis.health-indicator.ts)는 `@Inject(CACHE_MANAGER)`로 cache-manager 인스턴스 주입 받음
-- 앱 전역에서는 AppModule이 CacheModule.registerAsync(isGlobal: true)로 등록하여 동작
-- E2E `app.e2e-spec.ts`의 moduleFixture는 AppModule을 import한 뒤 `.overrideModule(CacheModule).useModule(CacheModule.register({ isGlobal: true }))`로 override. 이 과정에서 CacheModule 인스턴스가 in-memory store(기본값)로 교체되며 `cacheManager.store.getClient()`가 미정의 → RedisHealthIndicator 실행 시 TypeError
-- 결과: E2E HealthModule 관련 테스트가 격리 환경에서 실패 (#67)
-
-#### 권장 해결: HealthModule 자기완결성 확보
-
-HealthModule 자체에 CacheModule을 import하여 앱 전역 import에 의존하지 않도록 수정. E2E override의 영향을 받지 않으면서 RedisHealthIndicator가 항상 Redis 연결된 cache-manager를 inject 받도록 보장.
-
-#### 정상 경로
-
-1. `src/health/health.module.ts`에 CacheModule.registerAsync 직접 import 추가:
-   ```ts
-   imports: [
-     TerminusModule,
-     CacheModule.registerAsync(redisConfig),  // src/config/redisConfig.ts의 기존 redisConfig 재사용
-   ],
-   ```
-   - `redisConfig`는 AppModule이 사용하는 동일한 설정 객체를 재사용. 신규 설정 작성 금지 (단일 진실 공급원)
-2. AppModule의 CacheModule 전역 등록은 유지 (다른 모듈이 inject 가능하도록). HealthModule은 자체 CacheModule 인스턴스를 사용
-
-#### 대안 경로 (참고용, 비권장)
-
-- `app.e2e-spec.ts`의 CacheModule override 시 cache-manager-ioredis store를 명시적으로 등록: 테스트 코드 복잡도 증가 + 다른 E2E 파일에 동일 처리 누락 시 재발
-
-#### 검증
-
-- `npm run test:e2e` 통과
-- 신규 또는 기존 E2E 테스트에서 `GET /health` 호출 시 200 응답 + database/redis 둘 다 up 상태
-- HealthController.spec.ts unit test (현재 14개 중 1개) 통과 유지
-- Health endpoint를 격리 environment(다른 모듈 import 없는 minimal moduleFixture)에서도 정상 동작 확인 (구현자 선택: app.e2e-spec.ts에 health 검증 추가 또는 별도 health.e2e-spec.ts 신설)
-
-#### 실패 / 롤백 경로
-
-- CacheModule 중복 등록으로 인한 충돌: NestJS는 동일 모듈을 여러 곳에서 import해도 single instance로 공유. 충돌 발생 가능성 낮음
-- redisConfig 재사용 경로가 순환 의존을 유발하면 별도 헬스 전용 cache-manager 인스턴스를 inline 등록하는 fallback 가능
-- 롤백: health.module.ts 변경분 revert. 단, #67이 다시 발현되므로 별도 이슈로 재오픈 필요
-
-#### 변경 파일
-
-- `src/health/health.module.ts` (CacheModule.registerAsync import 추가)
-- 필요 시 `test/app.e2e-spec.ts` (CacheModule override 라인 단순화 또는 제거 가능 — RedisHealthIndicator가 자기 모듈 내 CacheModule을 사용하므로 override 불필요해질 수 있음. 구현 시점에 영향 범위 확인)
-
----
-
-### 흐름 4. TypeORM migrations 활성화
-
-#### 정상 경로
-
-1. **synchronize 동작 변경**:
-   - `src/config/typeOrmConfig.ts` 현 코드:
-     ```ts
-     synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
-     ```
-   - 변경: `synchronize: false`로 강제. DB_SYNCHRONIZE 환경변수는 env/.development.env / env/.test.env에서 'false'로 명시 (구현자 판단 — 변수 자체 제거도 가능하나, 학습 가치 측면에서 명시적 false 권장)
-   - 추가: `migrationsRun: false` (런타임 자동 실행은 비활성. 명시적 npm script 호출로만 실행)
-   - 추가: `migrations: [path.join(__dirname, '..', 'migrations', '*.js')]` (런타임 — 빌드된 JS, `__dirname` 기준 절대 경로로 cwd 의존성 제거). 마이그레이션 파일은 `src/migrations/` 아래에 두어 nest build sourceRoot 안쪽으로 포함되도록 한다 (그렇지 않으면 `dist/main.js`가 `dist/src/main.js`로 이동하여 `start:prod` 깨짐)
-
-2. **TypeORM CLI용 DataSource 신설** (TypeOrmModuleAsyncOptions와 별도 필요):
-   - `src/config/data-source.ts` 신설. TypeORM CLI(`typeorm-ts-node-commonjs`)는 NestJS DI 컨테이너 외부에서 실행되므로 ConfigService를 사용할 수 없음. dotenv로 직접 env 로드 + `new DataSource({...})` export
-   - 구조 예시:
-     ```ts
-     import 'dotenv/config';
-     import { DataSource } from 'typeorm';
-     // env 로드 (NODE_ENV에 따라 .development.env / .test.env 분기)
-     export default new DataSource({
-       type: 'mysql',
-       host: process.env.DB_HOST,
-       // ... typeOrmConfig.ts와 동일 필드 ...
-       entities: [path.join(__dirname, '..', '**', '*.entity.ts')],
-       migrations: [path.join(__dirname, '..', 'migrations', '*.ts')],
-     });
-     ```
-   - 의존성: `typeorm` 패키지가 이미 ^0.3.17로 설치됨. CLI는 `npx typeorm-ts-node-commonjs` 형태로 실행 가능 (별도 devDependency 추가 불필요. 다만 ts-node가 ^10.9.1로 이미 설치되어 동작)
-
-3. **InitialSchema 마이그레이션 export**:
-   - 명령:
-     ```
-     npx typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts src/migrations/InitialSchema
-     ```
-   - 결과: `src/migrations/{timestamp}-InitialSchema.ts` 파일 생성. 현 4개 엔티티(UserAuthEntity, UserInfoEntity, PostEntity, PostLikeEntity)의 CREATE TABLE 문이 up()에, DROP TABLE 문이 down()에 자동 작성됨
-   - 사전 조건: 빈 DB에서 generate 실행해야 정확한 export 가능. 기존 data/mysql-test 또는 개발 DB가 비어있는 상태에서 실행
-
-4. **package.json scripts 추가**:
-   ```json
-   "typeorm": "typeorm-ts-node-commonjs -d src/config/data-source.ts",
-   "migration:run": "npm run typeorm -- migration:run",
-   "migration:revert": "npm run typeorm -- migration:revert",
-   "migration:generate": "npm run typeorm -- migration:generate",
-   "migration:show": "npm run typeorm -- migration:show"
-   ```
-
-5. **E2E globalSetup 신설**:
-   - `test/global-setup.ts` 신설. Jest globalSetup hook에서 `migration:run` 동등 동작 호출 (DataSource.initialize() → runMigrations() → destroy())
-   - `test/jest-e2e.json`에 `"globalSetup": "<rootDir>/global-setup.ts"` 추가
-   - 동작: E2E 테스트 시작 전에 테스트 DB 스키마를 migration으로 준비. 기존 DbCleaner는 데이터 정리만 담당
-   - 주의: 테스트 컨테이너가 사전 기동된 상태 전제 (docker-compose -f docker-compose.test.yaml up -d). globalSetup이 컨테이너 시작까지 책임지지 않음
-
-6. **개발 환경 적용**:
-   - 개발 환경 컨테이너 기동 후 `npm run migration:run` 1회 실행으로 스키마 준비
-   - 또는 docker-compose에 init script로 통합 (구현자 선택. 학습 가치는 명시적 실행이 더 큼)
-
-#### 상태 모델
-
-migration 단일 파일 상태:
-```
-pending (typeorm migrations 테이블에 미등록)
-  → running (migration:run 실행 중)
-    → completed (migrations 테이블에 timestamp 등록됨)
-    → failed (트랜잭션 롤백, migrations 테이블 미반영)
+```typescript
+class UserAuthService {
+  async join(dto: JoinDto): Promise<void>
+  async login(dto: LoginDto): Promise<JwtDto>
+  async oauthLogin(credentialToken: string): Promise<JwtDto>
+  async refresh(refreshToken: string): Promise<JwtDto>
+}
 ```
 
-#### 검증
+### 3.2 user-auth.repository
 
-- `npm run migration:show` → InitialSchema가 [X] (적용됨) 상태로 출력
-- `npm run migration:revert` → InitialSchema rollback. 모든 테이블 DROP. `migration:show`에서 [ ] (미적용)
-- `npm run migration:run` → InitialSchema 재적용. 모든 테이블 재생성
-- entity 변경이 없는 상태에서 `npm run migration:generate -- src/migrations/Empty` 실행 → "No changes in database schema were found" 메시지 또는 빈 마이그레이션 파일 (TypeORM 동작에 따름)
-- `npm run test:e2e` 통과 — globalSetup이 자동으로 migration 실행하여 스키마 준비, 기존 3개 E2E test가 회귀 없이 통과
+```typescript
+class UserAuthRepository {
+  async findByLoginId(loginId: string): Promise<UserAuthEntity | null>
+  async findByUserId(userId: bigint): Promise<UserAuthEntity | null>
+  async findRefreshTokenForUpdate(userId: bigint, qr: QueryRunner): Promise<string | null>
+  async updateRefreshToken(userId: bigint, token: string | null, qr: QueryRunner): Promise<void>
+}
+```
 
-#### 실패 / 롤백 경로
+### 3.3 user.repository
 
-- **migration:generate 결과 빈 파일**:
-  - 원인: entities glob 패턴 불일치. `src/**/*.entity.ts`가 실제 entity 파일을 잡지 못함
-  - 대응: data-source.ts의 entities 경로 확인. UserAuthEntity 등이 정확히 매칭되는지 검증
-- **"Table already exists" 에러 (migration:run 시)**:
-  - 원인: 기존 data/mysql 또는 data/mysql-test 디렉토리에 synchronize:true로 생성된 스키마 잔존
-  - 대응 옵션 A: 컨테이너 down + 데이터 디렉토리 삭제 + 컨테이너 up + migration:run (학습 프로젝트라 데이터 손실 허용)
-  - 대응 옵션 B: migrations 테이블에 InitialSchema를 baseline INSERT (기존 스키마를 InitialSchema가 적용한 것으로 간주). DDL: `INSERT INTO migrations (timestamp, name) VALUES ({timestamp}, 'InitialSchema{timestamp}');`
-- **E2E globalSetup 실패**:
-  - 원인: 테스트 컨테이너 미기동 또는 healthcheck 미통과
-  - 대응: globalSetup 진입 시 connect retry (5회, 2초 간격) 또는 사전 컨테이너 기동 안내 메시지 출력
+```typescript
+class UserRepository {
+  async createWithAuthAndInfo(
+    auth: NewUserAuth,
+    info: NewUserInfo,
+    qr: QueryRunner,
+  ): Promise<bigint>  // returns user_id
 
-#### 변경 파일
+  async createOAuthUser(
+    provider: NewUserAuthProvider,
+    info: NewUserInfo,
+    qr: QueryRunner,
+  ): Promise<bigint>
 
-- `src/config/typeOrmConfig.ts` (synchronize:false 강제 + migrations 옵션)
-- `src/config/data-source.ts` (신설 — TypeORM CLI 전용 DataSource)
-- `package.json` (scripts 5종 추가)
-- `src/migrations/{timestamp}-InitialSchema.ts` (신설 — generate 결과)
-- `test/global-setup.ts` (신설 — E2E globalSetup)
-- `test/jest-e2e.json` (globalSetup 등록)
-- `env/.development.env` / `env/.test.env` (DB_SYNCHRONIZE=false 명시 — 가이드 수준)
+  async linkProvider(
+    userId: bigint,
+    provider: NewUserAuthProvider,
+    qr: QueryRunner,
+  ): Promise<void>
+}
+```
 
-#### Phase 1 첫 마이그레이션 이슈에서 다룰 후속 항목 (TODO)
+### 3.4 user-info.service / repository
 
-본 흐름은 인프라 확보까지를 다루며 다음 항목은 Phase 1 첫 데이터 보존형 마이그레이션 이슈와 페어링하여 작성한다 (PR #94 2차 리뷰 (5) 발견 사항).
+(기존 구조 유지. user_id BIGINT 외래키 적용. 본 Phase 직접 신규 메소드 없음 — 외래키 타입 마이그레이션 + IDOR 검증 추가)
 
-- 데이터 보존형 마이그레이션 작성 절차 가이드: generate 결과 검토 → 수동 백필 SQL 작성 기준 → up/down 가역성 e2e 절차. VARCHAR uid → BIGINT user_id 같이 generate가 자동 작성할 수 없는 변환의 작성 경계를 명시
-- up/down 가역성 회귀 e2e: 마이그레이션 추가 시 down → up 순환을 자동 검증하는 spec. 데이터 보존(예: BIGINT → VARCHAR rollback truncation) 회귀를 CI에서 잡는다
+### 3.5 user-auth-provider.repository
 
----
+```typescript
+class UserAuthProviderRepository {
+  async findByProviderSubject(
+    provider: 'GOOGLE',
+    subject: string,
+  ): Promise<UserAuthProviderEntity | null>
 
-### 흐름 5. gitleaks pre-commit 훅 추가
+  async findUserIdByEmail(email: string): Promise<bigint | null>
 
-#### 정상 경로
+  async insert(entity: NewUserAuthProvider, qr: QueryRunner): Promise<void>
+}
+```
 
-1. **현재 .husky/pre-commit 확장**:
-   - 현 내용: `npx lint-staged` 단일 라인
-   - 변경 후:
-     ```
-     npx lint-staged
-     npx gitleaks protect --staged --redact
-     ```
-   - `--staged`: staged 파일만 검사 (커밋 단위 방어)
-   - `--redact`: 검출된 시크릿을 출력에서 마스킹 (콘솔 노출 방지)
-   - npx 사용으로 별도 binary 설치 없이 실행 (사용자 결정)
+### 3.6 post.service
 
-2. **베이스라인 정리** (필요 시):
-   - 첫 실행 시 false positive 가능 영역:
-     - `env/.development.env`, `env/.test.env`의 placeholder 값 (DB_PASSWORD 등)
-     - `key/` 디렉토리(있다면) 내 샘플 키
-   - 대응 옵션 A: `.gitleaksignore` 파일에 false positive 라인 명시 (`<file>:<rule_id>:<commit>` 형식)
-   - 대응 옵션 B: `.gitleaks.toml`에 [allowlist] 규칙으로 path 또는 regex 패턴 등록
-   - 학습 프로젝트라 옵션 A 권장 (단순)
+```typescript
+class PostService {
+  async create(cmd: CreatePostCommand): Promise<PostDto>
+  async update(cmd: UpdatePostCommand): Promise<void>  // IDOR throws PostNotFoundException
+  async delete(cmd: DeletePostCommand): Promise<void>  // IDOR throws PostNotFoundException
+  async findOne(postId: bigint, authUserId: bigint): Promise<PostDto>  // hits++
+  async list(query: ListPostQuery): Promise<CursorPage<PostDto>>
+  async listByUser(userId: bigint, query: CursorPaginationDto): Promise<CursorPage<PostDto>>
+}
+```
 
-3. **검증 시나리오**:
-   - 의도적 더미 시크릿(예: `AKIAIOSFODNN7EXAMPLE` 같은 AWS access key 형식)을 임의 파일에 추가하여 commit 시도 → gitleaks가 차단해야 함
-   - 정상 commit (시크릿 없는 변경)이 차단되지 않아야 함
+CursorPage 구조: `{ items: T[]; next_cursor: string | null }`
 
-#### 검증
+### 3.7 post.repository
 
-- 더미 시크릿 commit 시도 → exit code 1 + 차단 메시지 출력
-- 정상 commit → 통과
-- `npx lint-staged`도 함께 동작 (ESLint --fix + Prettier --write 유지)
-- pre-push (`npm run build`) 별도 동작 유지 (이번 흐름과 무관)
+```typescript
+class PostRepository {
+  async findById(postId: bigint, qr?: QueryRunner): Promise<PostEntity | null>
+  async existsById(postId: bigint, qr?: QueryRunner): Promise<boolean>
+  async insertOwned(post: NewPost, qr: QueryRunner): Promise<bigint>
+  async updateByIdAndOwner(
+    postId: bigint, userId: bigint, patch: Partial<PostEntity>, qr: QueryRunner,
+  ): Promise<number>  // affected rows
+  async deleteByIdAndOwner(postId: bigint, userId: bigint, qr: QueryRunner): Promise<number>
+  async incrementHits(postId: bigint, qr: QueryRunner): Promise<void>  // UPDATE hits = hits + 1
+  async findByCursor(
+    cursor: PostCursor | null, limit: number, userId?: bigint,
+  ): Promise<PostEntity[]>
+}
+```
 
-#### 실패 / 롤백 경로
+### 3.8 post-like.repository
 
-- **Windows에서 npx gitleaks 첫 실행 시 다운로드 실패**:
-  - 원인: 네트워크 또는 npm cache 문제
-  - 대응: 별도 설치 (winget install gitleaks 또는 chocolatey) 후 `gitleaks protect --staged --redact`로 npx 제거
-  - 학습 프로젝트라 npx 우선, 실패 시 fallback 안내 README/CLAUDE.md에 추가
-- **false positive로 정상 커밋 차단**:
-  - 대응: `.gitleaksignore`에 해당 라인 등록 후 재시도
-- 롤백: `.husky/pre-commit`에서 gitleaks 라인 제거 → 즉시 복귀
+```typescript
+class PostLikeRepository {
+  async insert(postId: bigint, userId: bigint, qr: QueryRunner): Promise<void>
+    // UNIQUE 충돌 → PostLikeAlreadyExistsException
+    // FK 충돌 → PostNotFoundException
+  async delete(postId: bigint, userId: bigint, qr: QueryRunner): Promise<number>  // affected rows
+  async exists(postId: bigint, userId: bigint): Promise<boolean>
+  async getPostLikeMapByPostIds(
+    postIds: bigint[], authUserId: bigint,
+  ): Promise<Map<bigint, boolean>>
+  async countByPostIds(postIds: bigint[]): Promise<Map<bigint, number>>
+  async countByPostId(postId: bigint): Promise<number>
+}
+```
 
-#### 변경 파일
+### 3.9 post-like.service
 
-- `.husky/pre-commit` (gitleaks 라인 추가)
-- `.gitleaksignore` 또는 `.gitleaks.toml` (false positive 베이스라인 — 필요 시)
+```typescript
+class PostLikeService {
+  async like(postId: bigint, userId: bigint): Promise<void>
+  async unlike(postId: bigint, userId: bigint): Promise<void>
+}
+```
 
----
+### 3.10 comment.service
 
-## 작업 간 의존
+```typescript
+class CommentService {
+  async create(cmd: CreateCommentCommand): Promise<CommentDto>
+  async update(cmd: UpdateCommentCommand): Promise<void>
+  async delete(cmd: DeleteCommentCommand): Promise<void>
+  async list(postId: bigint, query: CursorPaginationDto): Promise<CursorPage<CommentDto>>
+}
+```
 
-- **흐름 4 (migrations 활성화) ← 흐름 3 (#67 hotfix)**:
-  - 흐름 4의 검증 채널 핵심이 E2E globalSetup이므로, 그 전에 E2E가 안정적으로 통과해야 함. #67 미해결 상태로 globalSetup을 추가하면 실패 원인 분리 곤란
-  - 권장: 흐름 3 → 흐름 4 순서로 처리 (이슈 4에 consumes 명시)
+### 3.11 comment.repository
 
-- **나머지 흐름 (1, 2, 5)은 독립**:
-  - 흐름 1 (Node 버전): 환경 표준 확립. 다른 흐름과 직접 의존 없음 (Jest 30 등 상위 도구 도입 시 선행 조건이지만 Phase 0 범위에서는 무관)
-  - 흐름 2 (redis 제거): 의존성 정리. cache-manager-ioredis 정상성은 흐름 3 검증과 겹치지만 작업 자체는 독립
-  - 흐름 5 (gitleaks): 커밋 훅 추가. 다른 흐름과 무관
+```typescript
+class CommentRepository {
+  async findById(commentId: bigint, qr?: QueryRunner): Promise<CommentEntity | null>
+  async existsById(commentId: bigint, qr?: QueryRunner): Promise<boolean>
+  async insertOwned(comment: NewComment, qr: QueryRunner): Promise<bigint>
+  async updateByIdAndOwner(...): Promise<number>
+  async deleteByIdAndOwner(...): Promise<number>
+  async findByCursor(
+    postId: bigint, cursor: CommentCursor | null, limit: number,
+  ): Promise<CommentEntity[]>
+}
+```
 
-## 데이터 모델 / Aggregate Invariant
+### 3.12 reply.service
 
-Phase 0은 도메인 모델 변경이 없다. data-design.md §Phase 0 명시: "스키마 형상 자체의 변경은 없으나 스키마 변경 관리 방식이 근본적으로 변경된다". 구체적 스키마 진화는 Phase 1부터 시작.
+```typescript
+class ReplyService {
+  async create(cmd: CreateReplyCommand): Promise<ReplyDto>
+  async update(cmd: UpdateReplyCommand): Promise<void>
+  async delete(cmd: DeleteReplyCommand): Promise<void>
+  async listByComment(commentId: bigint): Promise<ReplyDto[]>
+}
+```
 
-Aggregate Invariant 추가/변경 없음 (problem.md §도메인 Invariant 12개 그대로 유지).
+### 3.13 reply.repository
 
-## 인터페이스 시그니처
+```typescript
+class ReplyRepository {
+  async findById(replyId: bigint, qr?: QueryRunner): Promise<ReplyEntity | null>
+  async insertOwned(reply: NewReply, qr: QueryRunner): Promise<bigint>
+  async updateByIdAndOwner(...): Promise<number>
+  async deleteByIdAndOwner(...): Promise<number>
+  async listByComment(commentId: bigint): Promise<ReplyEntity[]>
+}
+```
 
-Phase 0에서 도입되는 인터페이스(코드 수준)는 다음 2개:
+## 4. Interceptor / Pipe / Guard
 
-1. **TypeORM CLI DataSource** (`src/config/data-source.ts` default export):
-   ```ts
-   export default new DataSource({
-     type: 'mysql',
-     host: string, port: number, username: string, password: string, database: string,
-     entities: string[],
-     migrations: string[],
-   });
-   ```
+### 4.1 SetRefreshTokenCookieInterceptor (기존 유지)
 
-2. **Jest globalSetup** (`test/global-setup.ts` default export):
-   ```ts
-   export default async function (): Promise<void>;
-   ```
-   동작: dotenv .test.env 로드 → DataSource initialize → runMigrations → destroy
+응답 객체가 `JwtDto` 형태(refreshToken 포함) 시 자동으로 HTTPOnly 쿠키 설정. user 모듈 내부.
 
-## Phase 1 진입 조건
+### 4.2 IdempotencyKeyInterceptor (신규)
 
-Phase 0의 5개 이슈가 모두 close되고 다음을 모두 만족:
+```typescript
+class IdempotencyKeyInterceptor implements NestInterceptor {
+  intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown>
+}
+```
 
-1. `node --version`이 22.x 출력
-2. `npm install` 후 lockfile 재생성 시 redis 패키지 부재
-3. `npm run test:e2e` 통과 (HealthModule CACHE_MANAGER 정상 + globalSetup migration 자동 실행 정상)
-4. `npm run migration:run` / `npm run migration:revert` 양방향 동작
-5. 의도적 더미 시크릿 커밋 시도 시 gitleaks 차단
-6. GitHub Actions setup-node 22.x로 동작
-7. pre-commit / pre-push 훅 정상 동작 (lint-staged + gitleaks + npm run build)
+전역 APP_INTERCEPTOR로 등록. AuthGuard 후행. 처리 로직은 flows/idempotency-key-handle.md.
 
-위 7개 조건이 충족되면 Phase 1 (User Aggregate 재설계 + 댓글/답글/중복 요청 방지 + 커서 페이징) /mcpsi-implementation 호출 가능.
+선택 데코레이터 `@SkipIdempotency()`: login/refresh/oauth 핸들러에 부착하여 Interceptor 우회.
+
+### 4.3 DecryptPrimaryKeyPipe (기존 유지, #89 회귀 보장)
+
+Path Param 자동 복호화 (PathParamAwareValidationPipe가 ValidationPipe transformPrimitive 우회 보장).
+
+### 4.4 EncryptPrimaryKeyInterceptor (기존 유지)
+
+`@EncryptField()` 적용 DTO 필드 자동 암호화.
+
+### 4.5 AuthGuard (Phase 1 수정)
+
+- payload.sub `BIGINT parseInt` 변환 (uid VARCHAR → user_id BIGINT)
+- 변환 실패 시 AuthUnauthorizedException
+- RefreshToken DB 대조는 기존 동작 유지 (user_auth.refresh_token)
+- DT-2 6분기를 코드로 표현 (runtime-deployment.md §1.1 다이어그램과 정합)
+
+```typescript
+class AuthGuard implements CanActivate {
+  canActivate(ctx: ExecutionContext): Promise<boolean>
+}
+```
+
+### 4.6 ThrottlerGuard (전역 APP_GUARD)
+
+`@nestjs/throttler` 신규 의존성. `app.module.ts`에서 ThrottlerModule.forRoot + APP_GUARD 등록. Tracker getter 오버라이드로 인증 요청은 user_id, 미인증은 IP.
+
+ThrottlerException → BaseExceptionFilter가 `FailureResponse(COMMON_TOO_MANY_REQUESTS)`로 변환 + Retry-After 헤더 유지.
+
+미확정 (Phase 1 진입 시 결정): `@nest-lab/throttler-storage-redis` 라이브러리 안정성 평가 → 채택 또는 직접 ioredis 기반 storage 구현. 첫 Throttler 적용 이슈 진입 시점에 결정 (§11 미확정 사항).
+
+## 5. ErrorCode 변경 (src/constant/ErrorCode.enum.ts)
+
+신규 추가:
+- `COMMON_TOO_MANY_REQUESTS` = 90008 (90xxx 영역) — Rate Limit 초과
+- `IDEMPOTENCY_IN_PROGRESS` = 90009 (90xxx 영역) — Idempotency pending 중복 요청 (선택, 또는 COMMON_TOO_MANY_REQUESTS 재사용 — flow idempotency-key-handle §3.2 결정 위임)
+- `COMMENT_NOT_FOUND` = 32001 (32xxx Comment 도메인)
+- `REPLY_NOT_FOUND` = 32002
+
+폐기 검토:
+- 기존 30xxx Post 도메인 / 31xxx PostLike 도메인 유지
+- `USER_NOT_FOUND` (20001) 유지
+
+## 6. 데이터 모델
+
+### 6.1 스키마 (Phase 1 최종 형상)
+
+data-design.md §user/user_auth/user_auth_provider/user_info/post/post_like/comment/reply 참조. 본 섹션은 차이점만 요약:
+
+- user (신설) — user_id BIGINT AUTO_INCREMENT PK
+- user_auth (재구성) — PK가 uid VARCHAR → user_id BIGINT (FK + PK). login_id VARCHAR(100) NULL UNIQUE
+- user_auth_provider (신설) — (provider, provider_subject) UNIQUE, email VARCHAR(320) NULL, FK user_id
+- user_info (외래키 변경) — PK가 uid VARCHAR → user_id BIGINT (FK + PK)
+- post (외래키 변경 + 인덱스 추가) — user_id BIGINT FK, idx_post_cursor (write_datetime DESC, post_id DESC), idx_post_user
+- post_like (외래키 변경) — user_id BIGINT FK, 복합 PK (post_id, user_id)
+- comment (신설) — comment_id, post_id FK, user_id FK, content, idx_comment_post_cursor
+- reply (신설) — reply_id, comment_id FK, user_id FK, content, idx_reply_comment
+
+### 6.2 Migration 절차
+
+data-migration.md §단계 1~7 — 데이터 보존형. 각 단계는 독립 migration 파일 + E2E 통과:
+
+1. user 테이블 신설
+2. user_auth 재구성 (user_id_new 추가 → 데이터 이동 → 기존 uid PK 제거)
+3. user_auth_provider 신설 + 기존 OAuth 사용자(socialYN='Y') 매핑
+4. user_info 외래키 변경
+5. post / post_like 외래키 변경 (post_uid → user_id)
+6. post 커서 페이징 인덱스 추가
+7. comment / reply 테이블 신설
+
+각 migration의 `down()` 메소드에 역방향 로직 작성. 기존 데이터 양이 적어 단일 트랜잭션 처리.
+
+### 6.3 Redis 키 구조
+
+| 키 패턴 | 용도 | 값 | TTL |
+|---------|------|-----|-----|
+| `login_fail:{loginId}` | 로그인 실패 카운터 | integer | 15분 (900s) |
+| `idempotency:{user_id}:{idempotency_key}` | Idempotency 응답 캐시 | JSON `{state, statusCode, responseBody, method, path, processedAt}` | 24시간 (86400s) |
+
+ioredis 단일 Provider(REDIS_CLIENT, Phase 0 #86)를 통해 접근.
+
+## 7. 상태 전이 매핑
+
+### 7.1 Idempotency Key state (Redis JSON.state)
+
+```
+[absent] --SETNX--> pending --SET--> completed --TTL 24h--> [absent]
+```
+
+application-level 강제 (Repository에 명시 transition 메소드만 노출). NotificationRepository 패턴(Phase 3 STM-Notification)과 유사한 단방향 life-cycle 정책.
+
+### 7.2 로그인 실패 카운터 (Redis login_fail counter)
+
+```
+absent → 1 → 2 → 3 → 4 → 5(locked) → TTL 15분 만료 → absent
+```
+
+5회 도달 시 잠금 (security-deployment.md §로그인 실패 카운트 — security.md §7과 정합). 로그인 성공 시 DEL로 즉시 absent.
+
+## 8. 핵심 알고리즘
+
+### 8.1 Cursor 인코딩/디코딩 (Post / Comment 공통)
+
+```typescript
+// cursor 형식: base64url(JSON { w: ISO8601, p: bigint string })
+function encode(item: { writeDatetime: Date; postId: bigint }): string {
+  return base64url(JSON.stringify({ w: item.writeDatetime.toISOString(), p: String(item.postId) }))
+}
+function decode(cursor: string): { writeDatetime: Date; postId: bigint } {
+  const { w, p } = JSON.parse(base64urlDecode(cursor))
+  return { writeDatetime: new Date(w), postId: BigInt(p) }
+}
+```
+
+WHERE 절: `(write_datetime, post_id) < (cursor.w, cursor.p)` 튜플 비교. Comment는 ASC라 `>` 사용.
+
+[가이드 — application-arch.md] base64 vs JSON 인코딩 선택은 자율. Comment cursor는 동일 패턴(`c: createdDatetime, i: commentId`).
+
+### 8.2 RefreshToken Rotation (data-design.md §Rotation 원자성)
+
+```
+1. QueryRunner.startTransaction()
+2. SELECT refresh_token FROM user_auth WHERE user_id = ? FOR UPDATE
+3. cookie === stored 비교 (불일치 시 ROLLBACK + AuthInvalidRefreshTokenException)
+4. 새 access + refresh 발급 (JWT sign)
+5. UPDATE user_auth SET refresh_token = new WHERE user_id = ?
+6. commit
+7. 실패 시 rollback + AuthInvalidRefreshTokenException (Rotation 원자성 INV-11)
+```
+
+### 8.3 OAuth Account Linking (SEQ-3 §3.3 결정 흐름)
+
+```
+1. google-auth-library.verifyIdToken({ idToken, audience })
+2. payload.sub로 user_auth_provider 조회
+   - 존재 → user_id 즉시 확보 (분기 A: 기존 OAuth)
+3. provider_subject 미일치 시 payload.email로 기존 user 탐지 (user_auth_provider.email 또는 별도 lookup)
+   - 존재 → 분기 B: Account Linking
+     - INSERT user_auth_provider (user_id, provider, provider_subject, email)
+   - 미존재 → 분기 C: 완전 신규
+     - INSERT user → user_auth (login_id NULL, password NULL) → user_auth_provider → user_info (nickname derived)
+4. 합류: user_id 확보 후 JWT 발급 + UserAuth.refresh_token UPDATE (Rotation 원자성)
+```
+
+lookup 출처 결정 (implementation-guide.md TODO — Phase 1 구현 시점): user 테이블에 email 컬럼 없음. user_auth_provider.email로 기존 user 탐지 시도하되, `email IS NOT NULL` + 동일 email로 매칭되는 user_id 반환. 다중 매칭 시 가장 오래된 user 선택 (학습 프로젝트 단순성).
+
+### 8.4 Nickname Derivation (UC-3 신규 가입)
+
+```
+1. base = payload.email.split('@')[0] (최대 30자)
+2. INSERT user_info (nickname=base) 시도
+3. UNIQUE 충돌 시 base + '#' + random(4 digits) 재시도 (최대 3회)
+4. 3회 실패 시 random uuid 8자 사용
+```
+
+INV-2 (nickname UNIQUE) 보장. user_info insert에서만 사용.
+
+### 8.5 IDOR 방어 패턴 (모든 Write API)
+
+Service 레이어 단일 책임. Repository UPDATE/DELETE 쿼리에 WHERE 절 `user_id = ?` 동등 조건 추가하여 DB-level 2차 방어.
+
+```typescript
+async updateByIdAndOwner(id, userId, patch, qr): Promise<number> {
+  const affected = await qr.manager
+    .createQueryBuilder()
+    .update(Entity)
+    .set(patch)
+    .where('id = :id AND user_id = :userId', { id, userId })
+    .execute()
+  return affected.affected ?? 0
+}
+// affected === 0 시 Service에서 *NotFoundException throw (404 정책)
+```
+
+404 응답 정책: Comment/Reply/Post 모두 존재 여부 자체 보호 (security-deployment.md §응답 코드 정책).
+
+## 9. Exception 계층
+
+기존 BaseException 계층 유지. Phase 1에서 다음 변경:
+
+### 9.1 신규 도메인 예외 추가
+
+src/exception/blog/:
+- `PostLikeAlreadyExistsException` — #73 흡수: `{ uid: bigint; postId: bigint }` 컨텍스트 필드 추가
+- `PostLikeNotFoundException` — #73 흡수: 동일 컨텍스트
+- `CommentNotFoundException` (신규) — `{ uid: bigint; commentId: bigint }`
+- `ReplyNotFoundException` (신규) — `{ uid: bigint; replyId: bigint }`
+
+barrel `src/exception/blog/index.ts`에 export 추가.
+
+### 9.2 #69 UnexpectedCodeException 통합 검토 결과
+
+현재 `UnexpectedCodeException`은 BaseException 하위로 catch-all 폴백 역할. Phase 1 검토:
+- BaseException을 abstract 유지 (직접 인스턴스화 차단)
+- UnexpectedCodeException은 ErrorCode `COMMON_INTERNAL_ERROR` 매핑된 구체 클래스로 유지
+- 새 신규 예외(Comment/Reply)도 동일 패턴
+
+Phase 5 RFC 9457 전환 시 추가 통합 가능성 있음 — 본 Phase는 통합 보류 + 패턴 정렬만 수행. 결정 사유: Phase 1은 신규 도메인 예외 다수 추가 중 — 통합 작업과 신규 작업 동시 진행 시 회귀 리스크.
+
+### 9.3 #70 verifyRefreshToken throw 통일 결과
+
+`JwtService.verifyRefreshToken` 시그니처를 throw 방식으로 변경 (flow user-token-refresh §5):
+- 성공: `JwtPayload` 반환
+- 실패: 정확한 도메인 예외 throw (`AuthInvalidRefreshTokenException` / `AuthRefreshTokenRequiredException`)
+
+기존 `{ valid, payload }` 객체 반환 경로 제거. AuthGuard, UserAuthService.refresh에서 try/catch로 처리.
+
+### 9.4 Filter 계층 (기존 유지)
+
+BaseExceptionFilter / HttpExceptionFilter / UnhandledExceptionFilter 3개 계층. ThrottlerException은 HttpExceptionFilter에서 catch → COMMON_TOO_MANY_REQUESTS 변환.
+
+## 10. Phase 0 → Phase 1 인터페이스 연결점
+
+| Phase 0 산출물 | Phase 1 활용 |
+|----------------|--------------|
+| synchronize:false + migrations 활성화 (#79) | data-migration.md 7단계 데이터 보존형 마이그레이션 작성 가능 |
+| 단일 ioredis Provider REDIS_CLIENT (#86) | IdempotencyService / LoginFailCounter / @nest-lab/throttler-storage-redis 가 동일 ioredis 인스턴스 활용 |
+| PathParamAwareValidationPipe (#89) | DecryptPrimaryKeyPipe path 우회 보장 — Phase 1 모든 PK 복호화 엔드포인트 회귀 보호 |
+| HealthModule 자기완결성 (#77) | Phase 1 신규 모듈 추가가 HealthModule 트리 영향 없음 |
+| gitleaks pre-commit (#78) | Phase 1 새 환경변수(throttler 관련) commit 시 시크릿 검출 보장 |
+
+## 11. 미확정 사항
+
+### 블로커 (구현 진입 시 결정)
+
+1. **@nest-lab/throttler-storage-redis 라이브러리 평가** (security-deployment.md §모듈 등록)
+   - 결정 시점: 첫 Throttler 적용 이슈 진입 시
+   - 결정 기준: (a) NestJS 10 호환성 (b) 단일 ioredis Provider(REDIS_CLIENT) 주입 가능성 (c) 최근 1년 이내 release + 활성 maintenance
+   - 미충족 시: 직접 ioredis 기반 ThrottlerStorage 구현 (`implements ThrottlerStorage`)
+
+### 허용 (구현 PR에서 결정)
+
+2. ThrottlerGuard 응답 포맷 통합 방식 (Filter vs Guard 확장)
+3. 403 vs 404 응답 코드 선택 (security-deployment.md §응답 코드 정책 — 가이드라인 명시)
+4. 미인증 요청에 Idempotency 적용 여부 (Phase 1 결정: 미적용)
+5. Cursor 인코딩 형식 (base64 vs JSON 명시) — §8.1에 base64url(JSON) 권고하되 자율
+6. PaginationDto cursor 전환 vs CursorPaginationDto 신규 — Phase 1 권고: 신규 도입
+7. Idempotency Interceptor의 NestJS 위치 (Interceptor vs Guard) — Interceptor 권고 (응답 캐싱 흐름 자연)
+8. OAuth Account Linking lookup 출처 (§8.3) — user_auth_provider.email 매칭 권고
+9. comment/reply 부모 미존재 시 빈 배열 vs NotFound (comment-list-read §3.1) — 빈 배열 권고
+
+## Sources
+
+- docs/solution/phase-1/{scope,arch-increment,data-migration,async-deployment,security-deployment,runtime-deployment}.md
+- docs/solution/common/{overview,application-arch,data-design,async,security,runtime-behavior}.md
+- docs/problem/{use-cases,domain-spec}.md
+- docs/implementation/flows/*.md (12개)
+- docs/implementation/testing-strategy.md
+- GitHub Issues #61, #69, #70, #73 (Phase 1 흡수)
+- 방법론: Vernon IDDD Rule 1/3/4, Helland Idempotence, OWASP IDOR/Authentication/JWT, Fowler Identity Field, RFC 4122 (UUID), Stripe Idempotency API
