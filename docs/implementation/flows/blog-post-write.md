@@ -148,7 +148,7 @@ dedup 결정 (flow-format.md §Dedup 판별 4단계):
 | TC-34 | §3.2 IDOR — 타인 Post UPDATE/DELETE 시도 → POST_NOT_FOUND (404 정책) | E2E (security) |
 | TC-35 | §3.2 DB WHERE 절 IDOR 2차 방어 — affected rows 0 시 적절 처리 | 통합 |
 | TC-36 | §3.4 title/contents 누락 → COMMON_BAD_REQUEST | E2E |
-| TC-37 | §3.3 Idempotency 4분기 (idempotency-key-handle TC-71~76 공유) | E2E |
+| TC-37 | §3.3 Idempotency 4분기 (idempotency-key-handle TC-IDEM-01~05 공유) | E2E |
 | TC-38 | Throttler 분당 60회 user_id 초과 → COMMON_TOO_MANY_REQUESTS | E2E (security) |
 | TC-39 | INV-6 Property: 어떤 (postId, userId) 조합이든 user_id ≠ authUserId면 UPDATE/DELETE 거부 | 단위 (PBT, fast-check) |
 

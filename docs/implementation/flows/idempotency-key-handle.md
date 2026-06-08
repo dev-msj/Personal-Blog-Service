@@ -148,8 +148,8 @@ SIGTERM 수신 시 Interceptor는 진행 중 요청(`state: pending`)의 완료 
 | 노드 | 메시지 | 인터페이스 | implementation-guide.md 섹션 |
 |------|--------|-----------|------------------------------|
 | Nest framework→Interceptor | intercept(ctx, next) | `IdempotencyKeyInterceptor implements NestInterceptor` | §4.2 idempotency-key.interceptor |
-| Interceptor→IdempotencyService | get/setPending/setCompleted | `IdempotencyService.get(userId, key) / setPending / setCompleted` | §6.5 idempotency.service |
-| IdempotencyService→Redis | GET/SETNX/SET/EXPIRE | `RedisClient` (REDIS_CLIENT 토큰 inject, Phase 0 ioredis 단일 Provider 활용) | §3.4 redis 인프라 |
+| Interceptor→IdempotencyService | get/setPending/setCompleted | `IdempotencyService.get(userId, key) / setPending / setCompleted` | §3.14 유틸 |
+| IdempotencyService→Redis | GET/SETNX/SET/EXPIRE | `RedisClient` (REDIS_CLIENT 토큰 inject, Phase 0 ioredis 단일 Provider 활용) | §6.3 Redis 키 구조 |
 | Decorator (선택) | @SkipIdempotency() | login/refresh/oauth 핸들러에 부착하여 Interceptor 우회 | §4.2 |
 
 전역 등록 위치: `app.module.ts` APP_INTERCEPTOR Provider로 등록. AuthGuard 후행(authUserId 추출 의존). NestJS 실행 순서: Guard → Interceptor → Handler.
@@ -158,14 +158,16 @@ SIGTERM 수신 시 Interceptor는 진행 중 요청(`state: pending`)의 완료 
 
 | TC-N | 커버 노드/분기 | 종류 |
 |------|---------------|------|
-| TC-IDEM-01 | §1 DT-1 R2 (키 + miss → 처리 후 캐싱) | 통합 |
+| TC-IDEM-01 | §1 DT-1 R2 (키 + miss → 처리 후 캐싱) | 계약 |
 | TC-IDEM-02 | §2.1 DT-1 R1 (키 미제공 → 정상 처리, 캐시 없음) | 단위 |
-| TC-IDEM-03 | §2.2 DT-1 R3 (키 + hit-stored → 원본 응답 재반환, Service 미호출) | 통합 |
+| TC-IDEM-03 | §2.2 DT-1 R3 (키 + hit-stored → 원본 응답 재반환, Service 미호출) | 계약 |
 | TC-IDEM-04 | §3.1 동일 키 + 다른 path → COMMON_BAD_REQUEST | 통합 |
-| TC-IDEM-05 | §3.2 DT-1 R4 (키 + pending → IDEMPOTENCY_IN_PROGRESS + Retry-After 5) | 통합 |
-| TC-IDEM-06 | §3.3 핸들러 throw 시 실패 응답 캐싱 → 재요청 시 동일 실패 응답 | 통합 |
+| TC-IDEM-05 | §3.2 DT-1 R4 (키 + pending → IDEMPOTENCY_IN_PROGRESS + Retry-After 5) | 계약 |
+| TC-IDEM-06 | §3.3 핸들러 throw 시 실패 응답 캐싱 → 재요청 시 동일 실패 응답 | 계약 |
 | TC-IDEM-07 | 헤더 형식 위반 (non-UUID v4) → COMMON_BAD_REQUEST | 단위 |
 | TC-IDEM-08 | DT-1 4분기 RuleBasedStateMachine Property-Based Test (fast-check) | 단위 (PBT) |
+
+종류 주: IDEM-01·03·05·06은 멱등 API 계약(DT-1 R2·R3·R4 + 실패 응답 캐싱)을 검증하므로 계약(contract). IDEM-02·07·08은 순수 로직(단위), IDEM-04는 path 검증(통합). testing-strategy.md §2 Pyramid 계약 4건과 정합.
 
 TC-IDEM-08은 testing-strategy.md §3 Property-Based Testing의 RuleBasedStateMachine 후보 — 키 상태(absent → pending → completed) 전이의 모든 invariant 검증. domain flow(user-register / blog-post-write / post-like-toggle / comment-write / reply-write)에서 `*a` Extension 분기는 본 매핑을 cross-reference (예: TC-05 user-register `*a` 분기는 TC-IDEM-02/03/05 셋을 공유 적용).
 

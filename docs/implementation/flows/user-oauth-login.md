@@ -106,7 +106,7 @@ sequenceDiagram
     Note over API: user_id 확보 → §1 JWT 발급 합류
 ```
 
-nickname 충돌 처리: `user_info.nickname` UNIQUE 제약(INV-2) 충돌 시 무작위 suffix 추가 후 재시도(최대 3회) — implementation-guide.md §6.6 nickname-derivation 알고리즘 결정.
+nickname 충돌 처리: `user_info.nickname` UNIQUE 제약(INV-2) 충돌 시 무작위 suffix 추가 후 재시도(최대 3회) — implementation-guide.md §8.4 nickname-derivation 알고리즘 결정.
 
 ## 3. Exception 분기
 
@@ -130,12 +130,12 @@ nickname 충돌 처리: `user_info.nickname` UNIQUE 제약(INV-2) 충돌 시 무
 | 노드 | 메시지 | 인터페이스 | implementation-guide.md 섹션 |
 |------|--------|-----------|------------------------------|
 | Controller→Service | oauth(dto) | `UserAuthService.oauthLogin(credentialToken: string): Promise<JwtDto>` | §3.1 user-auth.service |
-| Service→Google | verifyIdToken | `OAuth2Client.verifyIdToken({ idToken, audience }): LoginTicket` | §6.7 google-auth wrapper |
+| Service→Google | verifyIdToken | `OAuth2Client.verifyIdToken({ idToken, audience }): LoginTicket` | §3.14 유틸 (GoogleAuthVerifier) |
 | Service→Repository | findByProviderSubject | `UserAuthProviderRepository.findByProviderSubject(provider, sub): Promise<UserAuthProviderEntity \| null>` | §3.5 user-auth-provider.repository |
 | Service→Repository | findUserByEmail | `UserAuthProviderRepository.findUserIdByEmail(email): Promise<bigint \| null>` (또는 user-auth-provider 경유) | §3.5 |
 | Service→Repository | createOAuthUserOrLink | `UserRepository.createOAuthUser(...) / linkProvider(userId, provider, sub, email)` | §3.3 |
-| Service→Util | deriveNickname | `nicknameUtils.deriveFromEmail(email): Promise<string>` (UNIQUE 충돌 시 suffix retry) | §6.6 |
-| Service→JwtUtil | issueTokens | (user-login flow §5 공유) | §6.2 |
+| Service→Util | deriveNickname | `nicknameUtils.deriveFromEmail(email): Promise<string>` (UNIQUE 충돌 시 suffix retry) | §8.4 (시그니처 §3.14) |
+| Service→JwtUtil | issueTokens | (user-login flow §5 공유) | §3.14 유틸 |
 | Service→Repository | updateRefreshToken | (user-login flow §5 공유) | §3.2 |
 
 ## 6. 테스트 매핑

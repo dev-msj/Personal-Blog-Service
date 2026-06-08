@@ -262,6 +262,44 @@ class ReplyRepository {
 }
 ```
 
+### 3.14 유틸 / cross-cutting 인터페이스
+
+flow §5 인터페이스 계약 표가 역참조하는 유틸·cross-cutting 시그니처의 단일 진실 원천. 알고리즘 본체가 §8에 있는 항목은 시그니처만 두고 §8로 위임.
+
+```typescript
+// 비밀번호 해싱 (기존 crypto 모듈, SHA256 3회 — Phase 5 argon2id)
+function hashPassword(password: string, salt: string): string
+
+// JWT 발급/검증 (#70 흡수: verifyRefreshToken throw 통일)
+class JwtService {
+  issueTokens(userId: bigint, role: UserRole): { accessToken: string; refreshToken: string }
+  verifyRefreshToken(token: string): JwtPayload  // 실패 시 도메인 예외 throw (§9.3)
+}
+
+// 로그인 실패 카운터 (Redis login_fail:{loginId}, §6.3 / 상태전이 §7.2)
+class LoginFailCounter {
+  get(loginId: string): Promise<number>
+  incr(loginId: string): Promise<number>  // TTL 15분
+  del(loginId: string): Promise<void>      // 로그인 성공 시 즉시 absent
+}
+
+// Idempotency 저장소 (Redis idempotency:{user_id}:{key}, §6.3 / 상태전이 §7.1)
+class IdempotencyService {
+  get(userId: bigint, key: string): Promise<IdempotencyRecord | null>
+  setPending(userId: bigint, key: string, method: string, path: string): Promise<boolean>  // SETNX
+  setCompleted(userId: bigint, key: string, statusCode: number, body: unknown): Promise<void>  // TTL 24h
+}
+
+// Google OAuth 검증 wrapper (google-auth-library)
+class GoogleAuthVerifier {
+  verifyIdToken(args: { idToken: string; audience: string }): Promise<{ sub: string; email: string }>
+}
+```
+
+- nicknameUtils.deriveFromEmail(email: string): string — 알고리즘 §8.4
+- cursorUtils.encode(item)/decode(cursor) — 알고리즘 §8.1
+- QueryRunner 트랜잭션 패턴 (dataSource.createQueryRunner) — §8.2 Rotation / §8.5 IDOR
+
 ## 4. Interceptor / Pipe / Guard
 
 ### 4.1 SetRefreshTokenCookieInterceptor (기존 유지)

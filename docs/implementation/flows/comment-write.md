@@ -125,7 +125,7 @@ dedup 결정 (vs reply-write): Aggregate는 동일(Post Root, Comment 내부 Ent
 | Service→Repository | insertOwned | `CommentRepository.insertOwned(comment, qr): Promise<bigint>` | §3.11 |
 | Service→Repository | updateByIdAndOwner | `CommentRepository.updateByIdAndOwner(commentId, userId, patch, qr): Promise<number>` | §3.11 |
 | Service→Repository | deleteByIdAndOwner | `CommentRepository.deleteByIdAndOwner(commentId, userId, qr): Promise<number>` | §3.11 |
-| Exception | CommentNotFoundException | `extends BaseException { uid: bigint; commentId: bigint }` (32001) | §7 |
+| Exception | CommentNotFoundException | `extends BaseException { uid: bigint; commentId: bigint }` (32001) | §9.1 Exception |
 
 ## 6. 테스트 매핑
 

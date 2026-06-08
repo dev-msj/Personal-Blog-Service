@@ -106,15 +106,15 @@ sequenceDiagram
 | 노드 | 메시지 | 인터페이스 | implementation-guide.md 섹션 |
 |------|--------|-----------|------------------------------|
 | Controller→Service | refresh(cookie) | `UserAuthService.refresh(refreshToken: string): Promise<JwtDto>` | §3.1 user-auth.service |
-| Service→Util | verifyRefreshToken | `JwtService.verifyRefreshToken(token): JwtPayload` (#70 흡수 — throw 방식 통일) | §6.2 |
-| Service→QueryRunner | startTransaction | `dataSource.createQueryRunner()` | §6.4 트랜잭션 패턴 |
+| Service→Util | verifyRefreshToken | `JwtService.verifyRefreshToken(token): JwtPayload` (#70 흡수 — throw 방식 통일) | §3.14 유틸 |
+| Service→QueryRunner | startTransaction | `dataSource.createQueryRunner()` | §8.2 Rotation 트랜잭션 |
 | Service→Repository | findRefreshTokenForUpdate | `UserAuthRepository.findRefreshTokenForUpdate(userId, qr): Promise<string \| null>` | §3.2 |
 | Service→Repository | updateRefreshToken | `UserAuthRepository.updateRefreshToken(userId, token, qr): Promise<void>` | §3.2 |
 | Controller→Interceptor | refresh cookie 응답 | `SetRefreshTokenCookieInterceptor` (기존 유지) | §4.1 |
 
 ### #70 흡수: verifyRefreshToken 에러 시그널링 통일
 
-현 구현은 `verifyRefreshToken`이 `{ valid, payload }` 형태로 반환하거나 throw가 혼재. Phase 1에서 throw 방식으로 통일 (implementation-guide.md §6.2):
+현 구현은 `verifyRefreshToken`이 `{ valid, payload }` 형태로 반환하거나 throw가 혼재. Phase 1에서 throw 방식으로 통일 (implementation-guide.md §3.14 / §9.3):
 - 성공 시: `JwtPayload` 반환
 - 실패 시: `AuthInvalidRefreshTokenException` 또는 `AuthRefreshTokenRequiredException` throw
 

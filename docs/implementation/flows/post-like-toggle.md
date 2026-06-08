@@ -105,7 +105,7 @@ sequenceDiagram
     API->>API: FailureResponse(POST_LIKE_ALREADY_EXISTS, 31001)
 ```
 
-#73 흡수: PostLike 예외 클래스에 컨텍스트 정보(`uid`, `postId`) 추가 — 디버깅 메시지 보강. implementation-guide.md §7 Exception 계층에 반영.
+#73 흡수: PostLike 예외 클래스에 컨텍스트 정보(`uid`, `postId`) 추가 — 디버깅 메시지 보강. implementation-guide.md §9.1 Exception 계층에 반영.
 
 ### 3.2 UC-6 취소-3a (PostLike 미존재)
 
@@ -150,8 +150,8 @@ dedup 결정: 처리 단계 시퀀스 동일 (AuthGuard → Throttler → Idempo
 | Controller→Service | unlikePost(postId, authUserId) | `PostLikeService.unlike(postId: bigint, userId: bigint): Promise<void>` | §3.9 |
 | Service→Repository | insertLike | `PostLikeRepository.insert(postId, userId, qr): Promise<void>` (UNIQUE / FK 충돌은 Repository에서 도메인 예외 변환) | §3.8 |
 | Service→Repository | deleteLike | `PostLikeRepository.delete(postId, userId, qr): Promise<number>` (affected rows 반환) | §3.8 |
-| Exception | PostLikeAlreadyExistsException | `extends BaseException { uid: bigint; postId: bigint }` (#73 컨텍스트) | §7 Exception |
-| Exception | PostLikeNotFoundException | `extends BaseException { uid: bigint; postId: bigint }` (#73 컨텍스트) | §7 Exception |
+| Exception | PostLikeAlreadyExistsException | `extends BaseException { uid: bigint; postId: bigint }` (#73 컨텍스트) | §9.1 Exception |
+| Exception | PostLikeNotFoundException | `extends BaseException { uid: bigint; postId: bigint }` (#73 컨텍스트) | §9.1 Exception |
 | Path Pipe | decryptPostId | `DecryptPrimaryKeyPipe` | §4.3 |
 
 ## 6. 테스트 매핑

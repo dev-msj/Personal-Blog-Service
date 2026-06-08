@@ -39,7 +39,7 @@ sequenceDiagram
     API-->>-Client: 200 + SuccessResponse<br/>({ items: PostDto[], next_cursor })
 ```
 
-Cursor 인코딩 [가이드 — application-arch.md §Cursor-based Pagination]: base64url(JSON `{w: write_datetime ISO8601, p: post_id_encrypted}`). 구체 인코딩 결정은 implementation-guide.md §6.8 cursor-utility.
+Cursor 인코딩 [가이드 — application-arch.md §Cursor-based Pagination]: base64url(JSON `{w: write_datetime ISO8601, p: post_id_encrypted}`). 구체 인코딩 결정은 implementation-guide.md §8.1 Cursor 인코딩/디코딩 (시그니처 §3.14).
 
 본 flow는 GET이므로 Idempotency-Key 적용 대상 아님.
 
@@ -96,7 +96,7 @@ dedup 결정: 처리 단계 시퀀스 동일 (인덱스 선택만 다름), 분�
 |------|--------|-----------|------------------------------|
 | Controller→Service | listPosts(query, authUserId) | `PostService.list(query: ListPostQuery): Promise<CursorPage<PostDto>>` | §3.6 |
 | Controller→Service | listUserPosts | `PostService.listByUser(userId, query): Promise<CursorPage<PostDto>>` | §3.6 |
-| Service→Util | decode/encode cursor | `cursorUtils.decode(cursor) / encode(lastItem): string` | §6.8 |
+| Service→Util | decode/encode cursor | `cursorUtils.decode(cursor) / encode(lastItem): string` | §8.1 (시그니처 §3.14) |
 | Service→Repository | findByCursor | `PostRepository.findByCursor(cursor, limit, userId?): Promise<PostEntity[]>` | §3.7 |
 | Service→Repository | getPostLikeMap | `PostLikeRepository.getPostLikeMapByPostIds(postIds, authUserId): Promise<Map<bigint, boolean>>` (기존 N+1 회피 패턴 유지) | §3.8 |
 | Service→Repository | countLikesBatch | `PostLikeRepository.countByPostIds(postIds): Promise<Map<bigint, number>>` | §3.8 |

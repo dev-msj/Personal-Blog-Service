@@ -90,8 +90,8 @@ DT-1(domain-spec.md §Decision Tables) 본체는 idempotency-key-handle flow에 
 |------|--------|-----------|------------------------------|
 | Controller→Service | join(dto) | `UserAuthService.join(JoinDto): Promise<void>` | §3.1 user-auth.service |
 | Service→Repository | findByLoginId | `UserAuthRepository.findByLoginId(loginId): Promise<UserAuthEntity \| null>` | §3.2 user-auth.repository |
-| Service→Repository | createUserWithAuth | `UserRepository.createWithAuthAndInfo(user, auth, info, qr): Promise<UserEntity>` | §3.3 user.repository |
-| Service→Util | hashPassword | `cryptoUtils.hashPassword(password, salt): string` | §6.1 crypto utility |
+| Service→Repository | createUserWithAuth | `UserRepository.createWithAuthAndInfo(auth, info, qr): Promise<bigint>` (user_id 반환) | §3.3 user.repository |
+| Service→Util | hashPassword | `cryptoUtils.hashPassword(password, salt): string` | §3.14 유틸 |
 
 ## 6. 테스트 매핑
 

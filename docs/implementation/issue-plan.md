@@ -4,7 +4,6 @@ workers: 1
 assignees: [@dev-msj]
 created-at: 2026-04-25
 last-rebalanced-at: 2026-05-12 — Phase 1 이슈 단위 재설계 (빌드 일관성 + 크기 가이드 + 단일 관심사 원칙. Migration+Entity 통합 + IDOR Service 레이어 도메인 내장. 21건 → 22건. #70/#73 본체 흡수)
-pyramid-tracking: unit:15, integration:25, contract:8, e2e:40, performance:n/a, security:9, chaos:n/a
 ---
 
 # Issue Plan
@@ -115,6 +114,11 @@ pyramid-tracking: unit:15, integration:25, contract:8, e2e:40, performance:n/a, 
   provides: idx_post_cursor, idx_post_user, CursorPaginationDto, cursor utility (encode/decode), PostService.list/listByUser cursor 기반
   consumes: post 테이블 (← #121), PostEntity user_id (← #121)
 
+- #137 [기능] Y4: post 상세조회 — PostService.findOne (hits++ + liked_by_me/like_count 집계)
+  provides: PostService.findOne (hits++/liked_by_me/like_count), GET /posts/:postId 핸들러, blog-post-read-detail flow 구현 (UC-5 커버)
+  consumes: PostEntity/PostRepository (← #121), PostLikeRepository (← #122)
+  coord: #123 — 같은 PostService 영역
+
 - #125 [기능, 보안] Z2: Comment 모듈 신설 (Entity + Repository + Service + Controller + DTO + IDOR + Exception)
   provides: Comment 모듈 (controller/service/repository/dao/entities/dto), CommentNotFoundException {uid, commentId} 컨텍스트, COMMENT_NOT_FOUND ErrorCode (32001), Comment CRUD + IDOR
   consumes: comment 테이블 (← #124), PostEntity user_id (← #121)
@@ -160,9 +164,10 @@ pyramid-tracking: unit:15, integration:25, contract:8, e2e:40, performance:n/a, 
 - #70 — Phase 1 / 모노 트랙 흡수 본체 #128 (Phase 1 진입 분석 2026-05-12 + 이슈 단위 재설계)
 - #73 — Phase 1 / 모노 트랙 흡수 본체 #122 (Phase 1 진입 분석 2026-05-12 + 이슈 단위 재설계)
 - #117~#136 — Phase 1 / 모노 트랙 (Phase 1 이슈 단위 재설계 2026-05-12, 이전 #96~#116 21건 close + 신규 22건 생성)
+- #137 — Phase 1 / 모노 트랙 (UC-5 커버리지 공백 보정, 2026-06-05 mcpsi-implementation-verify 검증 4 Major 후속. blog-post-read-detail flow 구현 이슈)
 
 ### 분류 인덱스 (참고)
-- 기능: #78, #117, #119(공동 리팩토링), #120, #124, #125, #126, #127, #131, #132
+- 기능: #78, #117, #119(공동 리팩토링), #120, #124, #125, #126, #127, #131, #132, #137
 - 버그: #77, #89
 - 리팩토링: #75, #76, #79, #85, #86, #118, #121, #122, #128, #129, #130, #69, #70, #73
 - 인프라: #75, #79, #133

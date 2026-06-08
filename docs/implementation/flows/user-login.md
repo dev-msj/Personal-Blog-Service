@@ -95,9 +95,9 @@ sequenceDiagram
 |------|--------|-----------|------------------------------|
 | Controller→Service | login(dto) | `UserAuthService.login(LoginDto): Promise<JwtDto>` | §3.1 user-auth.service |
 | Service→Repository | findByLoginId | `UserAuthRepository.findByLoginId(loginId): Promise<UserAuthEntity \| null>` | §3.2 |
-| Service→JwtUtil | sign | `JwtService.issueTokens(userId, role): { accessToken, refreshToken }` | §6.2 |
+| Service→JwtUtil | sign | `JwtService.issueTokens(userId, role): { accessToken, refreshToken }` | §3.14 유틸 |
 | Service→Repository | updateRefreshToken | `UserAuthRepository.updateRefreshToken(userId, token, qr): Promise<void>` | §3.2 |
-| Service→Redis | login_fail get/incr/del | `LoginFailCounter.get/incr/del(loginId)` (security 유틸) | §6.3 |
+| Service→Redis | login_fail get/incr/del | `LoginFailCounter.get/incr/del(loginId)` (security 유틸) | §3.14 유틸 |
 | Controller→Interceptor | refresh cookie 응답 | `SetRefreshTokenCookieInterceptor` (기존 유지) | §4.1 |
 
 ## 6. 테스트 매핑
