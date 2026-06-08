@@ -54,6 +54,11 @@ import { CustomThrottlerGuard } from './throttler/custom-throttler.guard';
           },
         ],
         storage: new RedisThrottlerStorage(redis),
+        // 테스트 환경에서는 전역 throttle을 코드로 비활성화한다. 다수 e2e spec이
+        // 동일 IP 트래커를 공유하므로(git 미추적 .test.env 값에 의존하지 않도록)
+        // 결정적으로 skip. throttle 동작 검증은 throttler.e2e-spec이 옵션을
+        // 오버라이드(skipIf 미포함)하여 격리 수행한다.
+        skipIf: () => process.env.NODE_ENV === 'test',
       }),
     }),
     BlogModule,
