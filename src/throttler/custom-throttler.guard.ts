@@ -18,8 +18,11 @@ import { Request } from 'express';
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
   protected async getTracker(req: Request): Promise<string> {
+    // authenticatedUser는 AuthGuard가 토큰 검증 후 주입하는 신뢰값(단일 string)이며
+    // AuthGuard가 진입 시 외부 위조 헤더를 strip하므로 string|undefined만 흘러든다.
+    // 헤더 정적 타입(string|string[])상 방어적으로, string이 아니면 IP로 폴백한다.
     const userId = req.headers?.['authenticatedUser'];
 
-    return userId ? `user:${userId}` : `ip:${req.ip}`;
+    return typeof userId === 'string' ? `user:${userId}` : `ip:${req.ip}`;
   }
 }
