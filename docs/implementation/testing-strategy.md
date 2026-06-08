@@ -237,10 +237,11 @@ describe('PostService', () => {
 필터/파이프 등 의존이 1~2개인 단순 Provider도 SUT 자체를 `Test.createTestingModule`로 생성하고 `module.get()`으로 꺼낸다. 의존은 inline 객체로 `useValue` 주입한다. `new XFilter(mockLogger as any)` 직접 인스턴스화는 사용하지 않는다 — DI 토큰 검증을 받고 `as any`를 제거하기 위함:
 
 ```typescript
+const mockLogger = { error: jest.fn() } // 단순 의존은 inline 객체로 선언
 const module: TestingModule = await Test.createTestingModule({
   providers: [
     BaseExceptionFilter,
-    { provide: WINSTON_MODULE_PROVIDER, useValue: mockLogger }, // 단순 의존은 inline useValue
+    { provide: WINSTON_MODULE_PROVIDER, useValue: mockLogger }, // inline useValue 주입
   ],
 }).compile()
 filter = module.get(BaseExceptionFilter)
