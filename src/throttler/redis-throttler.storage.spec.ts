@@ -17,6 +17,9 @@ describe('RedisThrottlerStorage', () => {
   it('counter/block 키와 ttl·limit·blockDuration을 eval 인자로 전달한다', async () => {
     mockEval.mockResolvedValue([1, 60000, 0, 0]);
 
+    // 여기서 'tracker-key'는 base ThrottlerGuard.generateKey가 만든 산출물(임의 문자열)
+    // 자리로, 실 운영에서는 sha256 해시가 들어온다. 본 테스트는 storage가 받은 key에
+    // 'throttle:' prefix를 붙이는 매핑 계약만 검증한다.
     await storage.increment('tracker-key', 60000, 200, 60000);
 
     expect(mockEval).toHaveBeenCalledTimes(1);

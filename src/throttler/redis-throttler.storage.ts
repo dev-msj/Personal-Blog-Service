@@ -24,7 +24,11 @@ local ttl = tonumber(ARGV[1])
 local limit = tonumber(ARGV[2])
 local blockDuration = tonumber(ARGV[3])
 
--- 이미 차단 중이면 카운터를 더 늘리지 않고 차단 상태를 반환
+-- 이미 차단 중이면 카운터를 더 늘리지 않고 차단 상태를 반환.
+-- counter 키가 먼저 만료되고 block 키만 생존한 경계에서는 실제 누적값을 잃어
+-- hits를 limit으로 폴백한다(차단 상태라 Remaining=0이 의미상 정확). V1은
+-- blockDuration=ttl이라 두 키가 거의 동시 만료되어 이 경계가 드물다.
+-- TODO(#133 V2): blockDuration>ttl 정책 도입 시 누적 카운트 보존 방식 재검토.
 local blockPttl = redis.call('PTTL', KEYS[2])
 if blockPttl > 0 then
   local hits = tonumber(redis.call('GET', KEYS[1])) or limit

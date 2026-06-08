@@ -39,6 +39,9 @@ import { CustomThrottlerGuard } from './throttler/custom-throttler.guard';
     // 전역 Rate Limiting. storage는 단일 REDIS_CLIENT(ioredis@4)를 재사용하는
     // 직접 구현(RedisThrottlerStorage). 기본 제한값은 security.md §5.2 [확정]
     // 읽기 API(IP 분당 200회)이며 env로 조정 가능(Phase 4 부하 테스트 [가이드]).
+    // 카운트 단위: base ThrottlerGuard.generateKey가 (클래스·핸들러·throttler명·tracker)
+    // 해시로 키를 만들므로 제한은 '(tracker, 엔드포인트)별'로 적용된다(@nestjs/throttler
+    // 기본 동작). 경로별 명시 정책은 V2에서 @Throttle로 정리.
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [REDIS_CLIENT, ConfigService],
