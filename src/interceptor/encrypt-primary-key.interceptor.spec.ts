@@ -1,4 +1,6 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { EncryptPrimaryKeyInterceptor } from './encrypt-primary-key.interceptor';
+import authConfig from '../config/authConfig';
 import { CryptoUtils } from '../utils/crypto.utils';
 import { EncryptField } from '../decorator/encrypt-field.decorator';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
@@ -35,8 +37,14 @@ describe('EncryptPrimaryKeyInterceptor', () => {
   let interceptor: EncryptPrimaryKeyInterceptor;
   const mockContext = {} as ExecutionContext;
 
-  beforeAll(() => {
-    interceptor = new EncryptPrimaryKeyInterceptor({ pkSecretKey } as any);
+  beforeAll(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        EncryptPrimaryKeyInterceptor,
+        { provide: authConfig.KEY, useValue: { pkSecretKey } },
+      ],
+    }).compile();
+    interceptor = module.get(EncryptPrimaryKeyInterceptor);
   });
 
   it('응답 객체의 @EncryptField() 필드를 암호화한다', (done) => {

@@ -4,6 +4,8 @@ import {
   HttpStatus,
   NotFoundException,
 } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { ErrorCode } from '../constant/error-code.enum';
 
@@ -14,7 +16,7 @@ describe('HttpExceptionFilter', () => {
   let mockStatus: jest.Mock;
   let mockArgumentsHost: ArgumentsHost;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockLogger = { error: jest.fn() };
     mockJson = jest.fn();
     mockStatus = jest.fn().mockReturnValue({ json: mockJson });
@@ -26,7 +28,13 @@ describe('HttpExceptionFilter', () => {
       }),
     } as unknown as ArgumentsHost;
 
-    filter = new HttpExceptionFilter(mockLogger as any);
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        HttpExceptionFilter,
+        { provide: WINSTON_MODULE_PROVIDER, useValue: mockLogger },
+      ],
+    }).compile();
+    filter = module.get(HttpExceptionFilter);
   });
 
   it('BadRequestException을 처리하여 COMMON_BAD_REQUEST(90001) 코드를 응답한다', () => {

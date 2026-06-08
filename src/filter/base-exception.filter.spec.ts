@@ -1,4 +1,6 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { BaseExceptionFilter } from './base-exception.filter';
 import { InvalidPageException } from '../exception/invalid-page.exception';
 import { UnexpectedCodeException } from '../exception/unexpected-code.exception';
@@ -11,7 +13,7 @@ describe('BaseExceptionFilter', () => {
   let mockStatus: jest.Mock;
   let mockArgumentsHost: ArgumentsHost;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockLogger = { error: jest.fn() };
     mockJson = jest.fn();
     mockStatus = jest.fn().mockReturnValue({ json: mockJson });
@@ -23,7 +25,13 @@ describe('BaseExceptionFilter', () => {
       }),
     } as unknown as ArgumentsHost;
 
-    filter = new BaseExceptionFilter(mockLogger as any);
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        BaseExceptionFilter,
+        { provide: WINSTON_MODULE_PROVIDER, useValue: mockLogger },
+      ],
+    }).compile();
+    filter = module.get(BaseExceptionFilter);
   });
 
   it('InvalidPageException의 errorCode(91002)가 응답에 반영된다', () => {
