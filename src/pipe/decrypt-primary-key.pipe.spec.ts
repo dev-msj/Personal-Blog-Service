@@ -1,4 +1,7 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { DecryptPrimaryKeyPipe } from './decrypt-primary-key.pipe';
+import authConfig from '../config/authConfig';
 import { CryptoUtils } from '../utils/crypto.utils';
 import { InvalidEncryptedParameterException } from '../exception/validation';
 
@@ -7,9 +10,16 @@ describe('DecryptPrimaryKeyPipe', () => {
   let pipe: DecryptPrimaryKeyPipe;
   let mockLogger: { warn: jest.Mock };
 
-  beforeAll(() => {
+  beforeAll(async () => {
     mockLogger = { warn: jest.fn() };
-    pipe = new DecryptPrimaryKeyPipe(mockLogger as any, { pkSecretKey } as any);
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        DecryptPrimaryKeyPipe,
+        { provide: WINSTON_MODULE_PROVIDER, useValue: mockLogger },
+        { provide: authConfig.KEY, useValue: { pkSecretKey } },
+      ],
+    }).compile();
+    pipe = module.get(DecryptPrimaryKeyPipe);
   });
 
   beforeEach(() => {
