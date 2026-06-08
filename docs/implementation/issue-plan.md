@@ -49,7 +49,7 @@ last-rebalanced-at: 2026-05-12 — Phase 1 이슈 단위 재설계 (빌드 일�
   consumes: 없음
   coord: #118, #120, #121, #122, #124, #125, #126, #128, #129, #130, #131 — 신규 단위 테스트 작성 영역의 컨벤션 선행
 
-- #133 [보안, 인프라] V1: @nestjs/throttler + 전역 ThrottlerGuard + Tracker 오버라이드 + COMMON_TOO_MANY_REQUESTS
+- #133 [보안, 인프라] V1: @nestjs/throttler + 전역 ThrottlerGuard + Tracker 오버라이드 + COMMON_TOO_MANY_REQUESTS [closed]
   provides: ThrottlerGuard 전역, COMMON_TOO_MANY_REQUESTS ErrorCode (90008), Redis storage driver 결정 (라이브러리 평가 블로커)
   consumes: 없음 (REDIS_CLIENT — ← #86)
 
