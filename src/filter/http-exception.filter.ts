@@ -37,6 +37,7 @@ export class HttpExceptionFilter
       [HttpStatus.NOT_FOUND]: ErrorCode.COMMON_NOT_FOUND,
       [HttpStatus.NOT_ACCEPTABLE]: ErrorCode.COMMON_NOT_ACCEPTABLE,
       [HttpStatus.CONFLICT]: ErrorCode.COMMON_CONFLICT,
+      [HttpStatus.TOO_MANY_REQUESTS]: ErrorCode.COMMON_TOO_MANY_REQUESTS,
       [HttpStatus.INTERNAL_SERVER_ERROR]: ErrorCode.COMMON_INTERNAL_ERROR,
       [HttpStatus.SERVICE_UNAVAILABLE]: ErrorCode.COMMON_SERVICE_UNAVAILABLE,
     };
