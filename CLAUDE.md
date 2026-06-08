@@ -287,7 +287,9 @@ const module: TestingModule = await Test.createTestingModule({
 }).compile();
 ```
 
-소스와 동일 위치: `*.service.spec.ts`, `*.utils.spec.ts`.
+DI에 참여하는 모든 Provider(Service뿐 아니라 필터/파이프/인터셉터 등 `@Inject` 의존을 받는 클래스)는 `Test.createTestingModule`로 SUT를 생성하고 `module.get()`으로 꺼낸다. 의존 1~2개 단순 Provider도 동일 — `new X(dep as any)` 직접 인스턴스화 금지(`@Inject` 토큰 검증 + `as any` 제거). DI 미참여 순수 유틸 함수는 직접 호출. authoritative: docs/implementation/testing-strategy.md §8.
+
+소스와 동일 위치: `*.service.spec.ts`, `*.filter.spec.ts`, `*.utils.spec.ts`.
 
 ### E2E 테스트
 
