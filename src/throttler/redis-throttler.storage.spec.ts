@@ -1,3 +1,4 @@
+import type * as Redis from 'ioredis';
 import { RedisThrottlerStorage } from './redis-throttler.storage';
 
 describe('RedisThrottlerStorage', () => {
@@ -8,7 +9,9 @@ describe('RedisThrottlerStorage', () => {
     mockEval = jest.fn();
     // ioredis 인스턴스를 eval만 mock하여 주입 (단위 테스트는 TS 매핑 계층 검증.
     // Lua 원자성/윈도우 동작은 throttler.e2e-spec.ts에서 실 Redis로 검증)
-    storage = new RedisThrottlerStorage({ eval: mockEval } as never);
+    storage = new RedisThrottlerStorage({
+      eval: mockEval,
+    } as unknown as Redis.Redis);
   });
 
   it('counter/block 키와 ttl·limit·blockDuration을 eval 인자로 전달한다', async () => {
@@ -48,6 +51,25 @@ describe('RedisThrottlerStorage', () => {
     expect(record.isBlocked).toBe(true);
     expect(record.timeToBlockExpire).toBe(60);
     expect(record.totalHits).toBe(201);
+  });
+
+  it('이미 차단 중(blockPttl>0)인 반환을 isBlocked로 매핑한다', async () => {
+    // Lua는 block 키 활성 시 카운터를 늘리지 않고 {hits, pttl, 1, blockPttl} 반환
+    mockEval.mockResolvedValue([200, 45000, 1, 30000]);
+
+    const record = await storage.increment('k', 60000, 200, 60000);
+
+    expect(record.isBlocked).toBe(true);
+    expect(record.timeToExpire).toBe(45);
+    expect(record.timeToBlockExpire).toBe(30);
+  });
+
+  it('timeToBlockExpire도 올림(ceil)하여 초로 변환한다', async () => {
+    mockEval.mockResolvedValue([201, 0, 1, 30001]);
+
+    const record = await storage.increment('k', 60000, 200, 60000);
+
+    expect(record.timeToBlockExpire).toBe(31);
   });
 
   it('남은 ms는 올림(ceil)하여 초로 변환한다', async () => {
