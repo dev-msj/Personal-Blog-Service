@@ -1,4 +1,6 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UnhandledExceptionFilter } from './unhandled-exception.filter';
 import { ErrorCode } from '../constant/error-code.enum';
 
@@ -9,7 +11,7 @@ describe('UnhandledExceptionFilter', () => {
   let mockStatus: jest.Mock;
   let mockArgumentsHost: ArgumentsHost;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockLogger = { error: jest.fn() };
     mockJson = jest.fn();
     mockStatus = jest.fn().mockReturnValue({ json: mockJson });
@@ -21,7 +23,13 @@ describe('UnhandledExceptionFilter', () => {
       }),
     } as unknown as ArgumentsHost;
 
-    filter = new UnhandledExceptionFilter(mockLogger as any);
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UnhandledExceptionFilter,
+        { provide: WINSTON_MODULE_PROVIDER, useValue: mockLogger },
+      ],
+    }).compile();
+    filter = module.get(UnhandledExceptionFilter);
   });
 
   it('일반 Error를 COMMON_INTERNAL_ERROR(90006)로 변환하여 응답한다', () => {
