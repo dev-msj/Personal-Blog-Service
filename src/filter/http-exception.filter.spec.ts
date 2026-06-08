@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerException } from '@nestjs/throttler';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { ErrorCode } from '../constant/error-code.enum';
@@ -67,6 +68,23 @@ describe('HttpExceptionFilter', () => {
       expect.objectContaining({
         code: ErrorCode.COMMON_NOT_FOUND,
         message: 'Resource not found',
+      }),
+    );
+  });
+
+  it('ThrottlerException(429)을 처리하여 COMMON_TOO_MANY_REQUESTS(90008) 코드를 응답한다', () => {
+    // Given — ThrottlerException은 HttpException(TOO_MANY_REQUESTS, 429) 상속
+    const exception = new ThrottlerException('Too Many Requests');
+
+    // When
+    filter.catch(exception, mockArgumentsHost);
+
+    // Then — 응답 컨벤션상 HTTP 200 + FailureResponse(90008). Retry-After 헤더는
+    // CustomThrottlerGuard(base setHeaders)가 throw 직전 설정 (E2E에서 검증)
+    expect(mockStatus).toHaveBeenCalledWith(HttpStatus.OK);
+    expect(mockJson).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: ErrorCode.COMMON_TOO_MANY_REQUESTS,
       }),
     );
   });

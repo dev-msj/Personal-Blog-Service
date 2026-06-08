@@ -21,12 +21,20 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request: Request = context.switchToHttp().getRequest();
+
+    // 클라이언트가 위조한 authenticatedUser 헤더를 제거한다. 이 값은 본 Guard가
+    // 토큰 검증 후 주입하는 신뢰값이며, CustomThrottlerGuard.getTracker와
+    // @AuthenticatedUserValidation이 신뢰한다. @Public 경로에서는 아래 isPublic
+    // 분기로 즉시 통과하므로, strip하지 않으면 외부 입력 헤더가 그대로 흘러
+    // rate-limit 트래커 위조(IP 제한 우회) 및 신원 위조가 가능하다.
+    delete request.headers['authenticatedUser'];
+
     const isPublic = this.reflector.get<boolean>('public', context.getClass());
     if (isPublic) {
       return true;
     }
 
-    const request: Request = context.switchToHttp().getRequest();
     if (!request.headers.authorization) {
       this.logger.warn(
         `Authorization header is a non-existent request. - [${JSON.stringify(

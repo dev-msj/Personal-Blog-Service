@@ -25,6 +25,9 @@ export const validationEnv = Joi.object({
     )
     .optional(),
   COOKIE_SAME_SITE: Joi.string().valid('strict', 'lax', 'none').optional(),
+  // Rate Limiting (전역 ThrottlerGuard). 미설정 시 코드 기본값(60000ms / 200회) 사용
+  THROTTLE_DEFAULT_TTL: Joi.number().integer().positive().optional(),
+  THROTTLE_DEFAULT_LIMIT: Joi.number().integer().positive().optional(),
   GOOGLE_CLIENT_ID: Joi.string().required(),
   REDIS_HOST: Joi.string().required(),
   REDIS_PORT: Joi.number().integer().positive().required(),

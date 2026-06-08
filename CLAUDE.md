@@ -82,6 +82,7 @@ src/
 ├── user/           # UserAuth, UserInfo, JWT, OAuth
 ├── health/         # @nestjs/terminus 기반 health check (RedisModule을 직접 import하여 REDIS_CLIENT inject)
 ├── redis/          # NestJS CacheModule + health 경로가 공유하는 ioredis 인스턴스 Provider (REDIS_CLIENT 토큰 + OnModuleDestroy로 quit()). production TypeORM 쿼리 캐시는 별도 ioredis 클라이언트로 동작
+├── throttler/      # 전역 Rate Limiting. CustomThrottlerGuard(getTracker user_id/IP 분기), RedisThrottlerStorage(REDIS_CLIENT 재사용 직접 구현, Lua 원자 카운터)
 ├── config/         # TypeORM, Redis, Winston, JWT, env validation (Joi)
 ├── constant/       # ErrorCode enum, UserRole enum
 ├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField()
@@ -120,7 +121,7 @@ Controller → Service → Repository → Entity
 - CORS: `enableCors({ origin: true, credentials: true })` — 학습 환경, 프로덕션 배포 트리거 시 allowlist 전환 예정
 - ValidationPipe 전역: `PathParamAwareValidationPipe` (ValidationPipe 서브클래스, `whitelist: true, transform: true, enableImplicitConversion: true`). path 파라미터(`metadata.type === 'param'`)는 우회하여 사용자 파이프(`DecryptPrimaryKeyPipe`, `ParseIntPipe` 등)가 원문을 받도록 보장. body/query/custom은 super 위임
 - cookieParser 미들웨어
-- 전역 Guard: APP_GUARD → AuthGuard (app.module.ts)
+- 전역 Guard: APP_GUARD → AuthGuard → CustomThrottlerGuard (app.module.ts, 등록 순서대로 실행). AuthGuard가 먼저 `authenticatedUser`(uid) 헤더를 주입(+외부 위조 헤더 strip)해야 ThrottlerGuard.getTracker가 인증 요청을 user_id로, 미인증은 IP로 식별. ThrottlerGuard는 전역 기본 제한(IP 분당 200회)만 적용하며 경로별 정책은 후속 작업(V2) 예정
 - 전역 Filter: APP_FILTER → BaseExceptionFilter, HttpExceptionFilter, UnhandledExceptionFilter
 - Shutdown 훅: main.ts에서 `app.enableShutdownHooks()` 호출. SIGTERM/SIGINT 수신 시 RedisModule의 `OnModuleDestroy`(client.quit())가 트리거되어 ioredis 연결을 graceful 종료
 
@@ -138,10 +139,10 @@ ErrorCode 5자리 도메인별 체계 (src/constant/ErrorCode.enum.ts):
 - User 20xxx: USER_NOT_FOUND, USER_ALREADY_EXISTS, USER_INFO_NOT_FOUND, USER_INFO_ALREADY_EXISTS
 - Post 30xxx: POST_NOT_FOUND
 - PostLike 31xxx: POST_LIKE_ALREADY_EXISTS, POST_LIKE_NOT_FOUND
-- Common 90xxx: COMMON_BAD_REQUEST, COMMON_UNAUTHORIZED, COMMON_NOT_FOUND, COMMON_NOT_ACCEPTABLE, COMMON_CONFLICT, COMMON_INTERNAL_ERROR, COMMON_SERVICE_UNAVAILABLE
+- Common 90xxx: COMMON_BAD_REQUEST, COMMON_UNAUTHORIZED, COMMON_NOT_FOUND, COMMON_NOT_ACCEPTABLE, COMMON_CONFLICT, COMMON_INTERNAL_ERROR, COMMON_SERVICE_UNAVAILABLE, COMMON_TOO_MANY_REQUESTS(90008, Rate Limit 429 → HttpExceptionFilter가 변환)
 - Validation 91xxx: INVALID_ENCRYPTED_PARAMETER, INVALID_PAGE
 
-Phase 1에서 COMMON_TOO_MANY_REQUESTS(90xxx) 추가 예정 (Rate Limit 429 대응).
+COMMON_TOO_MANY_REQUESTS(90008)는 Phase 1에서 추가 완료 (전역 ThrottlerGuard Rate Limit 429 대응).
 
 ## 인증 흐름
 
@@ -243,6 +244,7 @@ env/.test.env
 - Cookie: COOKIE_MAX_AGE (기본 30일 ms), COOKIE_SECURE (production 자동), COOKIE_SAME_SITE (기본 strict)
 - Encryption: PK_SECRET_KEY (16자 고정, Phase 5에 32자 AES-256으로 확장 예정)
 - OAuth: GOOGLE_CLIENT_ID
+- Rate Limiting (선택): THROTTLE_DEFAULT_TTL (기본 60000ms), THROTTLE_DEFAULT_LIMIT (기본 200, IP 분당). 미설정 시 코드 기본값 사용
 
 Phase 0에서 Node 22.x LTS 관련 버전 선언 파일 추가 (.nvmrc, package.json engines, .github/workflows setup-node). Phase 2에서 Slack Webhook 환경변수 3종(SLACK_WEBHOOK_PAGE_URL/TICKET_URL/SECURITY_URL) 추가 예정.
 
