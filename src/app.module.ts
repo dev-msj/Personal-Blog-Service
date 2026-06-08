@@ -7,7 +7,7 @@ import { typeOrmConfig } from './config/typeOrmConfig';
 import { WinstonModule } from 'nest-winston';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ThrottlerModule } from '@nestjs/throttler';
-import * as Redis from 'ioredis';
+import type * as Redis from 'ioredis';
 import { redisConfig } from './config/redisConfig';
 import { BlogModule } from './blog/blog.module';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';

@@ -1,5 +1,5 @@
 import { ThrottlerStorage } from '@nestjs/throttler';
-import * as Redis from 'ioredis';
+import type * as Redis from 'ioredis';
 
 // ThrottlerStorageRecord는 @nestjs/throttler barrel에서 export되지 않으므로
 // increment 반환 타입에서 구조적으로 도출한다.
