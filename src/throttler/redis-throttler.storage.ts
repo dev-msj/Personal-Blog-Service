@@ -16,6 +16,13 @@ type ThrottlerStorageRecord = Awaited<
  *
  * INCR + PEXPIRE + PTTL을 Lua 스크립트로 원자 실행하여 요청 경합에서도
  * 카운터 일관성을 보장한다. 반환 시간 단위는 초(@nestjs/throttler 계약).
+ *
+ * 윈도우 방식: fixed-window(최초 hit에 PEXPIRE, 창 단위 일괄 리셋). 기본
+ * in-memory ThrottlerStorageService는 per-hit 만료(rolling)라 창 경계에서
+ * 최대 2*limit 버스트가 가능한 차이가 있다. V1 인프라에서는 [확정] 미규정
+ * 영역이라 fixed-window를 채택하되, 경로별 정책(#134 V2)·부하 테스트(Phase 4)
+ * 시점에 sliding-window 전환 필요성을 재평가한다.
+ * TODO(#134): login 등 민감 경로 @Throttle 적용 시 경계 버스트 영향 재검토.
  */
 export class RedisThrottlerStorage implements ThrottlerStorage {
   // KEYS[1] counter, KEYS[2] block / ARGV[1] ttl(ms), ARGV[2] limit, ARGV[3] blockDuration(ms)
