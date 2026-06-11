@@ -103,7 +103,11 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
   consumes: UserAuthEntity user_id (← #118)
   coord: #70 — 본 이슈가 #70 본체 흡수, #121 #122 #155 — @AuthenticatedUserValidation 식별자 전환의 컨트롤러 소비 클러스터
   migration: parallel-change/migrate
-  note: @AuthenticatedUserValidation 식별자(uid email→user_id)를 소비하는 컨트롤러 3곳(post #121, post-like #122, user-info #155)과 결합된 migrate 클러스터. 그린 게이트 결정: 데코레이터 반환을 number로 바꾸면 3 컨트롤러가 #128 머지 시 동시 컴파일 깨짐(원자 웨이브 필요) / 반환 string 유지(헤더 원형) + 소비처 parseInt면 타입 호환 유지(권장, 소비처는 #121·#122·#155가 user_id 의미로 전환). 어느 쪽이든 세 이슈가 #128을 선행 소비. work B3에서 데코레이터 전략 확정 — testing-strategy.md §13
+  note: #128이 선행이고, @AuthenticatedUserValidation 식별자(uid email→user_id) 전환을 쓰는 컨트롤러 3곳(post #121, post-like #122, user-info #155)이 #128을 consumes하는 후행 클러스터다. 그린 게이트 전략(work B3 확정):
+    - 전략 B(데코레이터 반환 number): parseInt는 데코레이터/가드 내부에서 수행하고 컨트롤러는 타입만 number로 바꾼다. #128 머지 시 미전환 3 컨트롤러가 동시 컴파일 깨짐 → #128+#121+#122+#155 원자 웨이브 필요
+    - 전략 A(반환 string 유지) 기각: 컴파일은 통과하나 주입 값이 user_id 문자열로 바뀌어 서비스가 findByUid("123")을 호출 → 매핑 없음 → E2E 런타임 실패. 컴파일 깨짐을 숨은 런타임 깨짐으로 바꿔 더 위험
+    - 전략 C(권장): 신규 데코레이터(@AuthUserId, number)를 병존 추가 → 컨트롤러를 PR별 순차 이전 → 구 데코레이터 제거. Parallel Change로 PR별 그린 보존
+    어느 전략이든 #121·#122·#155가 #128을 consumes — testing-strategy.md §13
 
 - #129 [리팩토링] U2: user-auth.service.join/login user_id 기반 재작성 (QueryRunner 트랜잭션)
   provides: UserAuthService.join (user→user_auth→user_info 3 INSERT 트랜잭션), UserAuthService.login (sub=user_id BIGINT)
