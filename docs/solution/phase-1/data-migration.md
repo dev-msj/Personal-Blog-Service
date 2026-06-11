@@ -54,6 +54,8 @@ ALTER TABLE user_auth ADD CONSTRAINT uq_login_id UNIQUE (login_id);
 
 `down()`은 역방향: login_id를 uid로 옮기고 user_id 컬럼 제거.
 
+구현 분할 (그린 게이트 보존, implementation-guide.md §마이그레이션 전략): 위 SQL의 "컬럼 추가 + backfill" 부분은 expand 이슈(#118)에서, "DROP PRIMARY KEY / DROP uid / DROP socialYN / user_id PK 승격 + FK + UNIQUE" 부분은 contract 이슈(#154)에서 실행한다. 논리 시퀀스는 동일하나, 호출자(AuthGuard #128 / UserAuthService #129~#131)와 FK 참조 테이블(#119·#121·#122)이 user_id로 전환 완료된 뒤 DROP을 수행해야 각 PR 머지 시점 빌드/테스트 그린이 유지된다 (application-arch §270 [확정] "각 단계 E2E 그린 보증").
+
 ### 단계 3: user_auth_provider 테이블 신설 + OAuth 사용자 매핑
 
 ```sql
