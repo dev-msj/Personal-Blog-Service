@@ -97,6 +97,8 @@ ALTER TABLE user_info ADD CONSTRAINT fk_user_info_user
   FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE;
 ```
 
+구현 분할 (그린 게이트 보존, implementation-guide.md §마이그레이션 전략): "컬럼 추가 + backfill"은 expand 이슈(#119)에서, "DROP + user_id PK 승격 + FK"는 contract 이슈(#155)에서 실행한다. user_info 소비자는 UserInfoService 단일 로커스라 #155가 소비자 user_id 전환과 컬럼 제거를 원자적으로 수행(머지 시점 그린). #154(user_auth contract)는 user_info가 user.user_id로 재지정된 #155 이후 user_auth.uid를 제거한다(@OneToOne 참조 무결성).
+
 ### 단계 5: post / post_like 외래키 변경
 
 ```sql

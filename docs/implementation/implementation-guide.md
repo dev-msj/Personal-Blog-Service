@@ -566,13 +566,14 @@ User Aggregate 재설계(uid VARCHAR → user_id BIGINT 분리 + UserAuthProvide
 사유: 식별자 모델/스키마 교체로 호출자 다수가 연쇄 변경되며, data-migration.md 단계 2·4·5가 "backwards-compatible 컬럼 추가 → 데이터 이동 → 기존 컬럼/PK 제거" 절차로 이미 expand-migrate-contract 구조를 구현한다. 각 단계 독립 migration 파일 + 단계별 E2E 그린 게이트가 이슈 분할 하한이다. 기각: Branch by Abstraction(라이브러리/계층 교체)·Strangler Fig(레거시 점진 교체)는 본 변경이 스키마/식별자 모델 전이라 부적합. Feature Toggle은 1회성 스키마 전이에 과잉. 통합 이슈는 호출자 3+/스키마 PK 변경이라 atomic 단위 초과.
 
 시리즈 단계별 책임 (단계명은 parallel-change 정의 집합 expand/migrate/contract 준수):
-- expand (#117·#118): #117 user 테이블 신설(data-migration 단계 1). #118 user_auth에 user_id/login_id 컬럼 추가 + backfill, 기존 uid PK·socialYN·Repository 메서드 보존(data-migration 단계 2의 추가 부분). 둘 다 additive — 기존 코드 무영향
+- expand (#117·#118·#119): #117 user 테이블 신설(data-migration 단계 1). #118 user_auth에 user_id/login_id 컬럼 추가 + backfill(단계 2 추가 부분). #119 user_info에 user_id 컬럼 추가 + backfill(단계 4 추가 부분). 모두 기존 uid PK·관계·Repository 메서드 보존 — additive, 기존 코드 무영향
 - migrate (#128·#129·#130·#131): AuthGuard sub BIGINT parseInt + Service 레이어(join/login/refresh/oauth)를 user_id 기반으로 전환. expand가 추가한 user_id/login_id 컬럼·메서드를 소비. 구 uid 컬럼은 여전히 존재하여 미전환 경로의 그린 유지. verifyRefreshToken throw 통일(#70 흡수)도 동반
-- migrate (#119·#121·#122): user_info / post / post_like 스키마를 user_id로 전환 + 각 Repository·Service 동기 변경. #121·#122는 PostService(IDOR 포함)를 자체 포함하므로 자기완결 migrate. 그린 게이트: Service 외부 계약(HTTP 응답)은 불변이라 기존 E2E가 통과해야 한다(불가 시 분할 재검토 — testing-strategy.md §13)
+- migrate (#121·#122): post / post_like 스키마를 user_id로 전환 + 각 Repository·Service 동기 변경. PostService(IDOR 포함)를 자체 포함하므로 자기완결 migrate. 그린 게이트: Service 외부 계약(HTTP 응답)은 불변이라 기존 E2E가 통과해야 한다(불가 시 분할 재검토 — testing-strategy.md §13)
 - migrate (#120): user_auth_provider 신설 + 기존 OAuth 사용자(login_id NULL) 매핑 (data-migration 단계 3)
-- contract (#154): 모든 user_auth 호출자(#128~#131) 전환 + FK 참조 테이블(#119·#121·#122) 전환 + user_auth_provider(#120) 완료 후, user_auth.uid PK·uid 컬럼·socialYN 제거 + user_id NOT NULL PK 승격 + FK·UNIQUE(login_id). 모든 선행 migrate 이슈를 consumes로 가진다
+- contract (#154): 모든 user_auth 호출자(#128~#131) 전환 + FK 참조 테이블(#155·#121·#122) 전환 + user_auth_provider(#120) 완료 후, user_auth.uid PK·uid 컬럼·socialYN 제거 + user_id NOT NULL PK 승격 + FK·UNIQUE(login_id). 모든 선행 migrate 이슈를 consumes로 가진다
+- contract (#155): user_info 소비자(UserInfoService/Controller)를 user_id로 전환하면서 user_info.uid 제거 + user_id PK 승격 + FK(user.user_id)를 한 이슈에서 원자 수행. user_info는 소비자가 UserInfoService 단일 로커스라 migrate+contract 결합이 안전(전환과 제거가 같은 PR이라 머지 그린). expand(#119)와 AuthGuard BIGINT(#128)를 consumes
 
-주의 (구현 시점 점검): #119(user_info)는 #118과 동일하게 소비자(UserInfoService)가 동일 이슈에 포함되지 않으면 컬럼 드롭 시 그린 게이트 위반 가능 — UserInfoService 동기 변경 포함 여부를 확인하고, 미포함이면 #118과 동일한 expand/contract 분리를 적용한다. #121·#122는 PostService를 자체 포함하나 기존 post E2E 그린 유지를 확인한다.
+주의 (구현 시점 점검): #121·#122는 PostService를 자체 포함하나 기존 post/post_like E2E 그린 유지를 확인한다(불가 시 #118/#119와 동일한 expand/contract 분리 적용).
 
 신구 공존 기간:
 - DB 구조: 각 migrate 단계 migration의 트랜잭션 내부 한정. 커밋 시점에 구조 단일화 (중간 실패 시 데이터 무결성 보존, data-migration 가역성)
