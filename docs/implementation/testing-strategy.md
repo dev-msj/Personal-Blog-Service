@@ -371,6 +371,28 @@ AuthGuard는 모든 보호 엔드포인트의 진입점이라 단일 flow에 매
 
 이 TC들은 user-token-refresh 또는 user-login에 묶지 않고 별도 `auth-guard.spec.ts`에 위치. TC 인벤토리(§6.1)의 user-token-refresh TC-20에 verifyRefreshToken throw 통일 단위 테스트로 일부 흡수.
 
+## 13. 마이그레이션 테스트 전략
+
+적용 전략: Parallel Change (Expand-Migrate-Contract) — implementation-guide.md §마이그레이션 전략 정합.
+
+기존 테스트 보존 정책:
+- contract 단계(#128·#129·#130·#131)가 호출부를 user_id 기반으로 전환하기 전까지 기존 user-auth.e2e-spec.ts / post.e2e-spec.ts는 그린 유지를 보장한다. AuthHelper / DbCleaner의 uid→user_id 전환(§7.1)은 contract 단계 PR에서 동기 수행하여 동일 PR 내 그린 게이트를 닫는다
+- migrate 단계는 스키마/데이터를 전환하되 Service 외부 계약(HTTP 응답 스키마)은 불변이므로 기존 E2E가 통과해야 한다. Repository는 contract 단계 전까지 기존 호출 시그니처 호환을 유지한다. 통과 불가 시 그 단계가 그린 게이트 하한 위반 — 분할 재검토
+
+신구 등가성 테스트:
+- TC-90(통합, 비-flow, §9.5): 데이터 보존형 마이그레이션 down→up 가역성. 단계 2·4·5의 uid VARCHAR ↔ user_id BIGINT round-trip에서 매핑 유실/중복 없음, login_id NULL(OAuth-only) 보존, BIGINT→VARCHAR rollback truncation 없음을 단언. 본 등가성 검증이 expand-migrate 단계의 신구 데이터 등가성을 담보 (신규 TC 아님 — 기존 TC-90이 본 전략의 등가성 테스트 역할 수행)
+
+어댑터 테스트:
+- 본 전략은 영구 어댑터(신구 인터페이스 변환 계층)를 두지 않는다 (1회성 스키마 전이). AuthGuard sub BIGINT parseInt 변환이 JWT payload 신구 형식 사이의 임시 어댑터 역할이며, TC-96(AuthGuard sub parseInt 실패 → AuthUnauthorized)이 어댑터 경계 테스트에 해당
+
+시리즈 단계별 그린 게이트:
+- expand(#117): user 테이블 신설 후 기존 전체 스위트 그린 (additive)
+- migrate(#118·#119·#121·#122): 각 migration 파일 단위로 globalSetup runMigrations 통과 + Repository 호환 유지로 해당 도메인 E2E 그린 + TC-90 가역성 통과
+- migrate(#120): user_auth_provider 매핑 후 OAuth 흐름 E2E 그린
+- contract(#128~#131): Service 재작성 PR에서 AuthHelper/DbCleaner 전환 동기 수행, user-auth/post E2E 전수 그린으로 게이트 마감
+
+카운트 영향: 본 섹션은 §2 Pyramid 합계를 변경하지 않는다. TC-90이 등가성 테스트로 재사용되며 신규 TC를 추가하지 않는다.
+
 ## Sources
 
 - docs/solution/phase-1/{scope,arch-increment,data-migration,async-deployment,security-deployment,runtime-deployment}.md

@@ -557,6 +557,29 @@ BaseExceptionFilter / HttpExceptionFilter / UnhandledExceptionFilter 3개 계층
 8. OAuth Account Linking lookup 출처 (§8.3) — user_auth_provider.email 매칭 권고
 9. comment/reply 부모 미존재 시 빈 배열 vs NotFound (comment-list-read §3.1) — 빈 배열 권고
 
+## 마이그레이션 전략
+
+User Aggregate 재설계(uid VARCHAR → user_id BIGINT 분리 + UserAuthProvider 신설)는 스키마 PK/FK 변경 + 호출자 3개 이상 연쇄 + 기존 E2E SUT 핵심 변경의 cascading breakage 신호를 동반한다. application-arch.md §3방향 리팩토링 [확정](Refactoring Towards Patterns, 점진적 이동, 중간 단계 필수)에 따라 Parallel Change(Expand-Migrate-Contract)를 적용한다. 본 섹션은 신규 구조 결정이 아니라 data-migration.md의 expand-migrate-contract 절차에 표준 전략명을 부여하고 그린 게이트·신구 공존 기간을 명문화하는 정합 기록이다.
+
+전략: Parallel Change (Expand-Migrate-Contract)
+
+사유: 식별자 모델/스키마 교체로 호출자 다수가 연쇄 변경되며, data-migration.md 단계 2·4·5가 "backwards-compatible 컬럼 추가 → 데이터 이동 → 기존 컬럼/PK 제거" 절차로 이미 expand-migrate-contract 구조를 구현한다. 각 단계 독립 migration 파일 + 단계별 E2E 그린 게이트가 이슈 분할 하한이다. 기각: Branch by Abstraction(라이브러리/계층 교체)·Strangler Fig(레거시 점진 교체)는 본 변경이 스키마/식별자 모델 전이라 부적합. Feature Toggle은 1회성 스키마 전이에 과잉. 통합 이슈는 호출자 3+/스키마 PK 변경이라 atomic 단위 초과.
+
+시리즈 단계별 책임 (단계명은 parallel-change 정의 집합 expand/migrate/contract 준수):
+- expand (#117): user 테이블 신설. 기존 구조 무영향 (data-migration 단계 1)
+- migrate (#118·#119·#121·#122): user_id 컬럼 추가 → UPDATE JOIN 데이터 매핑 + Entity/Repository가 user_id 키를 제공. 학습 규모상 컬럼 전환은 단일 트랜잭션 (data-migration 단계 2·4·5). socialYN 폐기는 login_id NULL 마킹으로 대체. 그린 게이트: Service 외부 계약(HTTP 응답)은 불변이라 기존 E2E가 통과해야 하며, Repository는 contract 단계 전까지 기존 호출 시그니처와 호환을 유지한다 (불가 시 분할 재검토 — testing-strategy.md §13)
+- migrate (#120): user_auth_provider 신설 + 기존 OAuth 사용자(login_id NULL) 매핑 (data-migration 단계 3)
+- contract (#128·#129·#130·#131): AuthGuard sub BIGINT parseInt + Service 레이어를 user_id 기반으로 재작성하여 구 uid 경로 완전 제거. 모든 migrate 단계 이슈를 선행으로 가진다. verifyRefreshToken throw 통일(#70 흡수)도 동일 단계의 호출부 정리
+
+신구 공존 기간:
+- DB 구조: 각 expand-migrate migration의 트랜잭션 내부 한정. 커밋 시점에 구조 단일화 (중간 실패 시 데이터 무결성 보존, data-migration 가역성)
+- 식별 의미: socialYN → login_id NULL(OAuth-only) 마킹은 Phase 1 이후 영구 공존 형태 (data-design.md user_auth login_id NULL UNIQUE)
+- JWT payload: sub의 uid→user_id 전환으로 기존 발급 AccessToken은 자연 만료까지 공존. AuthGuard sub parseInt 실패 → AuthUnauthorizedException(testing-strategy.md TC-96)이 공존 종료를 안전 처리
+
+이슈별 단계 메타는 issue-plan.md 각 이슈의 `migration: parallel-change/<단계>` 라인에 부여한다 (plan-format.md 들여쓴 보조 라인).
+
+비대상: comment/reply 신설(#124)·커서 인덱스(#123)·신규 도메인 모듈(#125·#126·#127)은 additive 변경으로 cascading breakage 신호가 없어 마이그레이션 전략 비대상이다.
+
 ## Sources
 
 - docs/solution/phase-1/{scope,arch-increment,data-migration,async-deployment,security-deployment,runtime-deployment}.md
