@@ -126,8 +126,8 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
   migration: parallel-change/contract
 
 - #155 [리팩토링, 보안, 데이터] X3 contract: user_info user_id 전환 + uid 제거 (Parallel Change contract, 소비자 migrate 결합)
-  provides: user_info 최종 스키마 (user_id PK, uid 제거, FK user.user_id), UserInfoService/Controller/Entity user_id 전환
-  consumes: user_info user_id 컬럼 (← #119), AuthGuard BIGINT 식별자 (← #128)
+  provides: user_info 최종 스키마 (user_id PK, uid 제거, FK user.user_id), UserInfoService/Controller/Entity user_id 전환, getUserInfoByUid 제거
+  consumes: user_info user_id 컬럼 (← #119), AuthGuard BIGINT 식별자 (← #128), post-like.service getUserInfoByUid 전환 완료 (← #122) — getUserInfoByUid 제거 전 전 호출자 이전 필요
   migration: parallel-change/contract
 
 - #135 [보안] V3: 로그인 실패 카운트 + 계정 잠금 (Redis 카운터)
