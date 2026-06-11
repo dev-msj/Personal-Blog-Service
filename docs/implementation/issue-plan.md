@@ -67,7 +67,7 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
   migration: parallel-change/expand
 
 - #119 [리팩토링, 데이터] X3 expand: user_info user_id 컬럼 추가 + backfill (Parallel Change expand)
-  provides: user_info.user_id 컬럼(nullable, backfill 완료), UserInfoEntity userId 필드, UserInfoRepository findByUserId (기존 uid PK·관계·메서드 보존)
+  provides: user_info.user_id 컬럼(nullable, backfill 완료), UserInfoEntity userId 필드, UserInfoRepository findByUserId, UserInfoService.getUserInfoByUserId (신규 — post_like 등 교차 서비스 소비자의 user_id 전환용. 기존 uid PK·관계·메서드·getUserInfoByUid 보존)
   consumes: user 테이블 (← #117)
   migration: parallel-change/expand
 
@@ -81,16 +81,18 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
   consumes: user 테이블 (← #117), user_auth login_id NULL 마킹 (← #118)
   migration: parallel-change/migrate
 
-- #121 [리팩토링, 보안, 데이터] Y1: post migration + PostEntity 외래키 + PostRepository + IDOR Service 레이어
-  provides: post.user_id BIGINT FK CASCADE, PostEntity user_id, PostRepository (updateByIdAndOwner/deleteByIdAndOwner WHERE 절 IDOR), PostService IDOR 강제 (404 정책)
+- #121 [리팩토링, 보안, 데이터] Y1: post migration + PostEntity 외래키 + PostRepository + IDOR Service 레이어 (통합 원자 — migrate+contract 결합)
+  provides: post.user_id BIGINT FK CASCADE, PostEntity user_id(@ManyToOne→User), PostRepository (updateByIdAndOwner/deleteByIdAndOwner WHERE 절 IDOR), PostService IDOR 강제 (404 정책), UserAuthEntity.@OneToMany(PostEntity) 역관계 제거(그린 게이트)
   consumes: user 테이블 (← #117), user_auth.user_id (← #118)
   migration: parallel-change/migrate
+  note: 단일 원자 PR. post_uid 제거가 user 모듈(UserAuthEntity 역관계)·cache-id.utils를 깨뜨리므로 해당 정리를 같은 PR에 포함해야 그린 — testing-strategy.md §13
 
 - #122 [리팩토링, 보안, 데이터] Y2: post_like migration + Entity + Repository + IDOR + 예외 컨텍스트 (#73 본체 흡수)
-  provides: post_like.user_id BIGINT 복합 PK (post_id, user_id), PostLikeEntity, PostLikeRepository (UNIQUE/FK 충돌 catch, DELETE WHERE IDOR), PostLikeAlreadyExists/NotFound 예외 {uid, postId} 컨텍스트
-  consumes: user 테이블 (← #117), user_auth.user_id (← #118)
+  provides: post_like.user_id BIGINT 복합 PK (post_id, user_id), PostLikeEntity(@ManyToOne→User), PostLikeRepository (UNIQUE/FK 충돌 catch, DELETE WHERE IDOR), PostLikeAlreadyExists/NotFound 예외 {userId, postId} 컨텍스트, UserAuthEntity.@OneToMany(PostLikeEntity) 역관계 제거(그린 게이트)
+  consumes: user 테이블 (← #117), user_auth.user_id (← #118), UserInfoService.getUserInfoByUserId (← #119) — post-like.service 닉네임 조회 user_id 전환
   coord: #73 — 본 이슈가 #73 본체 흡수
   migration: parallel-change/migrate
+  note: 단일 원자 PR. post_like.uid 제거가 UserAuthEntity 역관계·post-like.service의 getUserInfoByUid 호출을 깨뜨리므로 역관계 제거 + getUserInfoByUserId 전환을 같은 PR에 포함 — testing-strategy.md §13
 
 - #124 [기능, 데이터] Z1: comment / reply 테이블 신설 migration
   provides: comment 테이블 + idx_comment_post_cursor, reply 테이블 + idx_reply_comment (Adjacency List 깊이 1), FK CASCADE
