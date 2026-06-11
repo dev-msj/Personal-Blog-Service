@@ -83,13 +83,13 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
 
 - #121 [리팩토링, 보안, 데이터] Y1: post migration + PostEntity 외래키 + PostRepository + IDOR Service 레이어 (통합 원자 — migrate+contract 결합)
   provides: post.user_id BIGINT FK CASCADE, PostEntity user_id(@ManyToOne→User), PostRepository (updateByIdAndOwner/deleteByIdAndOwner WHERE 절 IDOR), PostService IDOR 강제 (404 정책), UserAuthEntity.@OneToMany(PostEntity) 역관계 제거(그린 게이트)
-  consumes: user 테이블 (← #117), user_auth.user_id (← #118)
+  consumes: user 테이블 (← #117), user_auth.user_id (← #118), 인증 user_id 식별자 (← #128) — PostService IDOR(Post.user_id === authUserId) 및 controller authUid 시그니처가 user_id 전제
   migration: parallel-change/migrate
   note: 단일 원자 PR. post_uid 제거가 user 모듈(UserAuthEntity 역관계)·cache-id.utils를 깨뜨리므로 해당 정리를 같은 PR에 포함해야 그린 — testing-strategy.md §13
 
 - #122 [리팩토링, 보안, 데이터] Y2: post_like migration + Entity + Repository + IDOR + 예외 컨텍스트 (#73 본체 흡수)
   provides: post_like.user_id BIGINT 복합 PK (post_id, user_id), PostLikeEntity(@ManyToOne→User), PostLikeRepository (UNIQUE/FK 충돌 catch, DELETE WHERE IDOR), PostLikeAlreadyExists/NotFound 예외 {userId, postId} 컨텍스트, UserAuthEntity.@OneToMany(PostLikeEntity) 역관계 제거(그린 게이트)
-  consumes: user 테이블 (← #117), user_auth.user_id (← #118), UserInfoService.getUserInfoByUserId (← #119) — post-like.service 닉네임 조회 user_id 전환
+  consumes: user 테이블 (← #117), user_auth.user_id (← #118), UserInfoService.getUserInfoByUserId (← #119) — post-like.service 닉네임 조회 user_id 전환, 인증 user_id 식별자 (← #128) — IDOR 및 controller authUid 시그니처
   coord: #73 — 본 이슈가 #73 본체 흡수
   migration: parallel-change/migrate
   note: 단일 원자 PR. post_like.uid 제거가 UserAuthEntity 역관계·post-like.service의 getUserInfoByUid 호출을 깨뜨리므로 역관계 제거 + getUserInfoByUserId 전환을 같은 PR에 포함 — testing-strategy.md §13
@@ -99,10 +99,11 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
   consumes: user 테이블 (← #117), post 테이블 (← #121)
 
 - #128 [리팩토링, 보안] U1: AuthGuard sub BIGINT 변환 + JwtService.verifyRefreshToken throw 통일 (#70 본체 흡수)
-  provides: AuthGuard payload.sub BIGINT parseInt, JwtService.verifyRefreshToken throw 시그니처, @AuthenticatedUserValidation() BIGINT
+  provides: AuthGuard payload.sub BIGINT parseInt, JwtService.verifyRefreshToken throw 시그니처, @AuthenticatedUserValidation() user_id 식별자
   consumes: UserAuthEntity user_id (← #118)
-  coord: #70 — 본 이슈가 #70 본체 흡수
+  coord: #70 — 본 이슈가 #70 본체 흡수, #121 #122 #155 — @AuthenticatedUserValidation 식별자 전환의 컨트롤러 소비 클러스터
   migration: parallel-change/migrate
+  note: @AuthenticatedUserValidation 식별자(uid email→user_id)를 소비하는 컨트롤러 3곳(post #121, post-like #122, user-info #155)과 결합된 migrate 클러스터. 그린 게이트 결정: 데코레이터 반환을 number로 바꾸면 3 컨트롤러가 #128 머지 시 동시 컴파일 깨짐(원자 웨이브 필요) / 반환 string 유지(헤더 원형) + 소비처 parseInt면 타입 호환 유지(권장, 소비처는 #121·#122·#155가 user_id 의미로 전환). 어느 쪽이든 세 이슈가 #128을 선행 소비. work B3에서 데코레이터 전략 확정 — testing-strategy.md §13
 
 - #129 [리팩토링] U2: user-auth.service.join/login user_id 기반 재작성 (QueryRunner 트랜잭션)
   provides: UserAuthService.join (user→user_auth→user_info 3 INSERT 트랜잭션), UserAuthService.login (sub=user_id BIGINT)
