@@ -572,7 +572,7 @@ User Aggregate 재설계(uid VARCHAR → user_id BIGINT 분리 + UserAuthProvide
 - contract (#128·#129·#130·#131): AuthGuard sub BIGINT parseInt + Service 레이어를 user_id 기반으로 재작성하여 구 uid 경로 완전 제거. 모든 migrate 단계 이슈를 선행으로 가진다. verifyRefreshToken throw 통일(#70 흡수)도 동일 단계의 호출부 정리
 
 신구 공존 기간:
-- DB 구조: 각 expand-migrate migration의 트랜잭션 내부 한정. 커밋 시점에 구조 단일화 (중간 실패 시 데이터 무결성 보존, data-migration 가역성)
+- DB 구조: 각 migrate 단계 migration의 트랜잭션 내부 한정. 커밋 시점에 구조 단일화 (중간 실패 시 데이터 무결성 보존, data-migration 가역성)
 - 식별 의미: socialYN → login_id NULL(OAuth-only) 마킹은 Phase 1 이후 영구 공존 형태 (data-design.md user_auth login_id NULL UNIQUE)
 - JWT payload: sub의 uid→user_id 전환으로 기존 발급 AccessToken은 자연 만료까지 공존. AuthGuard sub parseInt 실패 → AuthUnauthorizedException(testing-strategy.md TC-96)이 공존 종료를 안전 처리
 

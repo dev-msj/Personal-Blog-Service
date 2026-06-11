@@ -380,7 +380,7 @@ AuthGuard는 모든 보호 엔드포인트의 진입점이라 단일 flow에 매
 - migrate 단계는 스키마/데이터를 전환하되 Service 외부 계약(HTTP 응답 스키마)은 불변이므로 기존 E2E가 통과해야 한다. Repository는 contract 단계 전까지 기존 호출 시그니처 호환을 유지한다. 통과 불가 시 그 단계가 그린 게이트 하한 위반 — 분할 재검토
 
 신구 등가성 테스트:
-- TC-90(통합, 비-flow, §9.5): 데이터 보존형 마이그레이션 down→up 가역성. 단계 2·4·5의 uid VARCHAR ↔ user_id BIGINT round-trip에서 매핑 유실/중복 없음, login_id NULL(OAuth-only) 보존, BIGINT→VARCHAR rollback truncation 없음을 단언. 본 등가성 검증이 expand-migrate 단계의 신구 데이터 등가성을 담보 (신규 TC 아님 — 기존 TC-90이 본 전략의 등가성 테스트 역할 수행)
+- TC-90(통합, 비-flow, §9.5): 데이터 보존형 마이그레이션 down→up 가역성. 단계 2·4·5의 uid VARCHAR ↔ user_id BIGINT round-trip에서 매핑 유실/중복 없음, login_id NULL(OAuth-only) 보존, BIGINT→VARCHAR rollback truncation 없음을 단언. 본 등가성 검증이 migrate 단계의 신구 데이터 등가성을 담보 (신규 TC 아님 — 기존 TC-90이 본 전략의 등가성 테스트 역할 수행)
 
 어댑터 테스트:
 - 본 전략은 영구 어댑터(신구 인터페이스 변환 계층)를 두지 않는다 (1회성 스키마 전이). AuthGuard sub BIGINT parseInt 변환이 JWT payload 신구 형식 사이의 임시 어댑터 역할이며, TC-96(AuthGuard sub parseInt 실패 → AuthUnauthorized)이 어댑터 경계 테스트에 해당
