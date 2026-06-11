@@ -83,13 +83,13 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
 
 - #121 [리팩토링, 보안, 데이터] Y1: post migration + PostEntity 외래키 + PostRepository + IDOR Service 레이어 (통합 원자 — migrate+contract 결합)
   provides: post.user_id BIGINT FK CASCADE, PostEntity user_id(@ManyToOne→User), PostRepository (updateByIdAndOwner/deleteByIdAndOwner WHERE 절 IDOR), PostService IDOR 강제 (404 정책), UserAuthEntity.@OneToMany(PostEntity) 역관계 제거(그린 게이트)
-  consumes: user 테이블 (← #117), user_auth.user_id (← #118), 인증 user_id 식별자 (← #128) — PostService IDOR(Post.user_id === authUserId) 및 controller authUid 시그니처가 user_id 전제
+  consumes: user 테이블 (← #117), user_auth.user_id (← #118), 인증 user_id 식별자 (← #128) — PostService IDOR(Post.user_id === authUserId) 및 controller authUid 시그니처가 user_id 전제, UserAuthService.join user_id 생성 (← #129) — PR 테스트 셋업에서 join 엔드포인트로 생성한 사용자에 user_id 보장 필요
   migration: parallel-change/migrate
   note: 단일 원자 PR. post_uid 제거가 user 모듈(UserAuthEntity 역관계)·cache-id.utils를 깨뜨리므로 해당 정리를 같은 PR에 포함해야 그린 — testing-strategy.md §13
 
 - #122 [리팩토링, 보안, 데이터] Y2: post_like migration + Entity + Repository + IDOR + 예외 컨텍스트 (#73 본체 흡수)
   provides: post_like.user_id BIGINT 복합 PK (post_id, user_id), PostLikeEntity(@ManyToOne→User), PostLikeRepository (UNIQUE/FK 충돌 catch, DELETE WHERE IDOR), PostLikeAlreadyExists/NotFound 예외 {userId, postId} 컨텍스트, UserAuthEntity.@OneToMany(PostLikeEntity) 역관계 제거(그린 게이트)
-  consumes: user 테이블 (← #117), user_auth.user_id (← #118), UserInfoService.getUserInfoByUserId (← #119) — post-like.service 닉네임 조회 user_id 전환, 인증 user_id 식별자 (← #128) — IDOR 및 controller authUid 시그니처
+  consumes: user 테이블 (← #117), user_auth.user_id (← #118), UserInfoService.getUserInfoByUserId (← #119) — post-like.service 닉네임 조회 user_id 전환, 인증 user_id 식별자 (← #128) — IDOR 및 controller authUid 시그니처, UserAuthService.join user_id 생성 (← #129) — PR 테스트 셋업 user_id 보장
   coord: #73 — 본 이슈가 #73 본체 흡수
   migration: parallel-change/migrate
   note: 단일 원자 PR. post_like.uid 제거가 UserAuthEntity 역관계·post-like.service의 getUserInfoByUid 호출을 깨뜨리므로 역관계 제거 + getUserInfoByUserId 전환을 같은 PR에 포함 — testing-strategy.md §13
@@ -99,15 +99,11 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
   consumes: user 테이블 (← #117), post 테이블 (← #121)
 
 - #128 [리팩토링, 보안] U1: AuthGuard sub BIGINT 변환 + JwtService.verifyRefreshToken throw 통일 (#70 본체 흡수)
-  provides: AuthGuard payload.sub BIGINT parseInt, JwtService.verifyRefreshToken throw 시그니처, @AuthenticatedUserValidation() user_id 식별자
+  provides: AuthGuard payload.sub BIGINT parseInt, JwtService.verifyRefreshToken throw 시그니처, authenticatedUserId 헤더 신설(user_id string) + authenticatedUser(uid) 헤더 전환기 병존 유지, @AuthUserId() 데코레이터 신설(number 반환)
   consumes: UserAuthEntity user_id (← #118)
   coord: #70 — 본 이슈가 #70 본체 흡수
   migration: parallel-change/migrate
-  note: #128이 선행이고, @AuthenticatedUserValidation 식별자(uid email→user_id) 전환을 쓰는 컨트롤러 3곳(post #121, post-like #122, user-info #155)이 #128을 consumes하는 후행 클러스터다(순서는 각 이슈 consumes ←#128로 표기). 그린 게이트 전략(work B3 확정):
-    - 전략 B(데코레이터 반환 number): parseInt는 데코레이터/가드 내부에서 수행하고 컨트롤러는 타입만 number로 바꾼다. #128 머지 시 미전환 3 컨트롤러가 동시 컴파일 깨짐 → #128+#121+#122+#155 원자 웨이브 필요
-    - 전략 A(반환 string 유지) 기각: 컴파일은 통과하나 주입 값이 user_id 문자열로 바뀌어 서비스가 findByUid("123")을 호출 → 매핑 없음 → E2E 런타임 실패. 컴파일 깨짐을 숨은 런타임 깨짐으로 바꿔 더 위험
-    - 전략 C(권장): 신규 데코레이터(@AuthUserId, number)를 병존 추가 → 컨트롤러를 PR별 순차 이전 → 구 데코레이터 제거. Parallel Change로 PR별 그린 보존
-    어느 전략이든 #121·#122·#155가 #128을 consumes — testing-strategy.md §13
+  note: 전략 C 확정. (A) string 유지 기각: 서비스 findByUid("123") → E2E 런타임 실패. (B) number 즉시 기각: TypeScript가 createParamDecorator 반환 타입 ≠ 파라미터 어노테이션 불일치 미검사 → 컴파일 게이트 없음, #128+#121+#122+#155 원자 웨이브 필요 → plan PR 경계 파괴. (C) 가드 두 헤더 병존 + @AuthUserId 신설: 컨트롤러 PR별 독립 이전, #154 contract에서 uid 헤더·@AuthenticatedUserValidation 일괄 제거. testing-strategy.md §13
 
 - #129 [리팩토링] U2: user-auth.service.join/login user_id 기반 재작성 (QueryRunner 트랜잭션)
   provides: UserAuthService.join (user→user_auth→user_info 3 INSERT 트랜잭션), UserAuthService.login (sub=user_id BIGINT)
@@ -126,13 +122,13 @@ last-updated-at: 2026-06-11 — #119 Parallel Change 재분할: #119 expand + #1
   migration: parallel-change/migrate
 
 - #154 [리팩토링, 보안, 데이터] X2 contract: user_auth uid/socialYN 제거 + user_id PK 승격 (Parallel Change contract)
-  provides: user_auth 최종 스키마 (user_id PK, uid·socialYN 제거, login_id UNIQUE, FK CASCADE), UserAuthEntity/Repository uid 경로 제거
+  provides: user_auth 최종 스키마 (user_id PK, uid·socialYN 제거, login_id UNIQUE, FK CASCADE), UserAuthEntity/Repository uid 경로 제거, @AuthenticatedUserValidation 데코레이터 제거, AuthGuard authenticatedUser(uid) 헤더 병존 주입 제거
   consumes: user_auth user_id 컬럼 (← #118), AuthGuard user_id 전환 (← #128), UserAuthService join/login (← #129), refresh (← #130), oauth (← #131), user_auth_provider (← #120), user_info user_id 전환 (← #155), post user_id (← #121), post_like user_id (← #122)
   migration: parallel-change/contract
 
 - #155 [리팩토링, 보안, 데이터] X3 contract: user_info user_id 전환 + uid 제거 (Parallel Change contract, 소비자 migrate 결합)
   provides: user_info 최종 스키마 (user_id PK, uid 제거, FK user.user_id), UserInfoService/Controller/Entity user_id 전환, getUserInfoByUid 제거
-  consumes: user_info user_id 컬럼 (← #119), AuthGuard BIGINT 식별자 (← #128), post-like.service getUserInfoByUid 전환 완료 (← #122) — getUserInfoByUid 제거 전 전 호출자 이전 필요
+  consumes: user_info user_id 컬럼 (← #119), AuthGuard BIGINT 식별자 (← #128), post-like.service getUserInfoByUid 전환 완료 (← #122) — getUserInfoByUid 제거 전 전 호출자 이전 필요, UserAuthService.join user_id 생성 (← #129) — PR 테스트 셋업 user_id 보장
   migration: parallel-change/contract
 
 - #135 [보안] V3: 로그인 실패 카운트 + 계정 잠금 (Redis 카운터)
