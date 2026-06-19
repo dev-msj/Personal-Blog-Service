@@ -1,6 +1,7 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserAuthEntity } from './entities/user-auth.entity';
 import { UserInfoEntity } from './entities/user-info.entity';
+import { UserEntity } from './entities/user.entity';
 import { Module } from '@nestjs/common';
 import { UserInfoService } from './service/user-info.service';
 import { UserInfoRepository } from './repository/user-info.repository';
@@ -11,7 +12,9 @@ import { JwtService } from './service/jwt.service';
 import { UserInfoController } from './controller/user-info.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserInfoEntity, UserAuthEntity])],
+  imports: [
+    TypeOrmModule.forFeature([UserInfoEntity, UserAuthEntity, UserEntity]),
+  ],
   controllers: [UserAuthController, UserInfoController],
   providers: [
     UserInfoService,
