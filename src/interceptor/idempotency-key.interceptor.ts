@@ -3,7 +3,6 @@ import {
   CallHandler,
   ExecutionContext,
   HttpException,
-  HttpStatus,
   Inject,
   Injectable,
   NestInterceptor,
@@ -16,6 +15,10 @@ import { from, Observable, of, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { ErrorCode } from '../constant/error-code.enum';
 import { BaseException } from '../exception/base.exception';
+import {
+  HTTP_STATUS_TO_ERROR_CODE,
+  extractHttpExceptionMessage,
+} from '../filter/http-status-error-code.util';
 import { SKIP_IDEMPOTENCY_KEY } from '../decorator/skip-idempotency.decorator';
 import { IdempotencyService } from '../idempotency/idempotency.service';
 import {
@@ -55,6 +58,16 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
 
   private static readonly HEADER = 'idempotency-key';
 
+  // 멱등 비대상 안전 메서드(RFC 7231 — 상태 변경 없음). flow §header "GET 미대상".
+  // 전역 인터셉터라 라우트 필터가 없어 GET이 키를 동반하면 락/캐싱을 잡으므로
+  // 메서드 가드로 읽기 요청을 명시 우회한다(키 동반 GET의 가용성 저하·stale read 차단).
+  private static readonly SAFE_METHODS = new Set([
+    'GET',
+    'HEAD',
+    'OPTIONS',
+    'TRACE',
+  ]);
+
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER)
     private readonly logger: Logger,
@@ -73,6 +86,12 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
 
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();
+
+    // 안전 메서드(GET/HEAD/OPTIONS/TRACE)는 멱등 비대상 → 키 동반 여부와 무관하게
+    // 즉시 위임(Redis 미접근, flow §header). Write 메서드만 아래 분기로 진행.
+    if (IdempotencyKeyInterceptor.SAFE_METHODS.has(request.method)) {
+      return next.handle();
+    }
 
     const key = this.extractKey(request);
     // R1: 키 미제공 → 즉시 위임, Redis 미접근
@@ -194,10 +213,11 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
   /**
    * 핸들러 throw를 캐싱용 { errorCode, message }로 매핑한다.
    *
-   * HttpException 분기는 HttpExceptionFilter.mapToErrorCode/getMessage의 미러다 —
-   * 인터셉터는 NestJS 파이프라인상 ExceptionFilter 하류라 필터가 변환한 응답을
-   * 직접 수신하지 못하므로(catchError로 원본 예외만 받음), 같은 매핑을 직접 수행해
-   * 실패 스냅샷을 캐싱한다.
+   * HttpException 분기는 status→ErrorCode·메시지 추출을 http-status-error-code.util의
+   * 단일 소스(HttpExceptionFilter와 공유)로 수행한다. 인터셉터는 NestJS 파이프라인상
+   * ExceptionFilter 하류라 필터가 변환한 응답을 직접 수신하지 못하므로(catchError로
+   * 원본 예외만 받음) 같은 매핑을 캐싱 시점에 적용한다 — 미러 복제 대신 공유 상수
+   * 참조로 필터와의 분기를 원천 차단한다(멱등성상 최초 code = R3 재반환 code).
    */
   private toFailure(err: unknown): { errorCode: ErrorCode; message: string } {
     if (err instanceof BaseException) {
@@ -205,41 +225,16 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
     }
     if (err instanceof HttpException) {
       return {
-        errorCode: this.mapHttpStatusToErrorCode(err.getStatus()),
-        message: this.getMessage(err.getResponse()),
+        errorCode:
+          HTTP_STATUS_TO_ERROR_CODE[err.getStatus()] ??
+          ErrorCode.COMMON_INTERNAL_ERROR,
+        message: extractHttpExceptionMessage(err.getResponse()),
       };
     }
     return {
       errorCode: ErrorCode.COMMON_INTERNAL_ERROR,
       message: 'Internal server error',
     };
-  }
-
-  // HttpExceptionFilter.mapToErrorCode 미러 — 인터셉터가 필터 하류라 직접 매핑 필요.
-  private mapHttpStatusToErrorCode(status: number): ErrorCode {
-    const mapping: Record<number, ErrorCode> = {
-      [HttpStatus.BAD_REQUEST]: ErrorCode.COMMON_BAD_REQUEST,
-      [HttpStatus.UNAUTHORIZED]: ErrorCode.COMMON_UNAUTHORIZED,
-      [HttpStatus.NOT_FOUND]: ErrorCode.COMMON_NOT_FOUND,
-      [HttpStatus.NOT_ACCEPTABLE]: ErrorCode.COMMON_NOT_ACCEPTABLE,
-      [HttpStatus.CONFLICT]: ErrorCode.COMMON_CONFLICT,
-      [HttpStatus.TOO_MANY_REQUESTS]: ErrorCode.COMMON_TOO_MANY_REQUESTS,
-      [HttpStatus.INTERNAL_SERVER_ERROR]: ErrorCode.COMMON_INTERNAL_ERROR,
-      [HttpStatus.SERVICE_UNAVAILABLE]: ErrorCode.COMMON_SERVICE_UNAVAILABLE,
-    };
-    return mapping[status] ?? ErrorCode.COMMON_INTERNAL_ERROR;
-  }
-
-  // HttpExceptionFilter.getMessage 미러.
-  private getMessage(response: string | object): string {
-    if (typeof response === 'string') {
-      return response;
-    }
-    const message = (response as Record<string, unknown>).message;
-    if (Array.isArray(message)) {
-      return message.join(', ');
-    }
-    return typeof message === 'string' ? message : '';
   }
 
   private extractKey(request: Request): string | undefined {

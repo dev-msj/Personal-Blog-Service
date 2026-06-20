@@ -102,6 +102,32 @@ describe('IdempotencyKeyInterceptor', () => {
     });
   });
 
+  describe('안전 메서드 가드 (GET/HEAD/OPTIONS — 멱등 비대상)', () => {
+    it('GET은 유효 키를 동반해도 즉시 next.handle, Redis 미접근', async () => {
+      idempotencyService.get.mockResolvedValue(null);
+      const next = buildNext('read-result');
+
+      const result = await firstValueFrom(
+        interceptor.intercept(
+          buildContext(
+            {
+              'idempotency-key': VALID_UUID_V4,
+              authenticatedUser: 'user-1',
+            },
+            'GET',
+            '/posts',
+          ),
+          next,
+        ),
+      );
+
+      expect(result).toBe('read-result');
+      expect(next.handle).toHaveBeenCalledTimes(1);
+      expect(idempotencyService.get).not.toHaveBeenCalled();
+      expect(idempotencyService.setPending).not.toHaveBeenCalled();
+    });
+  });
+
   describe('TC-IDEM-02 DT-1 R1 (키 미제공)', () => {
     it('Idempotency-Key 헤더 부재 시 즉시 next.handle, Redis 미호출', async () => {
       const next = buildNext('handler-result');
