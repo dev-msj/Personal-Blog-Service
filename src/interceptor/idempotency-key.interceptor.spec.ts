@@ -192,6 +192,29 @@ describe('IdempotencyKeyInterceptor', () => {
         { code: 200, data: 'ok' },
       );
     });
+
+    it('setCompleted reject(Redis 장애) 시에도 성공 body 반환 + 실패 오분류 없음', async () => {
+      // flow §3.3 L136: pending→completed 전환 실패(성공 경로 포함)는 TTL 폴백.
+      // 성공 핸들러 후 setCompleted가 reject돼도 (1) 성공 응답을 그대로 반환하고
+      // (2) 외부 실패 catchError로 흘러 실패 스냅샷이 캐싱되는 오분류가 없어야 한다.
+      idempotencyService.get.mockResolvedValue(null);
+      idempotencyService.setPending.mockResolvedValue(true);
+      idempotencyService.setCompleted.mockRejectedValue(new Error('redis down'));
+      const next = buildNext({ code: 200, data: 'ok' });
+
+      const result = await firstValueFrom(
+        interceptor.intercept(
+          buildContext({
+            'idempotency-key': VALID_UUID_V4,
+            authenticatedUser: 'user-1',
+          }),
+          next,
+        ),
+      );
+
+      expect(result).toEqual({ code: 200, data: 'ok' });
+      expect(idempotencyService.setCompletedFailure).not.toHaveBeenCalled();
+    });
   });
 
   describe('DT-1 R3 (키 + completed → 재반환)', () => {

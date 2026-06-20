@@ -127,6 +127,9 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
               record.message as string,
             );
           }
+          // 성공 재반환은 body만 흘린다. 캐싱된 statusCode는 of()로 적용 불가다 —
+          // NestJS가 of() 반환값에 라우트 기본 status를 적용하므로(동일 키=동일
+          // 라우트 재요청이라 원본과 일치), record.statusCode는 관측용 보존 필드다.
           return of(record.responseBody);
         }
 
@@ -154,7 +157,15 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
                     response.statusCode,
                     body,
                   ),
-                ).pipe(switchMap(() => of(body))),
+                ).pipe(
+                  // 캐싱 실패(Redis 장애) 시 pending TTL 폴백 — 성공 응답은 그대로
+                  // 반환한다(flow §3.3 L136: pending→completed 전환 실패는 성공/실패
+                  // 공통 TTL 폴백). 이 inner catchError가 없으면 setCompleted reject가
+                  // 외부 실패 catchError로 흘러 (1) 성공한 요청이 500으로 응답되고
+                  // (2) 성공 요청에 실패 스냅샷이 캐싱되는 오분류가 발생한다.
+                  catchError(() => of(null)),
+                  switchMap(() => of(body)),
+                ),
               ),
               catchError((err) => {
                 const { errorCode, message } = this.toFailure(err);
