@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   CallHandler,
   ExecutionContext,
   Inject,
@@ -11,10 +12,9 @@ import { Logger } from 'winston';
 import { Request, Response } from 'express';
 import { from, Observable, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { ErrorCode } from '../constant/error-code.enum';
-import { FailureResponse } from '../response/failure-response.dto';
 import { SKIP_IDEMPOTENCY_KEY } from '../decorator/skip-idempotency.decorator';
 import { IdempotencyService } from '../idempotency/idempotency.service';
+import { IdempotencyInProgressException } from '../exception/idempotency';
 
 /**
  * API 수신 측 Idempotency-Key 처리 인터셉터 (DT-1 / flows/idempotency-key-handle.md).
@@ -29,8 +29,15 @@ import { IdempotencyService } from '../idempotency/idempotency.service';
  * - R4: 키 + pending → IDEMPOTENCY_IN_PROGRESS + Retry-After:5 (핸들러 미진입)
  * - 키 충돌(동일 키, 다른 method/path) → COMMON_BAD_REQUEST + Warning 로그
  *
- * 즉시 반환(R3/R4/충돌/형식위반)은 throw가 아닌 of()로 직접 응답을 흘린다.
- * Retry-After 헤더는 ExceptionFilter가 다루지 않으므로 res.setHeader로 직접 설정한다.
+ * 실패 경로(형식위반/충돌/R4)는 throw로 처리한다. 본 프로젝트의 "실패=HTTP 200"
+ * 규약은 throw → ExceptionFilter(res.status(200).json(FailureResponse)) 메커니즘으로
+ * 달성된다. of(FailureResponse)를 정상 반환값으로 흘리면 NestJS가 라우트 status
+ * (POST=201 등)를 적용해 규약을 우회하므로 금지한다.
+ * - 형식위반/충돌 → BadRequestException (HttpExceptionFilter가 COMMON_BAD_REQUEST 변환)
+ * - R4/락 경합 패 → IdempotencyInProgressException (BaseExceptionFilter가 90009 변환)
+ * Retry-After 헤더는 throw 전에 res.setHeader로 설정한다. Express는 기존 헤더를
+ * 삭제하지 않으므로 필터의 res.status(200).json()을 거쳐도 보존된다.
+ * 정상 경로(R2 처리·캐싱, R3 재반환)만 of()로 흘린다.
  */
 @Injectable()
 export class IdempotencyKeyInterceptor implements NestInterceptor {
@@ -65,14 +72,9 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    // 형식 위반(non-UUID v4) → COMMON_BAD_REQUEST
+    // 형식 위반(non-UUID v4) → HttpExceptionFilter가 COMMON_BAD_REQUEST로 변환
     if (!IdempotencyKeyInterceptor.UUID_V4_REGEX.test(key)) {
-      return of(
-        new FailureResponse(
-          ErrorCode.COMMON_BAD_REQUEST,
-          'Idempotency-Key must be a valid UUID v4.',
-        ),
-      );
+      throw new BadRequestException('Idempotency-Key must be a valid UUID v4.');
     }
 
     // authUserId 부재(미인증/@Public) → R1로 처리 (정책상 미적용, IP 대체 키 없음)
@@ -87,7 +89,7 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
     return from(this.idempotencyService.get(authUserId, key)).pipe(
       switchMap((record) => {
         if (record !== null) {
-          // 키 충돌: 동일 키, 다른 method/path
+          // 키 충돌: 동일 키, 다른 method/path → BadRequestException
           if (record.method !== method || record.path !== path) {
             this.logger.warn(
               `Idempotency-Key reused on different endpoint. - [${JSON.stringify(
@@ -98,23 +100,15 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
                 },
               )}]`,
             );
-            return of(
-              new FailureResponse(
-                ErrorCode.COMMON_BAD_REQUEST,
-                'Idempotency-Key was already used for a different request.',
-              ),
+            throw new BadRequestException(
+              'Idempotency-Key was already used for a different request.',
             );
           }
 
-          // R4: pending → IDEMPOTENCY_IN_PROGRESS + Retry-After:5
+          // R4: pending → IdempotencyInProgressException + Retry-After:5
           if (record.state === 'pending') {
             response.setHeader('Retry-After', '5');
-            return of(
-              new FailureResponse(
-                ErrorCode.IDEMPOTENCY_IN_PROGRESS,
-                'A request with the same Idempotency-Key is in progress.',
-              ),
-            );
+            throw new IdempotencyInProgressException();
           }
 
           // R3: completed → 원본 응답 즉시 재반환 (핸들러 미진입)
@@ -129,12 +123,7 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
             // SET NX 경합 패: 동시 요청이 먼저 락 획득 → R4 처리
             if (!acquired) {
               response.setHeader('Retry-After', '5');
-              return of(
-                new FailureResponse(
-                  ErrorCode.IDEMPOTENCY_IN_PROGRESS,
-                  'A request with the same Idempotency-Key is in progress.',
-                ),
-              );
+              throw new IdempotencyInProgressException();
             }
 
             // R2: 정상 처리 후 completed 캐싱

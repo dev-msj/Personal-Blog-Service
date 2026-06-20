@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CallHandler, ExecutionContext } from '@nestjs/common';
+import {
+  BadRequestException,
+  CallHandler,
+  ExecutionContext,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, lastValueFrom, of } from 'rxjs';
 import { IdempotencyKeyInterceptor } from './idempotency-key.interceptor';
 import { IdempotencyService } from '../idempotency/idempotency.service';
-import { ErrorCode } from '../constant/error-code.enum';
-import { FailureResponse } from '../response/failure-response.dto';
+import { IdempotencyInProgressException } from '../exception/idempotency';
 
 const VALID_UUID_V4 = '3f29c1a0-8b4e-4c2a-9f7d-1a2b3c4d5e6f';
 
@@ -95,31 +98,28 @@ describe('IdempotencyKeyInterceptor', () => {
   });
 
   describe('TC-IDEM-07 헤더 형식 위반', () => {
-    it('non-UUID v4 → COMMON_BAD_REQUEST, next.handle 미진입', async () => {
+    // 형식 위반은 intercept 진입부에서 동기 throw → HttpExceptionFilter가 COMMON_BAD_REQUEST 변환
+    it('non-UUID v4 → BadRequestException 동기 throw, next.handle 미진입', () => {
       const next = buildNext('handler-result');
 
-      const result = (await firstValueFrom(
+      expect(() =>
         interceptor.intercept(
           buildContext({ 'idempotency-key': 'not-a-uuid' }),
           next,
         ),
-      )) as FailureResponse;
+      ).toThrow(BadRequestException);
 
-      expect(result).toBeInstanceOf(FailureResponse);
-      expect(result.code).toBe(ErrorCode.COMMON_BAD_REQUEST);
       expect(next.handle).not.toHaveBeenCalled();
       expect(idempotencyService.get).not.toHaveBeenCalled();
     });
 
-    it('UUID v4가 아닌 v1(version nibble != 4) → COMMON_BAD_REQUEST', async () => {
+    it('UUID v4가 아닌 v1(version nibble != 4) → BadRequestException', () => {
       const next = buildNext('x');
       const v1 = '3f29c1a0-8b4e-1c2a-9f7d-1a2b3c4d5e6f'; // version 1
 
-      const result = (await firstValueFrom(
+      expect(() =>
         interceptor.intercept(buildContext({ 'idempotency-key': v1 }), next),
-      )) as FailureResponse;
-
-      expect(result.code).toBe(ErrorCode.COMMON_BAD_REQUEST);
+      ).toThrow(BadRequestException);
     });
   });
 
@@ -203,7 +203,8 @@ describe('IdempotencyKeyInterceptor', () => {
   });
 
   describe('DT-1 R4 (키 + pending → IN_PROGRESS)', () => {
-    it('pending → IDEMPOTENCY_IN_PROGRESS + Retry-After:5, 핸들러 미진입', async () => {
+    // R4는 switchMap 안에서 throw → observable error notification → 필터(90009)로 전달
+    it('pending → IdempotencyInProgressException + Retry-After:5, 핸들러 미진입', async () => {
       idempotencyService.get.mockResolvedValue({
         state: 'pending',
         method: 'POST',
@@ -212,18 +213,19 @@ describe('IdempotencyKeyInterceptor', () => {
       });
       const next = buildNext('fresh');
 
-      const result = (await firstValueFrom(
-        interceptor.intercept(
-          buildContext({
-            'idempotency-key': VALID_UUID_V4,
-            authenticatedUser: 'user-1',
-          }),
-          next,
+      await expect(
+        lastValueFrom(
+          interceptor.intercept(
+            buildContext({
+              'idempotency-key': VALID_UUID_V4,
+              authenticatedUser: 'user-1',
+            }),
+            next,
+          ),
         ),
-      )) as FailureResponse;
+      ).rejects.toBeInstanceOf(IdempotencyInProgressException);
 
-      expect(result).toBeInstanceOf(FailureResponse);
-      expect(result.code).toBe(ErrorCode.IDEMPOTENCY_IN_PROGRESS);
+      // Retry-After는 throw 전에 setHeader로 설정(Express가 필터 응답에도 보존)
       expect(setHeader).toHaveBeenCalledWith('Retry-After', '5');
       expect(next.handle).not.toHaveBeenCalled();
     });
@@ -233,24 +235,25 @@ describe('IdempotencyKeyInterceptor', () => {
       idempotencyService.setPending.mockResolvedValue(false);
       const next = buildNext('fresh');
 
-      const result = (await firstValueFrom(
-        interceptor.intercept(
-          buildContext({
-            'idempotency-key': VALID_UUID_V4,
-            authenticatedUser: 'user-1',
-          }),
-          next,
+      await expect(
+        lastValueFrom(
+          interceptor.intercept(
+            buildContext({
+              'idempotency-key': VALID_UUID_V4,
+              authenticatedUser: 'user-1',
+            }),
+            next,
+          ),
         ),
-      )) as FailureResponse;
+      ).rejects.toBeInstanceOf(IdempotencyInProgressException);
 
-      expect(result.code).toBe(ErrorCode.IDEMPOTENCY_IN_PROGRESS);
       expect(setHeader).toHaveBeenCalledWith('Retry-After', '5');
       expect(next.handle).not.toHaveBeenCalled();
     });
   });
 
   describe('키 충돌 (동일 키, 다른 method/path)', () => {
-    it('cached method/path 불일치 → COMMON_BAD_REQUEST + Warning 로그', async () => {
+    it('cached method/path 불일치 → BadRequestException + Warning 로그', async () => {
       idempotencyService.get.mockResolvedValue({
         state: 'completed',
         method: 'POST',
@@ -261,21 +264,22 @@ describe('IdempotencyKeyInterceptor', () => {
       });
       const next = buildNext('fresh');
 
-      const result = (await firstValueFrom(
-        interceptor.intercept(
-          buildContext(
-            {
-              'idempotency-key': VALID_UUID_V4,
-              authenticatedUser: 'user-1',
-            },
-            'DELETE',
-            '/posts/1',
+      await expect(
+        lastValueFrom(
+          interceptor.intercept(
+            buildContext(
+              {
+                'idempotency-key': VALID_UUID_V4,
+                authenticatedUser: 'user-1',
+              },
+              'DELETE',
+              '/posts/1',
+            ),
+            next,
           ),
-          next,
         ),
-      )) as FailureResponse;
+      ).rejects.toBeInstanceOf(BadRequestException);
 
-      expect(result.code).toBe(ErrorCode.COMMON_BAD_REQUEST);
       expect(logger.warn).toHaveBeenCalledTimes(1);
       expect(next.handle).not.toHaveBeenCalled();
     });

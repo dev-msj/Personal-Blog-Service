@@ -74,6 +74,22 @@
 
 - flow §3.3은 "BaseExceptionFilter가 변환한 실패 응답을 Interceptor가 수신 → completed 캐싱"을 이상으로 기술하나, NestJS에서 ExceptionFilter는 인터셉터 스트림 바깥에서 실행되어 인터셉터가 변환된 응답을 직접 수신하지 못함(catchError로 error를 받을 뿐). B3 작업 5 범위는 DT-1 R1~R4 + method/path + UUID + Retry-After로, 실패 응답 캐싱은 명시 비포함. 따라서 throw 시 pending 키를 24h TTL로 자연 만료시키는 폴백 채택(flow §3.3 마지막 문단이 명시 허용: "pending → completed 전환 실패 시 24h TTL 자연 만료"). 재요청은 R4(IN_PROGRESS)로 진입. 실패 응답 completed 캐싱이 요구되면 인터셉터 catchError 보강 필요 — 오케스트레이터 컨테이너 검증(TC-IDEM-06) 후 판단 권고.
 
+### [B5-fix] 실패 직접반환 of()→throw 전환 (오케스트레이터 컨테이너 검증 결함 1건) — Y-Statement
+
+- 맥락(In the context of): IdempotencyKeyInterceptor의 실패 경로(형식위반·키 충돌·R4 pending) 응답 형태.
+- 직면(facing): 초기 구현은 of(new FailureResponse(...))를 정상 반환값으로 흘렸으나, 컨테이너 E2E(TC-IDEM-04)에서 reuse.status가 기대 200이 아닌 201로 관측됨. 원인: of()-반환은 NestJS가 라우트 메타데이터 status(POST=201)를 적용하고 인터셉터의 response.statusCode 설정을 덮어쓴다. 이 프로젝트의 "실패=HTTP 200" 규약은 throw → ExceptionFilter(res.status(200).json(FailureResponse)) 메커니즘으로만 달성된다(throttler 429도 throw→HttpExceptionFilter 200 변환).
+- 결정(we decided for): 실패 경로를 throw로 전환. 형식위반·키 충돌 → BadRequestException(@nestjs/common, HttpExceptionFilter가 BAD_REQUEST→COMMON_BAD_REQUEST 변환). R4 pending·setPending 경합 패 → 신규 IdempotencyInProgressException extends BaseException(errorCode=90009, BaseExceptionFilter가 200+FailureResponse 변환). Retry-After:5는 throw 직전 res.setHeader로 설정(Express는 기존 헤더를 삭제하지 않아 필터의 res.status(200).json() 응답에도 보존). R2(처리·캐싱)·R3(재반환)은 of() 정상 경로 유지.
+- 기각(and neglected): of(FailureResponse) 유지(규약 우회, status 201 잔존) / HttpExceptionFilter에 90009 status 매핑 추가(90009는 표준 HTTP status 없어 부자연).
+- 결과(to achieve / accepting): 모든 실패 응답이 HTTP 200으로 통일, TC-IDEM-04 통과. switchMap 콜백 내 동기 throw는 RxJS가 error notification으로 변환→NestJS 필터로 전달되어 정상 동작. 신규 src/exception/idempotency/ 디렉토리 + barrel 추가(기존 도메인 예외 패턴 계승). 단위 spec은 형식위반=동기 throw(expect().toThrow), 충돌·R4=observable error(lastValueFrom().rejects.toBeInstanceOf)로 단언 전환.
+
+### [B5-fix] 동시성 테스트 불변식 정정 — 부작용 정확히 1회 (테스트 과도 엄격) — Y-Statement
+
+- 맥락(In the context of): idempotency-integration.e2e-spec.ts 동시성 테스트의 기대 불변식.
+- 직면(facing): 초기 테스트는 "1 success + N-1 IN_PROGRESS" 고정 기대였으나 컨테이너 검증에서 success=2로 실패. 코드는 정상이며 테스트가 틀림: setPending이 Lua SET NX EX로 원자적이라 핸들러는 정확히 1회 실행되지만, 동시 N요청 중 처리 완료 후 도착분은 R4(IN_PROGRESS)가 아닌 R3(completed 재반환 = success)가 정상 멱등 동작이다. 따라서 IN_PROGRESS 개수는 타이밍에 의존하는 비결정값이다.
+- 결정(we decided for): 멱등성의 진짜 불변식 "부작용 정확히 1회"로 정정(약화 아닌 강화). 핵심 단언: 버스트 후 GET /posts data length === 1(글 1건만). 부가: 모든 응답이 success(code 200) 또는 IN_PROGRESS 둘 중 하나(합 === N), success ≥ 1, 모든 success body 동일(멱등 동일 응답), 모든 IN_PROGRESS는 Retry-After:5 보유.
+- 기각(and neglected): IN_PROGRESS 개수 고정 기대(타이밍 의존 비결정 단언 — flaky) / success 개수 ≤ 1 강제(R3 재반환을 실패로 오판).
+- 결과(to achieve / accepting): 부작용 1회라는 멱등성 본질을 결정적으로 검증. TC-IDEM-04(키 충돌)는 코드 수정으로 reuse.status===200 통과하므로 기대값 유지(정정 불요).
+
 ## 의도적 제외
 
 - contract(TC-IDEM-01/03/05/06) + 통합/동시성(TC-IDEM-04 + 동일 키 동시 race) 스위트: 작성만, 실행 안 함. 컨테이너 공유 싱글톤 + maxWorkers:1 race 회피. **컨테이너 검증(TC-IDEM-01/03/04/05/06 + 동시성): 오케스트레이터 직렬 수행 대기.** 파일명은 e2e testRegex(.e2e-spec.ts$)에 맞춰 test/idempotency-contract.e2e-spec.ts / test/idempotency-integration.e2e-spec.ts로 명명(B3의 test/contract/idempotency.spec.ts는 e2e 정규식 미매치 → npm run test:e2e로 발견되도록 변경).
