@@ -152,27 +152,31 @@ describe('Idempotency-Key Contract (e2e)', () => {
     });
   });
 
-  describe('TC-IDEM-06 §3.3 핸들러 throw 시 처리', () => {
-    it('실패한 요청도 pending 키는 TTL로 자연 만료되어 재요청이 가능하다', async () => {
-      // 본 구현은 throw 시 completed 캐싱이 아닌 pending TTL 만료 폴백을 채택한다
-      // (flow §3.3 "pending → completed 전환 실패 시 24h TTL 자연 만료"). 따라서
-      // 같은 키 재요청은 R4(IN_PROGRESS)로 진입한다. 실패 응답 캐싱(completed)이
-      // 요구되면 인터셉터 catchError 보강 필요 — 오케스트레이터 검증 후 판단.
+  describe('TC-IDEM-06 §3.3 핸들러 throw 시 실패 응답 캐싱', () => {
+    it('실패 응답이 캐싱되고 같은 키 재요청은 동일 실패 응답을 재반환한다', async () => {
+      // flow §3.3 정상 경로: 핸들러 throw 시 실패 스냅샷을 completed(failed)로 캐싱하고
+      // 같은 키 재요청은 R3에서 동일 실패 응답을 재반환한다(성공/실패 무관 같은 결과 보장).
       await authHelper.createTestUser('idem06@example.com', 'Password123!');
       const key = randomUUID();
 
-      // 존재하지 않는 글 좋아요 등 도메인 예외를 유발하는 경로 사용
-      const res = await authedPost('/posts/999999/likes', key).send({});
+      // 존재하지 않는 글 좋아요 → 도메인 실패. HTTP 200 + FailureResponse로 변환된다.
+      const first = await authedPost('/posts/999999/likes', key).send({});
+      expect(first.status).toBe(200);
+      expect(first.body.code).not.toBe(200); // 실패 응답
+      expect(first.body.code).not.toBe(ErrorCode.IDEMPOTENCY_IN_PROGRESS);
 
-      // 도메인 예외는 HTTP 200 + FailureResponse로 변환된다
-      expect(res.status).toBe(200);
-      expect(res.body.code).not.toBe(200);
-
+      // 실패 스냅샷이 completed(failed)로 캐싱됨
       const cached = await redis.get(`idempotency:idem06@example.com:${key}`);
-      // pending 잔존(완료 캐싱 안 함) 또는 null(전환 실패) — 어느 쪽이든 completed 아님
-      if (cached !== null) {
-        expect(JSON.parse(cached).state).toBe('pending');
-      }
+      expect(cached).not.toBeNull();
+      const parsed = JSON.parse(cached as string);
+      expect(parsed.state).toBe('completed');
+      expect(parsed.failed).toBe(true);
+
+      // 같은 키·같은 path 재요청 → 동일 실패 응답 재반환(R3), IN_PROGRESS 아님
+      const second = await authedPost('/posts/999999/likes', key).send({});
+      expect(second.status).toBe(200);
+      expect(second.body).toEqual(first.body);
+      expect(second.body.code).not.toBe(ErrorCode.IDEMPOTENCY_IN_PROGRESS);
     });
   });
 });
