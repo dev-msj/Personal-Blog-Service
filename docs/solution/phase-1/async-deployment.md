@@ -31,7 +31,7 @@ Phase 1 신설/리팩토링 Write API 전수:
 2. 요청 진입 시 `Idempotency-Key` 헤더 검사 (UUID v4 형식 검증)
 3. Redis GET `idempotency:{user_id}:{idempotency_key}`:
    - 값 존재 + completed → 원본 응답 재반환 (statusCode + responseBody 복원)
-   - 값 존재 + pending → 409 Conflict + `Retry-After: 5` 헤더
+   - 값 존재 + pending → IDEMPOTENCY_IN_PROGRESS(90009) + `Retry-After: 5` 헤더 (HTTP Response Convention상 HTTP 200 + FailureResponse로 실현, 409 Conflict는 시맨틱 표기)
    - 값 없음 → Redis SETNX로 pending 상태 저장 → 핸들러 진행 → 완료 후 completed 상태로 UPDATE
 4. TTL 24시간 (`EXPIRE 86400`)
 5. 미인증 요청은 user_id 부재 → 일시적으로 IP 기반 키(`idempotency:ip:{ip}:{key}`)로 대체 또는 정책상 미적용

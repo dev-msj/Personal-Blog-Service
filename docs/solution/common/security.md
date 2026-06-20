@@ -412,7 +412,7 @@
 
 1. 요청 수신 → `user_id + idempotency_key` 조합으로 Redis GET
 2. 값 존재 + 완료 상태 → **원본 응답 재반환** (status, body 복원)
-3. 값 존재 + 진행 중(pending) 상태 → **409 Conflict** + `Retry-After: 5` (클라이언트에게 재시도 요청)
+3. 값 존재 + 진행 중(pending) 상태 → 재시도 신호 + `Retry-After: 5` (클라이언트에게 재시도 요청). 시맨틱은 409 Conflict이나, 본 프로젝트 HTTP Response Convention [확정](모든 실패 = HTTP 200 + FailureResponse)에 따라 **HTTP 200 + FailureResponse(IDEMPOTENCY_IN_PROGRESS=90009)** 로 실현된다 (flow idempotency-key-handle §3.2 정합, 인터셉터 throw → ExceptionFilter 변환, Retry-After 헤더 보존)
 4. 값 없음 → 새 요청 처리 시작 — Redis에 pending 상태로 저장(SETNX) → 처리 후 완료 응답으로 UPDATE
 
 **근거**: Stripe Idempotency API + IETF draft "Replaying Same Request Results in Same Response"
