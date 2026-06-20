@@ -83,7 +83,7 @@ describe('Idempotency-Key Integration & Concurrency (e2e)', () => {
   });
 
   describe('동시성 — 동일 키 동시 요청', () => {
-    it('동일 키로 동시 N요청 시 1건만 처리되고 나머지는 IN_PROGRESS이다', async () => {
+    it('동일 키로 동시 N요청 시 부작용은 정확히 1회(글 1건)이고 모든 응답이 유효하다', async () => {
       await authHelper.createTestUser('idemcc@example.com', 'Password123!');
       const key = randomUUID();
 
@@ -94,7 +94,16 @@ describe('Idempotency-Key Integration & Concurrency (e2e)', () => {
         ),
       );
 
-      // SET NX 락은 단 1건만 획득 → 1건 성공(201/code 200), 나머지는 IN_PROGRESS
+      // 멱등성의 핵심 불변식: 부작용 정확히 1회. SET NX EX Lua 원자 락으로
+      // 핸들러는 1회만 실행되어 글이 1건만 생성된다.
+      const list = await request(app.getHttpServer())
+        .get('/posts')
+        .set('Authorization', authHelper.getAuthHeader())
+        .set('Cookie', authHelper.getRefreshToken());
+      expect(list.body.data).toHaveLength(1);
+
+      // 각 응답은 success(code 200) 또는 IN_PROGRESS 둘 중 하나로만 유효.
+      // 처리 완료 전 도착분은 R4(IN_PROGRESS), 완료 후 도착분은 R3(success 재반환).
       const success = responses.filter(
         (r: request.Response) => r.body.code === 200,
       );
@@ -102,9 +111,16 @@ describe('Idempotency-Key Integration & Concurrency (e2e)', () => {
         (r: request.Response) =>
           r.body.code === ErrorCode.IDEMPOTENCY_IN_PROGRESS,
       );
+      expect(success.length + inProgress.length).toBe(N);
 
-      expect(success.length).toBe(1);
-      expect(inProgress.length).toBe(N - 1);
+      // R2 처리분이 최소 1건 존재하고, 모든 success 응답은 동일(멱등 동일 응답).
+      expect(success.length).toBeGreaterThanOrEqual(1);
+      const firstSuccessBody = success[0].body;
+      success.forEach((r: request.Response) => {
+        expect(r.body).toEqual(firstSuccessBody);
+      });
+
+      // 모든 IN_PROGRESS 응답은 Retry-After:5 헤더 보유.
       inProgress.forEach((r: request.Response) => {
         expect(r.headers['retry-after']).toBe('5');
       });
