@@ -84,13 +84,14 @@ src/
 ├── health/         # @nestjs/terminus 기반 health check (RedisModule을 직접 import하여 REDIS_CLIENT inject)
 ├── redis/          # NestJS CacheModule + health 경로가 공유하는 ioredis 인스턴스 Provider (REDIS_CLIENT 토큰 + OnModuleDestroy로 quit()). production TypeORM 쿼리 캐시는 별도 ioredis 클라이언트로 동작
 ├── throttler/      # 전역 Rate Limiting. CustomThrottlerGuard(getTracker user_id/IP 분기), RedisThrottlerStorage(REDIS_CLIENT 재사용 직접 구현, Lua 원자 카운터)
+├── idempotency/    # API 수신 측 Idempotency-Key 처리. IdempotencyService(REDIS_CLIENT, key idempotency:{user_id}:{key}, SET NX EX Lua 원자 락, TTL 24h), IdempotencyModule
 ├── config/         # TypeORM, Redis, Winston, JWT, env validation (Joi)
 ├── constant/       # ErrorCode enum, UserRole enum
-├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField()
+├── decorator/      # @Public(), @Roles(), @AuthenticatedUserValidation(), @EncryptField(), @SkipIdempotency()
 ├── filter/         # BaseException / HttpException / Unhandled ExceptionFilter
-├── interceptor/    # EncryptPrimaryKeyInterceptor
+├── interceptor/    # EncryptPrimaryKeyInterceptor, IdempotencyKeyInterceptor(전역 APP_INTERCEPTOR, DT-1 R1~R4)
 ├── pipe/           # DecryptPrimaryKeyPipe, PathParamAwareValidationPipe
-├── exception/      # 도메인별 Custom Exception (auth/, user/, blog/, validation/)
+├── exception/      # 도메인별 Custom Exception (auth/, user/, blog/, validation/, idempotency/)
 ├── response/       # BaseResponseDto, SuccessResponse, FailureResponse
 ├── types/          # 공용 타입 선언
 └── utils/          # crypto, pagination (TAKE=20), cache key, time
@@ -140,10 +141,10 @@ ErrorCode 5자리 도메인별 체계 (src/constant/ErrorCode.enum.ts):
 - User 20xxx: USER_NOT_FOUND, USER_ALREADY_EXISTS, USER_INFO_NOT_FOUND, USER_INFO_ALREADY_EXISTS
 - Post 30xxx: POST_NOT_FOUND
 - PostLike 31xxx: POST_LIKE_ALREADY_EXISTS, POST_LIKE_NOT_FOUND
-- Common 90xxx: COMMON_BAD_REQUEST, COMMON_UNAUTHORIZED, COMMON_NOT_FOUND, COMMON_NOT_ACCEPTABLE, COMMON_CONFLICT, COMMON_INTERNAL_ERROR, COMMON_SERVICE_UNAVAILABLE, COMMON_TOO_MANY_REQUESTS(90008, Rate Limit 429 → HttpExceptionFilter가 변환)
+- Common 90xxx: COMMON_BAD_REQUEST, COMMON_UNAUTHORIZED, COMMON_NOT_FOUND, COMMON_NOT_ACCEPTABLE, COMMON_CONFLICT, COMMON_INTERNAL_ERROR, COMMON_SERVICE_UNAVAILABLE, COMMON_TOO_MANY_REQUESTS(90008, Rate Limit 429 → HttpExceptionFilter가 변환), IDEMPOTENCY_IN_PROGRESS(90009, Idempotency-Key in-flight 중복 요청 → IdempotencyInProgressException throw → BaseExceptionFilter가 HTTP 200 + FailureResponse 변환)
 - Validation 91xxx: INVALID_ENCRYPTED_PARAMETER, INVALID_PAGE
 
-COMMON_TOO_MANY_REQUESTS(90008)는 Phase 1에서 추가 완료 (전역 ThrottlerGuard Rate Limit 429 대응).
+COMMON_TOO_MANY_REQUESTS(90008)는 Phase 1에서 추가 완료 (전역 ThrottlerGuard Rate Limit 429 대응). IDEMPOTENCY_IN_PROGRESS(90009)는 Phase 1 Idempotency-Key 도입 시 추가. 진행 중(pending) 동일 키 재요청 시 IdempotencyKeyInterceptor가 IdempotencyInProgressException을 throw하고(필터가 HTTP 200 + FailureResponse로 변환 — 프로젝트 "실패=HTTP 200" 규약은 of() 직접반환이 아닌 throw→필터 메커니즘으로만 달성), throw 직전 Retry-After:5 헤더를 setHeader한다(Express가 필터 응답에도 보존). 형식위반/키 충돌은 BadRequestException throw → HttpExceptionFilter가 COMMON_BAD_REQUEST 변환. 코드 규약상 in-flight도 HTTP 200으로 통일(security.md §8.3의 409 Conflict는 본 프로젝트 HTTP 200 컨벤션으로 대체).
 
 ## 인증 흐름
 
@@ -212,6 +213,7 @@ BaseException 계층 (abstract, protected constructor) → 도메인별 하위 �
 - user/: UserNotFoundException, UserAlreadyExistsException, UserInfoNotFoundException, UserInfoAlreadyExistsException
 - blog/: PostNotFoundException, PostLikeAlreadyExistsException, PostLikeNotFoundException
 - validation/: InvalidPageException, InvalidEncryptedParameterException
+- idempotency/: IdempotencyInProgressException (90009, R4 in-flight), IdempotentReplayException (캐싱된 실패 응답 R3 동일 재반환 — 핸들러 throw 시 errorCode/message 스냅샷을 completed(failed)로 캐싱 후 재요청 시 재구성 throw, flow §3.3)
 - 범용: UnexpectedCodeException (fallback)
 
 새 예외 추가 시: ErrorCode enum 도메인 그룹에 맞는 하위 디렉토리에 클래스 생성 + barrel index.ts export.

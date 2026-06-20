@@ -13,6 +13,7 @@ import { UserAuthRequestDto } from '../dto/user-auth-request.dto';
 import { UserAuthService } from './../service/user-auth.service';
 import { JwtDto } from '../dto/jwt.dto';
 import { Public } from '../../decorator/public.decorator';
+import { SkipIdempotency } from '../../decorator/skip-idempotency.decorator';
 import { OauthRequestDto } from '../dto/oauth-request.dto';
 import { SetRefreshTokenCookieInterceptor } from '../interceptor/set-refresh-token-cookie.interceptor';
 
@@ -38,6 +39,7 @@ export class UserAuthController {
   }
 
   @Post('login')
+  @SkipIdempotency()
   @ApiOperation({ description: '로그인 요청 API' })
   @ApiCreatedResponse({
     description: 'Response JWT(Access Token & Refresh Token)',
@@ -51,6 +53,7 @@ export class UserAuthController {
   }
 
   @Post('refresh')
+  @SkipIdempotency()
   @ApiOperation({ description: 'Refresh Token으로 토큰 갱신 요청 API' })
   @ApiCreatedResponse({
     description: 'Response JWT(Access Token & Refresh Token)',
@@ -63,6 +66,7 @@ export class UserAuthController {
   }
 
   @Post('oauth')
+  @SkipIdempotency()
   @ApiOperation({
     description:
       'Google Oauth으로 발급받은 Id Token으로 로그인 요청 API. 가입된 정보가 없을 경우 자동으로 회원가입한다.',

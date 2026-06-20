@@ -10,7 +10,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import type * as Redis from 'ioredis';
 import { redisConfig } from './config/redisConfig';
 import { BlogModule } from './blog/blog.module';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
 import authConfig from './config/authConfig';
 import { validationEnv } from './config/validationEnv';
@@ -24,6 +24,8 @@ import { RedisModule } from './redis/redis.module';
 import { REDIS_CLIENT } from './redis/redis.providers';
 import { RedisThrottlerStorage } from './throttler/redis-throttler.storage';
 import { CustomThrottlerGuard } from './throttler/custom-throttler.guard';
+import { IdempotencyModule } from './idempotency/idempotency.module';
+import { IdempotencyKeyInterceptor } from './interceptor/idempotency-key.interceptor';
 
 @Module({
   imports: [
@@ -64,10 +66,18 @@ import { CustomThrottlerGuard } from './throttler/custom-throttler.guard';
     BlogModule,
     UserModule,
     HealthModule,
+    IdempotencyModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    // 전역 Idempotency-Key 처리 인터셉터. AuthGuard 후행(NestJS Guard→Interceptor
+    // 순서로 authenticatedUser 신뢰 헤더 주입 후 실행). DT-1 R1~R4 + 키 충돌 분기는
+    // flows/idempotency-key-handle.md.
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyKeyInterceptor,
+    },
     // Guard 실행 순서(등록 순): AuthGuard → CustomThrottlerGuard.
     // AuthGuard가 먼저 req.headers['authenticatedUser'](uid)를 주입해야
     // CustomThrottlerGuard.getTracker가 인증 요청을 user_id로 식별한다.
