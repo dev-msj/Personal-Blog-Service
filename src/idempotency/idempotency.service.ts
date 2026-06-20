@@ -7,6 +7,10 @@ export type IdempotencyState = 'pending' | 'completed';
 /**
  * Redis JSON 값 (data-design.md §Redis 키 구조 / implementation-guide.md §6.3).
  * pending 시점에는 statusCode/responseBody가 아직 없으므로 optional.
+ *
+ * completed는 성공/실패 두 shape를 가진다 (flow §3.3 "성공/실패 무관 같은 결과 보장"):
+ * - 성공: statusCode + responseBody
+ * - 실패: failed=true + errorCode + message (재요청 시 동일 실패 응답 재구성용)
  */
 export interface IdempotencyRecord {
   state: IdempotencyState;
@@ -15,6 +19,9 @@ export interface IdempotencyRecord {
   processedAt: string;
   statusCode?: number;
   responseBody?: unknown;
+  failed?: boolean;
+  errorCode?: number;
+  message?: string;
 }
 
 /**
@@ -107,6 +114,38 @@ return 0
       processedAt: new Date().toISOString(),
       statusCode,
       responseBody: body,
+    };
+
+    await this.redis.set(
+      this.buildKey(userId, key),
+      JSON.stringify(record),
+      'EX',
+      IdempotencyService.TTL_SECONDS,
+    );
+  }
+
+  /**
+   * 실패 응답을 completed(failed) shape로 캐싱 (flow §3.3 정상 경로).
+   * 핸들러 throw 시 errorCode/message 스냅샷을 저장하여, 같은 키 재요청 시
+   * R3에서 동일 실패 응답을 재구성(throw)할 수 있게 한다. setCompleted와
+   * 동일 키/TTL, 실패 shape만 다르다.
+   */
+  async setCompletedFailure(
+    userId: string,
+    key: string,
+    method: string,
+    path: string,
+    errorCode: number,
+    message: string,
+  ): Promise<void> {
+    const record: IdempotencyRecord = {
+      state: 'completed',
+      failed: true,
+      errorCode,
+      message,
+      method,
+      path,
+      processedAt: new Date().toISOString(),
     };
 
     await this.redis.set(

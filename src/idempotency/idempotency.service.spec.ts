@@ -116,4 +116,35 @@ describe('IdempotencyService', () => {
       expect(ttl).toBe(86400);
     });
   });
+
+  describe('setCompletedFailure', () => {
+    it('실패 레코드를 failed/errorCode/message 포함하여 SET EX 86400 한다', async () => {
+      mockRedis.set.mockResolvedValue('OK');
+
+      await service.setCompletedFailure(
+        'user-1',
+        'key-1',
+        'POST',
+        '/posts/999/likes',
+        30001,
+        'Post does not exist! - [999]',
+      );
+
+      expect(mockRedis.set).toHaveBeenCalledTimes(1);
+      const [key, json, exFlag, ttl] = mockRedis.set.mock.calls[0];
+      expect(key).toBe('idempotency:user-1:key-1');
+      const parsed = JSON.parse(json as string);
+      expect(parsed.state).toBe('completed');
+      expect(parsed.failed).toBe(true);
+      expect(parsed.errorCode).toBe(30001);
+      expect(parsed.message).toBe('Post does not exist! - [999]');
+      expect(parsed.method).toBe('POST');
+      expect(parsed.path).toBe('/posts/999/likes');
+      // 실패 shape는 statusCode/responseBody를 갖지 않는다
+      expect(parsed.statusCode).toBeUndefined();
+      expect(parsed.responseBody).toBeUndefined();
+      expect(exFlag).toBe('EX');
+      expect(ttl).toBe(86400);
+    });
+  });
 });

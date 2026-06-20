@@ -3,15 +3,28 @@ import {
   BadRequestException,
   CallHandler,
   ExecutionContext,
+  NotFoundException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { firstValueFrom, lastValueFrom, of } from 'rxjs';
+import { firstValueFrom, lastValueFrom, of, throwError } from 'rxjs';
 import { IdempotencyKeyInterceptor } from './idempotency-key.interceptor';
 import { IdempotencyService } from '../idempotency/idempotency.service';
-import { IdempotencyInProgressException } from '../exception/idempotency';
+import {
+  IdempotencyInProgressException,
+  IdempotentReplayException,
+} from '../exception/idempotency';
+import { BaseException } from '../exception/base.exception';
+import { ErrorCode } from '../constant/error-code.enum';
 
 const VALID_UUID_V4 = '3f29c1a0-8b4e-4c2a-9f7d-1a2b3c4d5e6f';
+
+// 핸들러가 throw하는 도메인 예외 모사(BaseException 서브클래스)
+class FakePostNotFoundException extends BaseException {
+  constructor() {
+    super(ErrorCode.POST_NOT_FOUND, 'Post does not exist! - [999]');
+  }
+}
 
 describe('IdempotencyKeyInterceptor', () => {
   let interceptor: IdempotencyKeyInterceptor;
@@ -20,6 +33,7 @@ describe('IdempotencyKeyInterceptor', () => {
     get: jest.Mock;
     setPending: jest.Mock;
     setCompleted: jest.Mock;
+    setCompletedFailure: jest.Mock;
   };
   let logger: { warn: jest.Mock };
 
@@ -46,12 +60,18 @@ describe('IdempotencyKeyInterceptor', () => {
     handle: jest.fn(() => of(returnValue)),
   });
 
+  // 핸들러가 에러 observable을 내보내는 CallHandler 모사
+  const buildNextThrow = (err: unknown): CallHandler => ({
+    handle: jest.fn(() => throwError(() => err)),
+  });
+
   beforeEach(async () => {
     reflector = { getAllAndOverride: jest.fn().mockReturnValue(false) };
     idempotencyService = {
       get: jest.fn(),
       setPending: jest.fn(),
       setCompleted: jest.fn(),
+      setCompletedFailure: jest.fn(),
     };
     logger = { warn: jest.fn() };
     setHeader.mockClear();
@@ -282,6 +302,119 @@ describe('IdempotencyKeyInterceptor', () => {
 
       expect(logger.warn).toHaveBeenCalledTimes(1);
       expect(next.handle).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('flow §3.3 핸들러 실패 시 캐싱 (R2 catchError)', () => {
+    it('핸들러 BaseException throw → setCompletedFailure 캐싱 + 원본 에러 재전파', async () => {
+      idempotencyService.get.mockResolvedValue(null);
+      idempotencyService.setPending.mockResolvedValue(true);
+      idempotencyService.setCompletedFailure.mockResolvedValue(undefined);
+      const domainError = new FakePostNotFoundException();
+      const next = buildNextThrow(domainError);
+
+      await expect(
+        lastValueFrom(
+          interceptor.intercept(
+            buildContext({
+              'idempotency-key': VALID_UUID_V4,
+              authenticatedUser: 'user-1',
+            }),
+            next,
+          ),
+        ),
+      ).rejects.toBe(domainError); // 원본 에러 그대로 전파(필터가 변환)
+
+      expect(idempotencyService.setCompletedFailure).toHaveBeenCalledWith(
+        'user-1',
+        VALID_UUID_V4,
+        'POST',
+        '/posts',
+        ErrorCode.POST_NOT_FOUND,
+        'Post does not exist! - [999]',
+      );
+      expect(idempotencyService.setCompleted).not.toHaveBeenCalled();
+    });
+
+    it('핸들러 HttpException(NotFound) throw → COMMON_NOT_FOUND로 매핑 캐싱', async () => {
+      idempotencyService.get.mockResolvedValue(null);
+      idempotencyService.setPending.mockResolvedValue(true);
+      idempotencyService.setCompletedFailure.mockResolvedValue(undefined);
+      const httpError = new NotFoundException('nope');
+      const next = buildNextThrow(httpError);
+
+      await expect(
+        lastValueFrom(
+          interceptor.intercept(
+            buildContext({
+              'idempotency-key': VALID_UUID_V4,
+              authenticatedUser: 'user-1',
+            }),
+            next,
+          ),
+        ),
+      ).rejects.toBe(httpError);
+
+      expect(idempotencyService.setCompletedFailure).toHaveBeenCalledWith(
+        'user-1',
+        VALID_UUID_V4,
+        'POST',
+        '/posts',
+        ErrorCode.COMMON_NOT_FOUND,
+        'nope',
+      );
+    });
+
+    it('setCompletedFailure가 reject(Redis 장애)해도 원본 에러가 전파된다', async () => {
+      idempotencyService.get.mockResolvedValue(null);
+      idempotencyService.setPending.mockResolvedValue(true);
+      idempotencyService.setCompletedFailure.mockRejectedValue(
+        new Error('redis down'),
+      );
+      const domainError = new FakePostNotFoundException();
+      const next = buildNextThrow(domainError);
+
+      await expect(
+        lastValueFrom(
+          interceptor.intercept(
+            buildContext({
+              'idempotency-key': VALID_UUID_V4,
+              authenticatedUser: 'user-1',
+            }),
+            next,
+          ),
+        ),
+      ).rejects.toBe(domainError); // 캐싱 실패해도 원본 전파(pending TTL 폴백)
+    });
+  });
+
+  describe('flow §3.3 R3 캐싱된 실패 재반환 (completed failed)', () => {
+    it('completed(failed) → IdempotentReplayException(동일 errorCode/message) throw, 핸들러 미진입', async () => {
+      idempotencyService.get.mockResolvedValue({
+        state: 'completed',
+        failed: true,
+        errorCode: ErrorCode.POST_NOT_FOUND,
+        message: 'Post does not exist! - [999]',
+        method: 'POST',
+        path: '/posts',
+        processedAt: 'x',
+      });
+      const next = buildNext('fresh');
+
+      await expect(
+        lastValueFrom(
+          interceptor.intercept(
+            buildContext({
+              'idempotency-key': VALID_UUID_V4,
+              authenticatedUser: 'user-1',
+            }),
+            next,
+          ),
+        ),
+      ).rejects.toBeInstanceOf(IdempotentReplayException);
+
+      expect(next.handle).not.toHaveBeenCalled();
+      expect(idempotencyService.setPending).not.toHaveBeenCalled();
     });
   });
 });

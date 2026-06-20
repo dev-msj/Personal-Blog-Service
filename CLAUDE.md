@@ -213,7 +213,7 @@ BaseException 계층 (abstract, protected constructor) → 도메인별 하위 �
 - user/: UserNotFoundException, UserAlreadyExistsException, UserInfoNotFoundException, UserInfoAlreadyExistsException
 - blog/: PostNotFoundException, PostLikeAlreadyExistsException, PostLikeNotFoundException
 - validation/: InvalidPageException, InvalidEncryptedParameterException
-- idempotency/: IdempotencyInProgressException (90009, R4 in-flight)
+- idempotency/: IdempotencyInProgressException (90009, R4 in-flight), IdempotentReplayException (캐싱된 실패 응답 R3 동일 재반환 — 핸들러 throw 시 errorCode/message 스냅샷을 completed(failed)로 캐싱 후 재요청 시 재구성 throw, flow §3.3)
 - 범용: UnexpectedCodeException (fallback)
 
 새 예외 추가 시: ErrorCode enum 도메인 그룹에 맞는 하위 디렉토리에 클래스 생성 + barrel index.ts export.

@@ -2,6 +2,8 @@ import {
   BadRequestException,
   CallHandler,
   ExecutionContext,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   NestInterceptor,
@@ -10,11 +12,16 @@ import { Reflector } from '@nestjs/core';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { Request, Response } from 'express';
-import { from, Observable, of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { from, Observable, of, throwError } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
+import { ErrorCode } from '../constant/error-code.enum';
+import { BaseException } from '../exception/base.exception';
 import { SKIP_IDEMPOTENCY_KEY } from '../decorator/skip-idempotency.decorator';
 import { IdempotencyService } from '../idempotency/idempotency.service';
-import { IdempotencyInProgressException } from '../exception/idempotency';
+import {
+  IdempotencyInProgressException,
+  IdempotentReplayException,
+} from '../exception/idempotency';
 
 /**
  * API 수신 측 Idempotency-Key 처리 인터셉터 (DT-1 / flows/idempotency-key-handle.md).
@@ -25,7 +32,8 @@ import { IdempotencyInProgressException } from '../exception/idempotency';
  * DT-1 분기:
  * - R1: 키 미제공 → 즉시 next.handle() 위임 (Redis 미접근, 캐싱 없음)
  * - R2: 키 + miss → setPending(락 획득) → 처리 → setCompleted
- * - R3: 키 + completed → 원본 응답 즉시 재반환 (핸들러 미진입)
+ * - R3: 키 + completed → 캐싱된 응답 즉시 재반환 (핸들러 미진입). completed(failed)면
+ *   캐싱된 errorCode/message로 동일 실패 재반환(throw 재구성, flow §3.3)
  * - R4: 키 + pending → IDEMPOTENCY_IN_PROGRESS + Retry-After:5 (핸들러 미진입)
  * - 키 충돌(동일 키, 다른 method/path) → COMMON_BAD_REQUEST + Warning 로그
  *
@@ -111,7 +119,14 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
             throw new IdempotencyInProgressException();
           }
 
-          // R3: completed → 원본 응답 즉시 재반환 (핸들러 미진입)
+          // R3: completed → 캐싱된 응답 즉시 재반환 (핸들러 미진입)
+          // 실패 스냅샷이면 동일 errorCode/message로 재구성 throw (flow §3.3)
+          if (record.failed) {
+            throw new IdempotentReplayException(
+              record.errorCode as ErrorCode,
+              record.message as string,
+            );
+          }
           return of(record.responseBody);
         }
 
@@ -126,27 +141,94 @@ export class IdempotencyKeyInterceptor implements NestInterceptor {
               throw new IdempotencyInProgressException();
             }
 
-            // R2: 정상 처리 후 completed 캐싱
-            return next
-              .handle()
-              .pipe(
-                switchMap((body) =>
-                  from(
-                    this.idempotencyService.setCompleted(
-                      authUserId,
-                      key,
-                      method,
-                      path,
-                      response.statusCode,
-                      body,
-                    ),
-                  ).pipe(switchMap(() => of(body))),
-                ),
-              );
+            // R2: 정상 처리 후 completed 캐싱. 성공은 setCompleted, 실패(throw)는
+            // catchError에서 setCompletedFailure로 스냅샷 저장 후 원본 에러 전파.
+            return next.handle().pipe(
+              switchMap((body) =>
+                from(
+                  this.idempotencyService.setCompleted(
+                    authUserId,
+                    key,
+                    method,
+                    path,
+                    response.statusCode,
+                    body,
+                  ),
+                ).pipe(switchMap(() => of(body))),
+              ),
+              catchError((err) => {
+                const { errorCode, message } = this.toFailure(err);
+                return from(
+                  this.idempotencyService.setCompletedFailure(
+                    authUserId,
+                    key,
+                    method,
+                    path,
+                    errorCode,
+                    message,
+                  ),
+                ).pipe(
+                  // 캐싱 실패(Redis 장애) 시 pending TTL 폴백 — 원본 에러는 항상 전파
+                  catchError(() => of(null)),
+                  switchMap(() => throwError(() => err)),
+                );
+              }),
+            );
           }),
         );
       }),
     );
+  }
+
+  /**
+   * 핸들러 throw를 캐싱용 { errorCode, message }로 매핑한다.
+   *
+   * HttpException 분기는 HttpExceptionFilter.mapToErrorCode/getMessage의 미러다 —
+   * 인터셉터는 NestJS 파이프라인상 ExceptionFilter 하류라 필터가 변환한 응답을
+   * 직접 수신하지 못하므로(catchError로 원본 예외만 받음), 같은 매핑을 직접 수행해
+   * 실패 스냅샷을 캐싱한다.
+   */
+  private toFailure(err: unknown): { errorCode: ErrorCode; message: string } {
+    if (err instanceof BaseException) {
+      return { errorCode: err.errorCode, message: err.message };
+    }
+    if (err instanceof HttpException) {
+      return {
+        errorCode: this.mapHttpStatusToErrorCode(err.getStatus()),
+        message: this.getMessage(err.getResponse()),
+      };
+    }
+    return {
+      errorCode: ErrorCode.COMMON_INTERNAL_ERROR,
+      message: 'Internal server error',
+    };
+  }
+
+  // HttpExceptionFilter.mapToErrorCode 미러 — 인터셉터가 필터 하류라 직접 매핑 필요.
+  private mapHttpStatusToErrorCode(status: number): ErrorCode {
+    const mapping: Record<number, ErrorCode> = {
+      [HttpStatus.BAD_REQUEST]: ErrorCode.COMMON_BAD_REQUEST,
+      [HttpStatus.UNAUTHORIZED]: ErrorCode.COMMON_UNAUTHORIZED,
+      [HttpStatus.NOT_FOUND]: ErrorCode.COMMON_NOT_FOUND,
+      [HttpStatus.NOT_ACCEPTABLE]: ErrorCode.COMMON_NOT_ACCEPTABLE,
+      [HttpStatus.CONFLICT]: ErrorCode.COMMON_CONFLICT,
+      [HttpStatus.TOO_MANY_REQUESTS]: ErrorCode.COMMON_TOO_MANY_REQUESTS,
+      [HttpStatus.INTERNAL_SERVER_ERROR]: ErrorCode.COMMON_INTERNAL_ERROR,
+      [HttpStatus.SERVICE_UNAVAILABLE]: ErrorCode.COMMON_SERVICE_UNAVAILABLE,
+    };
+    return mapping[status] ?? ErrorCode.COMMON_INTERNAL_ERROR;
+  }
+
+  // HttpExceptionFilter.getMessage 미러.
+  private getMessage(response: string | object): string {
+    if (typeof response === 'string') {
+      return response;
+    }
+    const message = (response as Record<string, unknown>).message;
+    if (Array.isArray(message)) {
+      return message.join(', ');
+    }
+    return typeof message === 'string' ? message : '';
   }
 
   private extractKey(request: Request): string | undefined {
