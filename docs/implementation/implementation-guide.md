@@ -89,6 +89,8 @@ Phase 1 종료 시점에 domain-spec.md §Phase 진화 변경 예고 신규 INV 
 
 각 Service/Repository/Util의 시그니처 단일 진실 원천. flows/ §5에서 본 섹션을 역참조.
 
+user_id JS 타입: 모든 레이어에서 `string`으로 표현한다 (Entity는 TypeORM의 BIGINT 네이티브 매핑이 string, repo/service/controller 동일). `number`는 2^53 초과 정밀도 손실, TS `bigint`는 JSON 직렬화 예외 위험이 있어 배제 (2026-06-20 결정 — #117 expand·work-parallel 웨이브 1 리뷰에서 표기 분산 적발). postId 등 다른 BIGINT id의 JS 타입은 본 결정 범위 외이며 현 표기(`bigint`)를 유지한다 (필요 시 별도 결정으로 동일 컨벤션 적용).
+
 ### 3.1 user-auth.service
 
 ```typescript
@@ -105,9 +107,9 @@ class UserAuthService {
 ```typescript
 class UserAuthRepository {
   async findByLoginId(loginId: string): Promise<UserAuthEntity | null>
-  async findByUserId(userId: bigint): Promise<UserAuthEntity | null>
-  async findRefreshTokenForUpdate(userId: bigint, qr: QueryRunner): Promise<string | null>
-  async updateRefreshToken(userId: bigint, token: string | null, qr: QueryRunner): Promise<void>
+  async findByUserId(userId: string): Promise<UserAuthEntity | null>
+  async findRefreshTokenForUpdate(userId: string, qr: QueryRunner): Promise<string | null>
+  async updateRefreshToken(userId: string, token: string | null, qr: QueryRunner): Promise<void>
 }
 ```
 
@@ -119,16 +121,16 @@ class UserRepository {
     auth: NewUserAuth,
     info: NewUserInfo,
     qr: QueryRunner,
-  ): Promise<bigint>  // returns user_id
+  ): Promise<string>  // returns user_id
 
   async createOAuthUser(
     provider: NewUserAuthProvider,
     info: NewUserInfo,
     qr: QueryRunner,
-  ): Promise<bigint>
+  ): Promise<string>  // returns user_id
 
   async linkProvider(
-    userId: bigint,
+    userId: string,
     provider: NewUserAuthProvider,
     qr: QueryRunner,
   ): Promise<void>
@@ -148,7 +150,7 @@ class UserAuthProviderRepository {
     subject: string,
   ): Promise<UserAuthProviderEntity | null>
 
-  async findUserIdByEmail(email: string): Promise<bigint | null>
+  async findUserIdByEmail(email: string): Promise<string | null>
 
   async insert(entity: NewUserAuthProvider, qr: QueryRunner): Promise<void>
 }
@@ -161,9 +163,9 @@ class PostService {
   async create(cmd: CreatePostCommand): Promise<PostDto>
   async update(cmd: UpdatePostCommand): Promise<void>  // IDOR throws PostNotFoundException
   async delete(cmd: DeletePostCommand): Promise<void>  // IDOR throws PostNotFoundException
-  async findOne(postId: bigint, authUserId: bigint): Promise<PostDto>  // hits++
+  async findOne(postId: bigint, authUserId: string): Promise<PostDto>  // hits++
   async list(query: ListPostQuery): Promise<CursorPage<PostDto>>
-  async listByUser(userId: bigint, query: CursorPaginationDto): Promise<CursorPage<PostDto>>
+  async listByUser(userId: string, query: CursorPaginationDto): Promise<CursorPage<PostDto>>
 }
 ```
 
@@ -177,12 +179,12 @@ class PostRepository {
   async existsById(postId: bigint, qr?: QueryRunner): Promise<boolean>
   async insertOwned(post: NewPost, qr: QueryRunner): Promise<bigint>
   async updateByIdAndOwner(
-    postId: bigint, userId: bigint, patch: Partial<PostEntity>, qr: QueryRunner,
+    postId: bigint, userId: string, patch: Partial<PostEntity>, qr: QueryRunner,
   ): Promise<number>  // affected rows
-  async deleteByIdAndOwner(postId: bigint, userId: bigint, qr: QueryRunner): Promise<number>
+  async deleteByIdAndOwner(postId: bigint, userId: string, qr: QueryRunner): Promise<number>
   async incrementHits(postId: bigint, qr: QueryRunner): Promise<void>  // UPDATE hits = hits + 1
   async findByCursor(
-    cursor: PostCursor | null, limit: number, userId?: bigint,
+    cursor: PostCursor | null, limit: number, userId?: string,
   ): Promise<PostEntity[]>
 }
 ```
@@ -191,13 +193,13 @@ class PostRepository {
 
 ```typescript
 class PostLikeRepository {
-  async insert(postId: bigint, userId: bigint, qr: QueryRunner): Promise<void>
+  async insert(postId: bigint, userId: string, qr: QueryRunner): Promise<void>
     // UNIQUE 충돌 → PostLikeAlreadyExistsException
     // FK 충돌 → PostNotFoundException
-  async delete(postId: bigint, userId: bigint, qr: QueryRunner): Promise<number>  // affected rows
-  async exists(postId: bigint, userId: bigint): Promise<boolean>
+  async delete(postId: bigint, userId: string, qr: QueryRunner): Promise<number>  // affected rows
+  async exists(postId: bigint, userId: string): Promise<boolean>
   async getPostLikeMapByPostIds(
-    postIds: bigint[], authUserId: bigint,
+    postIds: bigint[], authUserId: string,
   ): Promise<Map<bigint, boolean>>
   async countByPostIds(postIds: bigint[]): Promise<Map<bigint, number>>
   async countByPostId(postId: bigint): Promise<number>
@@ -208,8 +210,8 @@ class PostLikeRepository {
 
 ```typescript
 class PostLikeService {
-  async like(postId: bigint, userId: bigint): Promise<void>
-  async unlike(postId: bigint, userId: bigint): Promise<void>
+  async like(postId: bigint, userId: string): Promise<void>
+  async unlike(postId: bigint, userId: string): Promise<void>
 }
 ```
 
@@ -272,7 +274,7 @@ function hashPassword(password: string, salt: string): string
 
 // JWT 발급/검증 (#70 흡수: verifyRefreshToken throw 통일)
 class JwtService {
-  issueTokens(userId: bigint, role: UserRole): { accessToken: string; refreshToken: string }
+  issueTokens(userId: string, role: UserRole): { accessToken: string; refreshToken: string }
   verifyRefreshToken(token: string): JwtPayload  // 실패 시 도메인 예외 throw (§9.3)
 }
 
@@ -285,9 +287,9 @@ class LoginFailCounter {
 
 // Idempotency 저장소 (Redis idempotency:{user_id}:{key}, §6.3 / 상태전이 §7.1)
 class IdempotencyService {
-  get(userId: bigint, key: string): Promise<IdempotencyRecord | null>
-  setPending(userId: bigint, key: string, method: string, path: string): Promise<boolean>  // SETNX
-  setCompleted(userId: bigint, key: string, statusCode: number, body: unknown): Promise<void>  // TTL 24h
+  get(userId: string, key: string): Promise<IdempotencyRecord | null>
+  setPending(userId: string, key: string, method: string, path: string): Promise<boolean>  // SETNX
+  setCompleted(userId: string, key: string, statusCode: number, body: unknown): Promise<void>  // TTL 24h
 }
 
 // Google OAuth 검증 wrapper (google-auth-library)
